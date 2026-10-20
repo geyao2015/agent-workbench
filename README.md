@@ -2,7 +2,7 @@
 
 > 从知识库对话到可审计发版。一个用于求职展示的研发 Agent 工作台：Chat 基于工程知识库对话，Release 执行可审计的发版流程。
 
-**状态：M0 进行中。** 技术选型与待确认项见 [docs/decision.md](docs/decision.md)；执行计划见 [docs/plan.md](docs/plan.md)；协议草案见 [docs/protocol.md](docs/protocol.md)。
+**状态：M0 已完成。** 技术选型与待确认项见 [docs/decision.md](docs/decision.md)；执行计划见 [docs/plan.md](docs/plan.md)；协议草案见 [docs/protocol.md](docs/protocol.md)。
 
 本文件是产品事实的唯一来源：项目定位、场景、演示流程、功能范围、非目标、当前状态、仓库结构与文档索引。
 
@@ -103,7 +103,7 @@ agent-workbench/
 
 ## 8. 当前阶段
 
-当前处于 **M0 进行中**：pnpm monorepo、Hono API 与 React 前端骨架已初始化，可本地启动。
+**M0 已完成**：本地单 URL 可流式输出，支持暂停/继续、取消与断线续传；下一步进入 M1 渲染层深挖。
 
 ```bash
 pnpm install

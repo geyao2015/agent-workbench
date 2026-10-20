@@ -1,0 +1,45 @@
+{"v":1,"eventId":"evt_release_001","seq":1,"runId":"run_fixture_release","threadId":"thread_fixture","ts":0,"type":"run.started","payload":{"kind":"chat","title":"1.2.0 发版注意事项"}}
+{"v":1,"eventId":"evt_release_002","seq":2,"runId":"run_fixture_release","threadId":"thread_fixture","ts":0,"type":"message.started","payload":{"messageId":"msg_release_001","role":"assistant"}}
+{"v":1,"eventId":"evt_release_003","seq":3,"runId":"run_fixture_release","threadId":"thread_fixture","ts":0,"type":"text.delta","payload":{"messageId":"msg_release_001","delta":"## 1.2.0 发版注意事项\n\n"}}
+{"v":1,"eventId":"evt_release_004","seq":4,"runId":"run_fixture_release","threadId":"thread_fixture","ts":0,"type":"text.delta","payload":{"messageId":"msg_release_001","delta":"**结论：可以发版，"}}
+{"v":1,"eventId":"evt_release_005","seq":5,"runId":"run_fixture_release","threadId":"thread_fixture","ts":0,"type":"text.delta","payload":{"messageId":"msg_release_001","delta":"但先完成两项确认。**\n\n"}}
+{"v":1,"eventId":"evt_release_006","seq":6,"runId":"run_fixture_release","threadId":"thread_fixture","ts":0,"type":"text.delta","payload":{"messageId":"msg_release_001","delta":"1. **合并冲突**："}}
+{"v":1,"eventId":"evt_release_007","seq":7,"runId":"run_fixture_release","threadId":"thread_fixture","ts":0,"type":"text.delta","payload":{"messageId":"msg_release_001","delta":"`checkout-service` 的 hotfix "}}
+{"v":1,"eventId":"evt_release_008","seq":8,"runId":"run_fixture_release","threadId":"thread_fixture","ts":0,"type":"text.delta","payload":{"messageId":"msg_release_001","delta":"与 1.2.0 有 2 处冲突，"}}
+{"v":1,"eventId":"evt_release_009","seq":9,"runId":"run_fixture_release","threadId":"thread_fixture","ts":0,"type":"text.delta","payload":{"messageId":"msg_release_001","delta":"需按 runbook 保留新版接口签名。\n"}}
+{"v":1,"eventId":"evt_release_010","seq":10,"runId":"run_fixture_release","threadId":"thread_fixture","ts":0,"type":"text.delta","payload":{"messageId":"msg_release_001","delta":"2. **回归测试**："}}
+{"v":1,"eventId":"evt_release_011","seq":11,"runId":"run_fixture_release","threadId":"thread_fixture","ts":0,"type":"text.delta","payload":{"messageId":"msg_release_001","delta":"`INC-042` 相关用例必须全绿，"}}
+{"v":1,"eventId":"evt_release_012","seq":12,"runId":"run_fixture_release","threadId":"thread_fixture","ts":0,"type":"text.delta","payload":{"messageId":"msg_release_001","delta":"重点检查超时配置。\n\n"}}
+{"v":1,"eventId":"evt_release_013","seq":13,"runId":"run_fixture_release","threadId":"thread_fixture","ts":0,"type":"text.delta","payload":{"messageId":"msg_release_001","delta":"### 建议步骤\n\n"}}
+{"v":1,"eventId":"evt_release_014","seq":14,"runId":"run_fixture_release","threadId":"thread_fixture","ts":0,"type":"text.delta","payload":{"messageId":"msg_release_001","delta":"- 合并并审批冲突 diff\n"}}
+{"v":1,"eventId":"evt_release_015","seq":15,"runId":"run_fixture_release","threadId":"thread_fixture","ts":0,"type":"text.delta","payload":{"messageId":"msg_release_001","delta":"- 重跑 checkout 回归套件\n"}}
+{"v":1,"eventId":"evt_release_016","seq":16,"runId":"run_fixture_release","threadId":"thread_fixture","ts":0,"type":"text.delta","payload":{"messageId":"msg_release_001","delta":"- 生成 release notes 后 dry-run tag\n\n"}}
+{"v":1,"eventId":"evt_release_017","seq":17,"runId":"run_fixture_release","threadId":"thread_fixture","ts":0,"type":"text.delta","payload":{"messageId":"msg_release_001","delta":"### 风险检查\n\n"}}
+{"v":1,"eventId":"evt_release_018","seq":18,"runId":"run_fixture_release","threadId":"thread_fixture","ts":0,"type":"text.delta","payload":{"messageId":"msg_release_001","delta":"- 数据库迁移 `2026_10_add_retry` "}}
+{"v":1,"eventId":"evt_release_019","seq":19,"runId":"run_fixture_release","threadId":"thread_fixture","ts":0,"type":"text.delta","payload":{"messageId":"msg_release_001","delta":"需先在 staging 验证\n"}}
+{"v":1,"eventId":"evt_release_020","seq":20,"runId":"run_fixture_release","threadId":"thread_fixture","ts":0,"type":"text.delta","payload":{"messageId":"msg_release_001","delta":"- 支付回调重试窗口从 30s 调整为 60s，"}}
+{"v":1,"eventId":"evt_release_021","seq":21,"runId":"run_fixture_release","threadId":"thread_fixture","ts":0,"type":"text.delta","payload":{"messageId":"msg_release_001","delta":"需确认下游幂等\n"}}
+{"v":1,"eventId":"evt_release_022","seq":22,"runId":"run_fixture_release","threadId":"thread_fixture","ts":0,"type":"text.delta","payload":{"messageId":"msg_release_001","delta":"- 新增限流阈值只对 "}}
+{"v":1,"eventId":"evt_release_023","seq":23,"runId":"run_fixture_release","threadId":"thread_fixture","ts":0,"type":"text.delta","payload":{"messageId":"msg_release_001","delta":"`checkout-service` 生效\n\n"}}
+{"v":1,"eventId":"evt_release_024","seq":24,"runId":"run_fixture_release","threadId":"thread_fixture","ts":0,"type":"text.delta","payload":{"messageId":"msg_release_001","delta":"### 回滚预案\n\n"}}
+{"v":1,"eventId":"evt_release_025","seq":25,"runId":"run_fixture_release","threadId":"thread_fixture","ts":0,"type":"text.delta","payload":{"messageId":"msg_release_001","delta":"1. 关闭 1.2.0 灰度开关\n"}}
+{"v":1,"eventId":"evt_release_026","seq":26,"runId":"run_fixture_release","threadId":"thread_fixture","ts":0,"type":"text.delta","payload":{"messageId":"msg_release_001","delta":"2. 将流量切回 1.1.8\n"}}
+{"v":1,"eventId":"evt_release_027","seq":27,"runId":"run_fixture_release","threadId":"thread_fixture","ts":0,"type":"text.delta","payload":{"messageId":"msg_release_001","delta":"3. 回放失败请求并核对订单状态\n"}}
+{"v":1,"eventId":"evt_release_028","seq":28,"runId":"run_fixture_release","threadId":"thread_fixture","ts":0,"type":"text.delta","payload":{"messageId":"msg_release_001","delta":"4. 在事故频道同步回滚结论\n\n"}}
+{"v":1,"eventId":"evt_release_029","seq":29,"runId":"run_fixture_release","threadId":"thread_fixture","ts":0,"type":"text.delta","payload":{"messageId":"msg_release_001","delta":"### 上线后观察\n\n"}}
+{"v":1,"eventId":"evt_release_030","seq":30,"runId":"run_fixture_release","threadId":"thread_fixture","ts":0,"type":"text.delta","payload":{"messageId":"msg_release_001","delta":"- 5xx 比例低于 0.5%\n"}}
+{"v":1,"eventId":"evt_release_031","seq":31,"runId":"run_fixture_release","threadId":"thread_fixture","ts":0,"type":"text.delta","payload":{"messageId":"msg_release_001","delta":"- P95 延迟低于 450ms\n"}}
+{"v":1,"eventId":"evt_release_032","seq":32,"runId":"run_fixture_release","threadId":"thread_fixture","ts":0,"type":"text.delta","payload":{"messageId":"msg_release_001","delta":"- 支付回调失败率低于 0.1%\n\n"}}
+{"v":1,"eventId":"evt_release_033","seq":33,"runId":"run_fixture_release","threadId":"thread_fixture","ts":0,"type":"text.delta","payload":{"messageId":"msg_release_001","delta":"### 值班沟通\n\n"}}
+{"v":1,"eventId":"evt_release_034","seq":34,"runId":"run_fixture_release","threadId":"thread_fixture","ts":0,"type":"text.delta","payload":{"messageId":"msg_release_001","delta":"- 发版前在 #release "}}
+{"v":1,"eventId":"evt_release_035","seq":35,"runId":"run_fixture_release","threadId":"thread_fixture","ts":0,"type":"text.delta","payload":{"messageId":"msg_release_001","delta":"同步窗口与负责人\n"}}
+{"v":1,"eventId":"evt_release_036","seq":36,"runId":"run_fixture_release","threadId":"thread_fixture","ts":0,"type":"text.delta","payload":{"messageId":"msg_release_001","delta":"- 审批通过后再执行 "}}
+{"v":1,"eventId":"evt_release_037","seq":37,"runId":"run_fixture_release","threadId":"thread_fixture","ts":0,"type":"text.delta","payload":{"messageId":"msg_release_001","delta":"dry-run tag\n"}}
+{"v":1,"eventId":"evt_release_038","seq":38,"runId":"run_fixture_release","threadId":"thread_fixture","ts":0,"type":"text.delta","payload":{"messageId":"msg_release_001","delta":"- 出现异常先停止灰度，"}}
+{"v":1,"eventId":"evt_release_039","seq":39,"runId":"run_fixture_release","threadId":"thread_fixture","ts":0,"type":"text.delta","payload":{"messageId":"msg_release_001","delta":"再评估回滚\n\n"}}
+{"v":1,"eventId":"evt_release_040","seq":40,"runId":"run_fixture_release","threadId":"thread_fixture","ts":0,"type":"text.delta","payload":{"messageId":"msg_release_001","delta":"> 回滚窗口：发版后 30 分钟内"}}
+{"v":1,"eventId":"evt_release_041","seq":41,"runId":"run_fixture_release","threadId":"thread_fixture","ts":0,"type":"text.delta","payload":{"messageId":"msg_release_001","delta":"可一键回滚。"}}
+{"v":1,"eventId":"evt_release_042","seq":42,"runId":"run_fixture_release","threadId":"thread_fixture","ts":0,"type":"citation.added","payload":{"messageId":"msg_release_001","citationId":"cit_release_001","sourceId":"doc_release_runbook","title":"1.2.0 发版规范"}}
+{"v":1,"eventId":"evt_release_043","seq":43,"runId":"run_fixture_release","threadId":"thread_fixture","ts":0,"type":"text.block.completed","payload":{"messageId":"msg_release_001","blockId":"msg_release_001:b0"}}
+{"v":1,"eventId":"evt_release_044","seq":44,"runId":"run_fixture_release","threadId":"thread_fixture","ts":0,"type":"message.completed","payload":{"messageId":"msg_release_001","stopReason":"stop"}}
+{"v":1,"eventId":"evt_release_045","seq":45,"runId":"run_fixture_release","threadId":"thread_fixture","ts":0,"type":"run.completed","payload":{"status":"done","usage":{"inputTokens":1480,"outputTokens":386}}}

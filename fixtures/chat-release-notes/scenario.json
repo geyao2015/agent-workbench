@@ -1,0 +1,14 @@
+{
+  "name": "chat-release-notes",
+  "description": "1.2.0 发版注意事项：约 5 秒流式 Markdown、列表、引用",
+  "runKind": "chat",
+  "threadId": "thread_fixture",
+  "timing": {
+    "mode": "delays",
+    "defaultMs": 120,
+    "bySeq": {
+      "1": 0,
+      "2": 20
+    }
+  }
+}

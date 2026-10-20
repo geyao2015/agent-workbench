@@ -1,0 +1,8 @@
+{"v":1,"eventId":"evt_short_001","seq":1,"runId":"run_fixture_short","threadId":"thread_fixture","ts":0,"type":"run.started","payload":{"kind":"chat","title":"短回复演示"}}
+{"v":1,"eventId":"evt_short_002","seq":2,"runId":"run_fixture_short","threadId":"thread_fixture","ts":0,"type":"message.started","payload":{"messageId":"msg_short_001","role":"assistant"}}
+{"v":1,"eventId":"evt_short_003","seq":3,"runId":"run_fixture_short","threadId":"thread_fixture","ts":0,"type":"text.delta","payload":{"messageId":"msg_short_001","delta":"1.2.0 发版前需要确认两件事："}}
+{"v":1,"eventId":"evt_short_004","seq":4,"runId":"run_fixture_short","threadId":"thread_fixture","ts":0,"type":"text.delta","payload":{"messageId":"msg_short_001","delta":"合并冲突已解决，以及回归测试通过。"}}
+{"v":1,"eventId":"evt_short_005","seq":5,"runId":"run_fixture_short","threadId":"thread_fixture","ts":0,"type":"citation.added","payload":{"messageId":"msg_short_001","citationId":"cit_short_001","sourceId":"doc_release_runbook","title":"发版规范"}}
+{"v":1,"eventId":"evt_short_006","seq":6,"runId":"run_fixture_short","threadId":"thread_fixture","ts":0,"type":"text.block.completed","payload":{"messageId":"msg_short_001","blockId":"msg_short_001:b0"}}
+{"v":1,"eventId":"evt_short_007","seq":7,"runId":"run_fixture_short","threadId":"thread_fixture","ts":0,"type":"message.completed","payload":{"messageId":"msg_short_001","stopReason":"stop"}}
+{"v":1,"eventId":"evt_short_008","seq":8,"runId":"run_fixture_short","threadId":"thread_fixture","ts":0,"type":"run.completed","payload":{"status":"done","usage":{"inputTokens":120,"outputTokens":32}}}
