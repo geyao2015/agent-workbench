@@ -2,7 +2,7 @@
 
 最后更新：2026-10-20
 
-本文件是阶段划分、阶段状态、执行清单与验收标准的唯一来源。当前项目阶段摘要见 [README.md §9](../README.md#9-当前阶段)；技术选型与运行方式见 [decision.md §2](decision.md#2-技术选型与运行方式)；协议契约见 [protocol.md](protocol.md)。
+本文件是阶段划分、阶段状态、执行清单与验收标准的唯一来源。当前项目阶段摘要见 [README.md §8](../README.md#8-当前阶段)；技术选型与运行方式见 [decision.md §2](decision.md#2-技术选型与运行方式)；协议契约见 [protocol.md](protocol.md)。
 
 阶段状态取值：`未开始` / `进行中` / `已完成`。状态变化时同步更新本文件的「最后更新」日期。
 
@@ -14,7 +14,7 @@
 
 | 阶段 | 状态 | 完成后具备的能力 | 可演示交付 | 简历 / 面试可讲 | 时间盒 |
 | --- | --- | --- | --- | --- | --- |
-| M0 可运行的流式 Chat 地基 | 未开始 | 能搭可运行的流式 Agent 前端骨架 | 本地单 URL mock 聊天：SSE、事件协议、fixture 回放、reducer、基础 Markdown、快捷场景 | 事件协议、SSE、流式状态管理、从零搭建 | 1.5–2 周 |
+| M0 可运行的流式 Chat 地基 | 未开始 | 能搭可运行的流式 Agent 前端骨架 | 本地单 URL mock 聊天：SSE、事件协议、fixture 回放、reducer、基础 Markdown、快捷场景、事件检查器 | 事件协议、SSE、流式状态管理、从零搭建 | 1.5–2 周 |
 | M1 Agent 渲染层深挖 | 未开始 | 能独立开发 Agent 项目的渲染与交互层 | 增量 Markdown、工具调用/审批状态、reasoning、引用、长会话虚拟化、性能基准 | 块级增量渲染、10k 块长会话、工具状态机、渲染次数优化 | 约 3 周 |
 
 ### 阶段 B：完整 Agent
@@ -33,17 +33,21 @@
 
 ## 3. M0 执行清单
 
-1. 初始化 pnpm monorepo（结构见 [README.md §6](../README.md#6-仓库结构规划)）。
+开始前确认 [decision.md §8](decision.md#8-待确认) 的样式方案；部署平台不阻塞 M0。
+
+1. 初始化 pnpm monorepo（结构见 [README.md §5](../README.md#5-仓库结构规划)）。
 2. 实现 `AgentEvent` v1 类型 + Zod schema。
-3. 定义 fixture JSONL 格式与回放器。
+3. 定义 fixture JSONL 格式与回放器（`fixtures/`）。
 4. 实现纯函数 reducer + 单测。
-5. 搭聊天壳：输入框、消息列表、快捷场景、事件检查器。
-6. 按 [decision.md §2](decision.md#2-技术选型与运行方式) 的运行方式，用单个后端进程在本地同时服务 web 静态资源和 API（mock 模式）。
+5. 实现 transport：mock fixture 回放 + SSE 适配，共用同一 `AgentEvent` 协议。
+6. 搭聊天壳：输入框、消息列表、快捷场景、基础 Markdown、事件检查器。
+7. 实现取消与断线重连语义。
+8. 按 [decision.md §2](decision.md#2-技术选型与运行方式) 的运行方式，用单个后端进程在本地同时服务 web 静态资源和 API（mock 模式）。
 
 M0 验收：
 
 - 本地单 URL 能流式输出。
-- 取消不脏状态。
+- 取消与断线重连不产生脏状态或重复事件。
 - fixture / reducer 测试通过。
 - typecheck 通过。
 

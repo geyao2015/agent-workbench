@@ -2,7 +2,7 @@
 
 > 从知识库对话到可审计发版。一个用于求职展示的研发 Agent 工作台：Chat 基于工程知识库对话，Release 执行可审计的发版流程。
 
-**状态：设计与文档阶段，代码尚未初始化。** 技术选型与待确认项见 [docs/decision.md](docs/decision.md)；执行计划见 [docs/plan.md](docs/plan.md)；协议草案见 [docs/protocol.md](docs/protocol.md)。
+**状态：设计与文档阶段，产品代码尚未初始化。** 技术选型与待确认项见 [docs/decision.md](docs/decision.md)；执行计划见 [docs/plan.md](docs/plan.md)；协议草案见 [docs/protocol.md](docs/protocol.md)。
 
 本文件是产品事实的唯一来源：项目定位、场景、演示流程、功能范围、非目标、当前状态、仓库结构与文档索引。
 
@@ -47,13 +47,9 @@ flowchart LR
   Web --> Protocol
 ```
 
-关键设计决策（协议优先、事件与 telemetry 分离、fixture 回放、确定性边界等）见 [docs/decision.md §1](docs/decision.md#1-架构与协议决策)。
+关键设计决策见 [docs/decision.md §1](docs/decision.md#1-架构与协议决策)；技术选型与运行方式见 [docs/decision.md §2](docs/decision.md#2-技术选型与运行方式)。
 
-## 5. 技术栈
-
-技术选型、运行方式与未定项见 [docs/decision.md §2](docs/decision.md#2-技术选型与运行方式)。
-
-## 6. 仓库结构（规划）
+## 5. 仓库结构（规划）
 
 ```
 agent-workbench/
@@ -62,18 +58,22 @@ agent-workbench/
 │   └── api/              后端
 ├── packages/
 │   └── protocol/         共享协议包
+├── fixtures/             Chat / Release 场景事件 fixture
 ├── data/
 │   ├── docs/             合成工程文档（知识库）
 │   └── logs/             合成故障日志
 ├── docs/
-│   ├── decision.md       决策记录与阶段规划
+│   ├── decision.md       决策与理由
+│   ├── plan.md           执行计划与阶段状态
 │   └── protocol.md       事件协议草案
+├── scripts/
+│   └── check-docs.mjs    文档一致性检查
 ├── AGENTS.md             AI Agent 工作规则
 ├── CLAUDE.md             Claude Code 加载入口
 └── README.md
 ```
 
-## 7. 功能范围
+## 6. 功能范围
 
 ### Chat
 
@@ -93,7 +93,7 @@ agent-workbench/
 - 运行追踪：Trace 瀑布、Events 原始事件流、回放、token / 耗时 / 成本。
 - 日志是横切能力：Chat 与 Release 各有入口，功能复用，作用域不同。
 
-## 8. 非目标
+## 7. 非目标
 
 - 不做真实 CI/CD 执行、Kubernetes 或多环境编排。
 - 不做通用知识库平台、日志平台或 Agent 平台。
@@ -101,13 +101,13 @@ agent-workbench/
 - 不使用前雇主的代码、数据、内部 prompt、架构图或系统名。
 - 不在第一版实现权限体系、多租户、复杂文档接入。
 
-## 9. 当前阶段
+## 8. 当前阶段
 
-当前处于**设计与文档阶段**，代码尚未初始化。
+当前处于**设计与文档阶段**，产品代码尚未初始化。
 
 各阶段状态、交付物、时间盒与退出条件见 [docs/plan.md](docs/plan.md)。
 
-## 10. 文档索引
+## 9. 文档索引
 
 - [docs/decision.md](docs/decision.md) — 技术选型、架构与范围决策、求职叙事、待确认项、变更记录
 - [docs/plan.md](docs/plan.md) — 阶段划分、阶段状态、M0 执行清单、时间盒与验收标准
@@ -115,7 +115,7 @@ agent-workbench/
 - [AGENTS.md](AGENTS.md) — AI 工作规则与文档来源约定
 - [CLAUDE.md](CLAUDE.md) — Claude Code 加载入口
 
-## 11. 数据与合规
+## 10. 数据与合规
 
 - 所有示例数据均为合成数据。
 - 文档与日志视为不可信输入，防 prompt injection。
