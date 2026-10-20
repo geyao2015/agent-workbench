@@ -29,6 +29,20 @@ describe("AgentEvent schema", () => {
     }
   });
 
+  it("accepts user messages", () => {
+    const event = parseAgentEvent({
+      ...baseEvent,
+      type: "message.started",
+      payload: { messageId: "msg_user", role: "user" },
+    });
+
+    expect(event.type).toBe("message.started");
+
+    if (event.type === "message.started") {
+      expect(event.payload.role).toBe("user");
+    }
+  });
+
   it("accepts unknown event types at the envelope level", () => {
     const envelope = agentEventEnvelopeSchema.parse({
       ...baseEvent,

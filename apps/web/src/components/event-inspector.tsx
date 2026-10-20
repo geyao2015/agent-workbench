@@ -42,6 +42,12 @@ export function EventInspector({ events, state, onClose }: EventInspectorProps) 
                   <span className="font-mono text-[11px] text-muted-foreground">
                     #{event.seq}
                   </span>
+                  <span
+                    className="font-mono text-[10px] text-muted-foreground/70"
+                    title={event.runId}
+                  >
+                    {event.runId.slice(-6)}
+                  </span>
                   <time className="font-mono text-[10px] text-muted-foreground/80">
                     {formatTime(event.ts)}
                   </time>

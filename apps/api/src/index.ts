@@ -12,6 +12,7 @@ import { streamSSE } from "hono/streaming";
 import type { AgentEvent, Timing } from "@agent-workbench/protocol";
 
 import { loadFixtures } from "./fixtures.js";
+import type { FixtureDefinition } from "./fixtures.js";
 
 const port = Number(process.env.PORT ?? 8787);
 const webDist = resolve(dirname(fileURLToPath(import.meta.url)), "../../web/dist");
@@ -32,6 +33,95 @@ interface MockRun {
 }
 
 const runs = new Map<string, MockRun>();
+
+const MAX_PROMPT_LENGTH = 4000;
+
+function pickRandomChatFixture(): FixtureDefinition | undefined {
+  const chatFixtures = [...fixtures.values()].filter(
+    ({ scenario }) => scenario.runKind === "chat",
+  );
+
+  if (chatFixtures.length === 0) {
+    return undefined;
+  }
+
+  return chatFixtures[Math.floor(Math.random() * chatFixtures.length)];
+}
+
+function createRunEvents(
+  runId: string,
+  threadId: string,
+  fixture: FixtureDefinition,
+  prompt: string,
+): AgentEvent[] {
+  const userMessageId = `msg_user_${randomUUID()}`;
+  const runStarted: AgentEvent = {
+    v: 1,
+    eventId: "",
+    seq: 0,
+    runId,
+    threadId,
+    ts: 0,
+    type: "run.started",
+    payload: { kind: fixture.scenario.runKind, title: prompt.slice(0, 60) },
+  };
+  const userEvents: AgentEvent[] = [
+    {
+      v: 1,
+      eventId: "",
+      seq: 0,
+      runId,
+      threadId,
+      ts: 0,
+      type: "message.started",
+      payload: { messageId: userMessageId, role: "user" },
+    },
+    {
+      v: 1,
+      eventId: "",
+      seq: 0,
+      runId,
+      threadId,
+      ts: 0,
+      type: "text.delta",
+      payload: { messageId: userMessageId, delta: prompt },
+    },
+    {
+      v: 1,
+      eventId: "",
+      seq: 0,
+      runId,
+      threadId,
+      ts: 0,
+      type: "text.block.completed",
+      payload: { messageId: userMessageId, blockId: `${userMessageId}:b0` },
+    },
+    {
+      v: 1,
+      eventId: "",
+      seq: 0,
+      runId,
+      threadId,
+      ts: 0,
+      type: "message.completed",
+      payload: { messageId: userMessageId, stopReason: "stop" },
+    },
+  ];
+  const fixtureTail = fixture.events.filter(
+    (event, index) => !(index === 0 && event.type === "run.started"),
+  );
+
+  return [runStarted, ...userEvents, ...fixtureTail].map(
+    (event, index): AgentEvent => ({
+      ...event,
+      eventId: `${runId}:${index + 1}`,
+      seq: index + 1,
+      runId,
+      threadId,
+      ts: 0,
+    }),
+  );
+}
 
 function delayForSeq(timing: Timing, seq: number): number {
   if (timing.mode === "fast") {
@@ -121,27 +211,40 @@ app.get("/api/scenarios", (c) =>
 );
 
 app.post("/api/runs", async (c) => {
-  const body = await c.req.json<{ fixture?: unknown }>().catch(() => null);
-  const fixtureName = body?.fixture;
+  const body = await c.req
+    .json<{ prompt?: unknown; fixture?: unknown; threadId?: unknown }>()
+    .catch(() => null);
+  const prompt = typeof body?.prompt === "string" ? body.prompt.trim() : "";
 
-  if (typeof fixtureName !== "string" || fixtureName.length === 0) {
-    return c.json({ error: "fixture 必填" }, 400);
+  if (!prompt) {
+    return c.json({ error: "prompt 必填" }, 400);
   }
 
-  const fixture = fixtures.get(fixtureName);
+  if (prompt.length > MAX_PROMPT_LENGTH) {
+    return c.json({ error: `prompt 不能超过 ${MAX_PROMPT_LENGTH} 字符` }, 400);
+  }
+
+  const requestedFixture =
+    typeof body?.fixture === "string" && body.fixture.length > 0
+      ? body.fixture
+      : undefined;
+  const fixture = requestedFixture
+    ? fixtures.get(requestedFixture)
+    : pickRandomChatFixture();
 
   if (!fixture) {
-    return c.json({ error: `未知 fixture：${fixtureName}` }, 404);
+    return c.json(
+      { error: requestedFixture ? `未知 fixture：${requestedFixture}` : "没有可用的 Chat fixture" },
+      requestedFixture ? 404 : 500,
+    );
   }
 
   const runId = `run_${randomUUID()}`;
-  const threadId = `thread_${randomUUID()}`;
-  const events = fixture.events.map((event) => ({
-    ...event,
-    runId,
-    threadId,
-    eventId: `${runId}:${event.seq}`,
-  }));
+  const threadId =
+    typeof body?.threadId === "string" && body.threadId.length > 0
+      ? body.threadId
+      : `thread_${randomUUID()}`;
+  const events = createRunEvents(runId, threadId, fixture, prompt);
 
   runs.set(runId, {
     runId,
@@ -156,7 +259,12 @@ app.post("/api/runs", async (c) => {
     finished: false,
   });
 
-  return c.json({ runId, threadId, fixture: fixtureName, kind: fixture.scenario.runKind });
+  return c.json({
+    runId,
+    threadId,
+    fixture: fixture.scenario.name,
+    kind: fixture.scenario.runKind,
+  });
 });
 
 app.post("/api/runs/:runId/cancel", (c) => {

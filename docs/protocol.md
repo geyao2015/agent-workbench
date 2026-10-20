@@ -83,7 +83,7 @@ interface Usage {
 
 | type | payload | 说明 |
 | --- | --- | --- |
-| `message.started` | `{ messageId, role: "assistant" }` | 新消息 |
+| `message.started` | `{ messageId, role: "user" \| "assistant" }` | 新消息；用户输入也写入事件日志 |
 | `text.delta` | `{ messageId, delta, blockId? }` | 追加文本；`blockId` 可选 |
 | `text.block.completed` | `{ messageId, blockId }` | 显式闭合一个 block |
 | `message.completed` | `{ messageId, stopReason? }` | 消息结束 |
@@ -98,6 +98,7 @@ Block 归属规则（默认）：
 - 已闭合 block 不可变；只增量解析当前开放 block。
 - 若后端提供 `blockId`，以事件为准；同一条消息内不得混用两种模式。
 - 分段规则必须是纯函数，保证 fixture 回放和多端一致。
+- 用户输入以 `role: "user"` 的消息事件写入同一 run 的事件日志，先于 assistant 消息；prompt 不得只存在于前端状态。
 
 ### 4.3 工具调用
 
@@ -341,6 +342,7 @@ fixtures/
 - `timing.mode = "delays"`：按 `bySeq` / `defaultMs` 延迟。
 - `timing.mode = "fast"`：测试/CI 忽略延迟，同步产出。
 - fixture 的 `runId` / `threadId` 在加载时可重写，避免多个场景冲突。
+- Chat fixture 只保存 assistant 侧事件；运行时后端把用户 prompt 写成 user 消息事件插入事件日志。
 - fixture 是**契约测试**：真实后端修复 bug 后，优先补 fixture，而不是只写 UI 测试。
 
 必需覆盖的场景：
@@ -411,3 +413,4 @@ export interface Span {
 | 日期 | 版本 | 变更 |
 | --- | --- | --- |
 | 2026-10-20 | v0 | 初稿：信封、事件类型、reducer、fixture、transport、Span |
+| 2026-10-20 | v0 | 用户输入纳入事件流（`message.started` 支持 user 角色）；多轮 run 共用 thread |

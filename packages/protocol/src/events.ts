@@ -71,7 +71,7 @@ const eventSchemas = [
     "message.started",
     z.object({
       messageId: z.string().min(1),
-      role: z.literal("assistant"),
+      role: z.enum(["user", "assistant"]),
     }),
   ),
   event(

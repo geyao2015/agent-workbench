@@ -80,6 +80,26 @@ describe("reducer", () => {
     expect(reduce(state, events[0]!)).toBe(state);
   });
 
+  it("projects user messages from event log", () => {
+    const state = [
+      makeEvent(1, "run.started", { kind: "chat" }),
+      makeEvent(2, "message.started", { messageId: "msg_user", role: "user" }),
+      makeEvent(3, "text.delta", {
+        messageId: "msg_user",
+        delta: "发版前要确认什么？",
+      }),
+      makeEvent(4, "message.completed", { messageId: "msg_user", stopReason: "stop" }),
+    ].reduce(
+      reduce,
+      createRunState({ runId: "run_test", threadId: "thread_test", kind: "chat" }),
+    );
+
+    expect(state.messageOrder).toEqual(["msg_user"]);
+    expect(state.messages["msg_user"]?.role).toBe("user");
+    expect(state.messages["msg_user"]?.text).toBe("发版前要确认什么？");
+    expect(state.messages["msg_user"]?.status).toBe("completed");
+  });
+
   it("tracks user pause and resume states", () => {
     const initial = createRunState({
       runId: "run_test",

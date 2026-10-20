@@ -44,7 +44,10 @@ const QUICK_PROMPTS = [
   },
 ];
 
-const DEFAULT_FIXTURE = "chat-release-notes";
+interface ChatRun {
+  runId: string;
+  state: RunState;
+}
 
 function isAbortError(cause: unknown): boolean {
   return cause instanceof Error && cause.name === "AbortError";
@@ -70,9 +73,8 @@ function finalizeLocalRun(
 }
 
 export default function App() {
-  const [prompt, setPrompt] = useState<string | null>(null);
   const [input, setInput] = useState("");
-  const [runState, setRunState] = useState<RunState | null>(null);
+  const [runs, setRuns] = useState<ChatRun[]>([]);
   const [events, setEvents] = useState<AgentEvent[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -81,8 +83,10 @@ export default function App() {
   const [reconnectAttempt, setReconnectAttempt] = useState(0);
   const abortRef = useRef<AbortController | null>(null);
   const runIdRef = useRef<string | null>(null);
+  const threadIdRef = useRef<string | null>(null);
   const lastEventIdRef = useRef<string | null>(null);
   const stopTimerRef = useRef<number | null>(null);
+  const bottomRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     return () => {
@@ -93,6 +97,10 @@ export default function App() {
       }
     };
   }, []);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ block: "end" });
+  }, [events.length]);
 
   function clearStopTimer() {
     if (stopTimerRef.current !== null) {
@@ -113,6 +121,18 @@ export default function App() {
     clearStopTimer();
   }
 
+  function updateRun(runId: string, updater: (state: RunState) => RunState) {
+    setRuns((previous) =>
+      previous.map((run) =>
+        run.runId === runId ? { runId: run.runId, state: updater(run.state) } : run,
+      ),
+    );
+  }
+
+  function finalizeRun(runId: string, reason: "cancelled" | "failed") {
+    updateRun(runId, (state) => finalizeLocalRun(state, reason));
+  }
+
   async function consumeEvents(
     controller: AbortController,
     stream: AsyncGenerator<AgentEvent, void, void>,
@@ -126,31 +146,40 @@ export default function App() {
         lastEventIdRef.current = event.eventId;
         setReconnectAttempt(0);
         setEvents((previous) => [...previous, event]);
-        setRunState((previous) => {
-          const base =
-            previous ??
-            createRunState({
+        setRuns((previous) => {
+          const index = previous.findIndex((run) => run.runId === event.runId);
+
+          if (index === -1) {
+            const base = createRunState({
               runId: event.runId,
               threadId: event.threadId,
               kind: "chat",
             });
 
-          return reduce(base, event);
+            return [...previous, { runId: event.runId, state: reduce(base, event) }];
+          }
+
+          return previous.map((run, runIndex) =>
+            runIndex === index
+              ? { runId: run.runId, state: reduce(run.state, event) }
+              : run,
+          );
         });
       }
     } catch (cause) {
       if (!isAbortError(cause)) {
         setError(cause instanceof Error ? cause.message : "请求失败");
-        setRunState((previous) =>
-          previous ? finalizeLocalRun(previous, "failed") : previous,
-        );
+
+        if (runIdRef.current) {
+          finalizeRun(runIdRef.current, "failed");
+        }
       }
     } finally {
       finishRun(controller);
     }
   }
 
-  async function startRun(fixture: string, text: string) {
+  async function startRun(fixture: string | undefined, text: string) {
     abortRef.current?.abort();
 
     const controller = new AbortController();
@@ -159,27 +188,29 @@ export default function App() {
     lastEventIdRef.current = null;
     clearStopTimer();
 
-    setPrompt(text);
-    setRunState(null);
-    setEvents([]);
     setError(null);
     setIsStreaming(true);
     setIsStopping(false);
     setReconnectAttempt(0);
 
     try {
-      const run = await startChatRun(fixture, {
-        signal: controller.signal,
-        onRetry: setReconnectAttempt,
-      });
+      const run = await startChatRun(
+        {
+          prompt: text,
+          fixture,
+          threadId: threadIdRef.current ?? undefined,
+        },
+        {
+          signal: controller.signal,
+          onRetry: setReconnectAttempt,
+        },
+      );
       runIdRef.current = run.runId;
+      threadIdRef.current = run.threadId;
       await consumeEvents(controller, run.events);
     } catch (cause) {
       if (!isAbortError(cause)) {
         setError(cause instanceof Error ? cause.message : "请求失败");
-        setRunState((previous) =>
-          previous ? finalizeLocalRun(previous, "failed") : previous,
-        );
       }
 
       finishRun(controller);
@@ -200,9 +231,7 @@ export default function App() {
       abortRef.current = null;
       setIsStreaming(false);
       setIsStopping(false);
-      setRunState((previous) =>
-        previous ? { ...previous, status: "paused" } : previous,
-      );
+      updateRun(runId, (state) => ({ ...state, status: "paused" }));
       stopTimerRef.current = null;
     }, 2000);
 
@@ -273,9 +302,7 @@ export default function App() {
         abortRef.current = null;
         setIsStreaming(false);
         setIsStopping(false);
-        setRunState((previous) =>
-          previous ? finalizeLocalRun(previous, "cancelled") : previous,
-        );
+        finalizeRun(runId, "cancelled");
       }
     })();
   }
@@ -290,12 +317,12 @@ export default function App() {
     abortRef.current?.abort();
     abortRef.current = null;
     runIdRef.current = null;
+    threadIdRef.current = null;
     lastEventIdRef.current = null;
     clearStopTimer();
 
-    setPrompt(null);
     setInput("");
-    setRunState(null);
+    setRuns([]);
     setEvents([]);
     setError(null);
     setIsStreaming(false);
@@ -303,29 +330,22 @@ export default function App() {
     setReconnectAttempt(0);
   }
 
+  const activeRun = runs.at(-1)?.state ?? null;
+  const isPaused = activeRun?.status === "paused";
+  const hasConversation = runs.length > 0 || isStreaming || error !== null;
+
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     const text = input.trim();
-    const paused = runState?.status === "paused";
 
-    if (!text || isStreaming || paused) {
+    if (!text || isStreaming || isPaused) {
       return;
     }
 
     setInput("");
-    void startRun(DEFAULT_FIXTURE, text);
+    void startRun(undefined, text);
   }
-
-  const assistantMessages = runState
-    ? runState.messageOrder.flatMap((id) => {
-        const message = runState.messages[id];
-        return message ? [message] : [];
-      })
-    : [];
-  const hasConversation =
-    prompt !== null || runState !== null || isStreaming || error !== null;
-  const isPaused = runState?.status === "paused";
 
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-muted/20">
@@ -387,35 +407,46 @@ export default function App() {
                     </div>
                   ) : null}
 
-                  {prompt ? <UserMessage text={prompt} /> : null}
-
                   {error ? (
                     <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
                       出错了：{error}
                     </div>
                   ) : null}
 
-                  {runState ? (
-                    assistantMessages.map((message) => (
-                      <AssistantMessage
-                        key={message.id}
-                        message={message}
-                        runStatus={runState.status}
-                      />
-                    ))
+                  {runs.length > 0 ? (
+                    runs.map((run) =>
+                      run.state.messageOrder.map((messageId) => {
+                        const message = run.state.messages[messageId];
+
+                        if (!message) {
+                          return null;
+                        }
+
+                        return message.role === "user" ? (
+                          <UserMessage
+                            key={`${run.runId}:${message.id}`}
+                            text={message.text}
+                          />
+                        ) : (
+                          <AssistantMessage
+                            key={`${run.runId}:${message.id}`}
+                            message={message}
+                            runStatus={run.state.status}
+                          />
+                        );
+                      }),
+                    )
                   ) : isStreaming ? (
                     <PendingAssistant />
                   ) : null}
 
                   {isPaused ? (
                     <div className="rounded-lg border bg-muted/40 px-4 py-2 text-xs text-muted-foreground">
-                      已暂停在 seq {runState?.lastSeq}，点击“继续”从断点恢复。
+                      已暂停在 seq {activeRun?.lastSeq}，点击“继续”从断点恢复。
                     </div>
                   ) : null}
 
-                  {runState && assistantMessages.length === 0 && !isStreaming && !error ? (
-                    <p className="text-sm text-muted-foreground">本次运行没有产生消息。</p>
-                  ) : null}
+                  <div ref={bottomRef} />
                 </>
               )}
             </div>
@@ -440,7 +471,7 @@ export default function App() {
                 />
                 <p className="mt-1 text-[11px] text-muted-foreground">
                   {isPaused
-                    ? `断点 seq ${runState?.lastSeq ?? 0} · 可继续或取消`
+                    ? `断点 seq ${activeRun?.lastSeq ?? 0} · 可继续或取消`
                     : "Mock 模式 · 回答来自本地 fixture"}
                 </p>
               </div>
@@ -506,7 +537,7 @@ export default function App() {
         {showInspector ? (
           <EventInspector
             events={events}
-            state={runState}
+            state={activeRun}
             onClose={() => setShowInspector(false)}
           />
         ) : null}

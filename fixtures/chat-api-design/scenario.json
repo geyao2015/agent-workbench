@@ -1,0 +1,14 @@
+{
+  "name": "chat-api-design",
+  "description": "Rate Limiter API 设计建议：接口、响应与取舍",
+  "runKind": "chat",
+  "threadId": "thread_fixture",
+  "timing": {
+    "mode": "delays",
+    "defaultMs": 110,
+    "bySeq": {
+      "1": 0,
+      "2": 20
+    }
+  }
+}

@@ -8,6 +8,12 @@ interface CreateRunResponse {
   kind: RunKind;
 }
 
+export interface StartChatRunInput {
+  prompt: string;
+  fixture?: string;
+  threadId?: string;
+}
+
 export interface StartChatRunOptions {
   signal?: AbortSignal;
   onRetry?: (attempt: number) => void;
@@ -35,13 +41,13 @@ class HttpError extends Error {
 }
 
 export async function startChatRun(
-  fixture: string,
+  input: StartChatRunInput,
   options: StartChatRunOptions = {},
 ): Promise<StartedRun> {
   const response = await fetch("/api/runs", {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ fixture }),
+    body: JSON.stringify(input),
     signal: options.signal,
   });
 
