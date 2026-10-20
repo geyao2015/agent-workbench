@@ -49,6 +49,14 @@ export interface CitationState {
   locator?: string;
 }
 
+export interface ReasoningState {
+  id: string;
+  messageId: string;
+  text: string;
+  status: "streaming" | "completed";
+  startedAtSeq: number;
+}
+
 export interface MessageState {
   id: string;
   role: "user" | "assistant";
@@ -56,6 +64,7 @@ export interface MessageState {
   text: string;
   blockIds: string[];
   citations: CitationState[];
+  reasoning: ReasoningState[];
   startedAtSeq: number;
 }
 
@@ -241,6 +250,25 @@ function appendTextDelta(
   return { ...state, messages, blocks };
 }
 
+function findReasoning(
+  message: MessageState,
+  blockId?: string,
+): ReasoningState | undefined {
+  if (blockId) {
+    return message.reasoning.find((item) => item.id === blockId);
+  }
+
+  for (let index = message.reasoning.length - 1; index >= 0; index -= 1) {
+    const item = message.reasoning[index];
+
+    if (item?.status === "streaming") {
+      return item;
+    }
+  }
+
+  return undefined;
+}
+
 function appendError(state: RunState, code: string, message: string, seq: number): RunState {
   return { ...state, errors: [...state.errors, { code, message, seq }] };
 }
@@ -294,6 +322,7 @@ function applyKnownEvent(state: RunState, event: AgentEvent): RunState {
           text: "",
           blockIds: [],
           citations: [],
+          reasoning: [],
           startedAtSeq: event.seq,
         },
       };
@@ -356,13 +385,18 @@ function applyKnownEvent(state: RunState, event: AgentEvent): RunState {
             : block,
         ]),
       );
+      const reasoning = message.reasoning.map((reasoningItem) =>
+        reasoningItem.status === "streaming"
+          ? { ...reasoningItem, status: "completed" as const }
+          : reasoningItem,
+      );
 
       return {
         ...state,
         blocks,
         messages: {
           ...state.messages,
-          [message.id]: { ...message, status: "completed" },
+          [message.id]: { ...message, status: "completed", reasoning },
         },
       };
     }
@@ -622,10 +656,91 @@ function applyKnownEvent(state: RunState, event: AgentEvent): RunState {
       );
     }
 
-    case "reasoning.started":
-    case "reasoning.delta":
+    case "reasoning.started": {
+      const message = state.messages[event.payload.messageId];
+
+      if (!message) {
+        return state;
+      }
+
+      const id =
+        event.payload.blockId ?? `${message.id}:r${message.reasoning.length}`;
+
+      if (message.reasoning.some((item) => item.id === id)) {
+        return state;
+      }
+
+      return {
+        ...state,
+        messages: {
+          ...state.messages,
+          [message.id]: {
+            ...message,
+            reasoning: [
+              ...message.reasoning,
+              {
+                id,
+                messageId: message.id,
+                text: "",
+                status: "streaming",
+                startedAtSeq: event.seq,
+              },
+            ],
+          },
+        },
+      };
+    }
+
+    case "reasoning.delta": {
+      const message = state.messages[event.payload.messageId];
+      const target = message
+        ? findReasoning(message, event.payload.blockId)
+        : undefined;
+
+      if (!message || !target) {
+        return state;
+      }
+
+      return {
+        ...state,
+        messages: {
+          ...state.messages,
+          [message.id]: {
+            ...message,
+            reasoning: message.reasoning.map((item) =>
+              item.id === target.id
+                ? { ...item, text: item.text + event.payload.delta }
+                : item,
+            ),
+          },
+        },
+      };
+    }
+
     case "reasoning.completed": {
-      return state;
+      const message = state.messages[event.payload.messageId];
+      const target = message
+        ? findReasoning(message, event.payload.blockId)
+        : undefined;
+
+      if (!message || !target) {
+        return state;
+      }
+
+      return {
+        ...state,
+        messages: {
+          ...state.messages,
+          [message.id]: {
+            ...message,
+            reasoning: message.reasoning.map((item) =>
+              item.id === target.id
+                ? { ...item, status: "completed" as const }
+                : item,
+            ),
+          },
+        },
+      };
     }
 
     default: {

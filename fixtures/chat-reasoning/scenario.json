@@ -1,0 +1,14 @@
+{
+  "name": "chat-reasoning",
+  "description": "Reasoning 折叠：INC-042 支付回调重试分析",
+  "runKind": "chat",
+  "threadId": "thread_fixture",
+  "timing": {
+    "mode": "delays",
+    "defaultMs": 70,
+    "bySeq": {
+      "1": 0,
+      "2": 20
+    }
+  }
+}

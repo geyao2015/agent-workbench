@@ -194,6 +194,14 @@ interface CitationState {
   locator?: string;
 }
 
+interface ReasoningState {
+  id: string;
+  messageId: string;
+  text: string;
+  status: "streaming" | "completed";
+  startedAtSeq: number;
+}
+
 interface MessageState {
   id: string;
   role: "user" | "assistant";
@@ -201,6 +209,7 @@ interface MessageState {
   text: string;
   blockIds: string[];
   citations: CitationState[];
+  reasoning: ReasoningState[];
   startedAtSeq: number;
 }
 
@@ -412,7 +421,7 @@ export interface Span {
 3. **审批粒度**：工具级 vs 阶段级。默认不可逆工具用工具级，Release 整体用阶段级 gate。
 4. **取消语义**：工具是否必须支持 `AbortSignal`；默认是，超时后标记为 cancelled。
 5. **恢复来源**：开发期事件日志；生产期 checkpoint。接口保持一致。
-6. **Reasoning 可见性**：默认不在 UI 持久展示；仅调试抽屉可选，避免泄露和噪音。
+6. **Reasoning 可见性**：时间线默认展开，内容区限高滚动；调试抽屉仍可查看原文，避免长推理挤压正文。
 7. **同一 thread 的并发 run**：默认单活跃 run；后续再设计队列。
 8. **Token 统计粒度**：默认在 `run.completed.usage` + span attributes；是否增加 `usage.updated` 待定。
 
@@ -423,3 +432,4 @@ export interface Span {
 | 2026-10-20 | v0 | 初稿：信封、事件类型、reducer、fixture、transport、Span |
 | 2026-10-20 | v0 | 用户输入纳入事件流（`message.started` 支持 user 角色）；多轮 run 共用 thread |
 | 2026-10-20 | v0 | reducer 状态保留引用元数据（`CitationState`）与工具耗时（`ToolCallState.durationMs`） |
+| 2026-10-20 | v0 | reducer 记录 reasoning 块（`ReasoningState`）；UI 默认展开并限高 |

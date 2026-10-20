@@ -38,6 +38,7 @@ import {
 
 import { EventInspector } from "@/components/event-inspector";
 import { MarkdownBlock } from "@/components/markdown";
+import { ReasoningCard } from "@/components/reasoning-card";
 import { ToolCallCard } from "@/components/tool-card";
 import { Button } from "@/components/ui/button";
 import {
@@ -112,6 +113,14 @@ const QUICK_PROMPTS: QuickPrompt[] = [
     description: "流式 Markdown + 多条来源引用",
   },
   {
+    kind: "run",
+    group: "功能测试",
+    fixture: "chat-reasoning",
+    label: "推理折叠",
+    prompt: "INC-042 支付回调为什么一直重试？",
+    description: "默认折叠的思考过程 + 结论与引用",
+  },
+  {
     kind: "history",
     group: "性能测试",
     label: "长会话",
@@ -159,6 +168,12 @@ type ChatRow =
       showCursor: boolean;
     }
   | { kind: "assistant-thinking"; key: string }
+  | {
+      kind: "reasoning";
+      key: string;
+      text: string;
+      streaming: boolean;
+    }
   | {
       kind: "tool";
       key: string;
@@ -282,10 +297,27 @@ function buildChatRows(input: {
         streaming,
       });
 
-      if (message.blockIds.length === 0 && streaming) {
+      if (
+        message.blockIds.length === 0 &&
+        message.reasoning.length === 0 &&
+        streaming
+      ) {
         rows.push({
           kind: "assistant-thinking",
           key: `${run.runId}:${message.id}:thinking`,
+        });
+      }
+
+      for (const reasoning of message.reasoning) {
+        if (reasoning.text.length === 0 && reasoning.status !== "streaming") {
+          continue;
+        }
+
+        rows.push({
+          kind: "reasoning",
+          key: `${run.runId}:${reasoning.id}`,
+          text: reasoning.text,
+          streaming: reasoning.status === "streaming",
         });
       }
 
@@ -1138,7 +1170,7 @@ const ChatFeed = memo(function ChatFeed({
       onTouchMove={() => {
         stickToBottomRef.current = false;
       }}
-      className="min-h-0 flex-1 overflow-y-auto"
+      className="scroll-slim min-h-0 flex-1 overflow-y-auto"
     >
       <Profiler id="chat-feed" onRender={handleProfilerRender}>
         <div
@@ -1250,6 +1282,9 @@ function ChatRowView({
           }}
         />
       );
+
+    case "reasoning":
+      return <ReasoningCard text={row.text} streaming={row.streaming} />;
 
     case "assistant-thinking":
       return <div className="pl-11 text-sm text-muted-foreground">思考中…</div>;
@@ -1502,7 +1537,7 @@ function PerformancePanel({
   useFps(active);
 
   return (
-    <aside className="fixed right-4 bottom-4 z-40 max-h-[calc(100vh-2rem)] w-[calc(100%-2rem)] max-w-sm overflow-y-auto rounded-xl border bg-background/95 p-4 shadow-lg backdrop-blur">
+    <aside className="scroll-slim fixed right-4 bottom-4 z-40 max-h-[calc(100vh-2rem)] w-[calc(100%-2rem)] max-w-sm overflow-y-auto rounded-xl border bg-background/95 p-4 shadow-lg backdrop-blur">
       <div className="flex items-start justify-between gap-2">
         <div>
           <p className="text-sm font-medium">渲染性能</p>

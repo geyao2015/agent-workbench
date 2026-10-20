@@ -31,7 +31,7 @@ export function EventInspector({ events, state, onClose }: EventInspectorProps) 
         </Button>
       </div>
 
-      <div className="flex-1 space-y-2 overflow-y-auto p-3">
+      <div className="scroll-slim flex-1 space-y-2 overflow-y-auto p-3">
         {events.length === 0 ? (
           <p className="px-1 py-2 text-sm text-muted-foreground">尚无事件。</p>
         ) : (

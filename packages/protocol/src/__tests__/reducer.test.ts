@@ -123,6 +123,75 @@ describe("reducer", () => {
     ]);
   });
 
+  it("streams reasoning and closes it with the message", () => {
+    let state = createRunState({
+      runId: "run_test",
+      threadId: "thread_test",
+      kind: "chat",
+    });
+
+    state = reduce(state, makeEvent(1, "run.started", { kind: "chat" }));
+    state = reduce(
+      state,
+      makeEvent(2, "message.started", { messageId: "msg_1", role: "assistant" }),
+    );
+    state = reduce(
+      state,
+      makeEvent(3, "reasoning.started", {
+        messageId: "msg_1",
+        blockId: "reas_1",
+      }),
+    );
+    state = reduce(
+      state,
+      makeEvent(4, "reasoning.delta", {
+        messageId: "msg_1",
+        blockId: "reas_1",
+        delta: "先检查",
+      }),
+    );
+    state = reduce(
+      state,
+      makeEvent(5, "reasoning.delta", {
+        messageId: "msg_1",
+        blockId: "reas_1",
+        delta: "日志。",
+      }),
+    );
+    state = reduce(
+      state,
+      makeEvent(6, "reasoning.completed", {
+        messageId: "msg_1",
+        blockId: "reas_1",
+      }),
+    );
+    state = reduce(
+      state,
+      makeEvent(7, "reasoning.started", { messageId: "msg_1" }),
+    );
+    state = reduce(
+      state,
+      makeEvent(8, "message.completed", { messageId: "msg_1" }),
+    );
+
+    expect(state.messages["msg_1"]?.reasoning).toEqual([
+      {
+        id: "reas_1",
+        messageId: "msg_1",
+        text: "先检查日志。",
+        status: "completed",
+        startedAtSeq: 3,
+      },
+      {
+        id: "msg_1:r1",
+        messageId: "msg_1",
+        text: "",
+        status: "completed",
+        startedAtSeq: 7,
+      },
+    ]);
+  });
+
   it("is idempotent for duplicate events", () => {
     const state = applyAll();
     const lastEvent = events.at(-1);

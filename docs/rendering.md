@@ -16,14 +16,14 @@ SSE → Zod 校验 → 纯函数 reducer → 行级投影 → 虚拟列表。
 ## 2. 工具与引用的渲染边界
 
 - assistant 文本、代码、表格等静态内容按 Markdown block 渲染
-- 工具调用、审批、阶段、artifact 等有生命周期或交互的内容作为独立时间线行，由 AgentEvent 投影，不进入 Markdown AST
+- 工具调用、审批、reasoning、阶段、artifact 等有生命周期或交互的内容作为独立时间线行，由 AgentEvent 投影，不进入 Markdown AST
 - 引用等只读、轻量信息可以内联到 Markdown；当前以消息底部的可展开来源行展示，保留 `title / sourceId / locator`
 - 不执行模型输出中的 MDX、JSX 或原始 HTML；需要内联结构化内容时只接受受控占位符，并映射到事件状态
 - 工具卡片内部可以用 Markdown 渲染结果预览
 
 ### 卡片容器
 
-- `AgentCard` 统一头部、状态、内容、操作与底栏；工具、审批及后续异构内容（音视频、PDF、流程卡）复用同一容器
+- `AgentCard` 统一头部、状态、内容、操作与底栏；工具、审批、reasoning 及后续异构内容（音视频、PDF、流程卡）复用同一容器
 - 时间线按 `startedAtSeq` 合并消息与工具调用，保证同一 run 内文本与工具卡片正确交错
 - 工具卡片由 `ToolCallState` 投影：参数半截到达时按原文展示，`tool.ready` 后展示结构化参数，结果与耗时来自 `tool.result`
 - 审批作为工具卡片底栏，由 `ApprovalState` 投影；决定通过 `POST /api/approvals/:approvalId` 追加 `tool.approval_resolved` / `run.resumed` 事件，客户端按 `lastEventId` 恢复，前端状态不作为事实源
