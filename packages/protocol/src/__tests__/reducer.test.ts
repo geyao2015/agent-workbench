@@ -17,6 +17,26 @@ const eventsJsonl = readFileSync(
 );
 
 const { events } = parseFixture(scenarioJson, eventsJsonl);
+const releaseEventsJsonl = readFileSync(
+  fileURLToPath(
+    new URL("../../../../fixtures/chat-release-notes/events.jsonl", import.meta.url),
+  ),
+  "utf8",
+);
+const releaseScenarioJson = readFileSync(
+  fileURLToPath(
+    new URL("../../../../fixtures/chat-release-notes/scenario.json", import.meta.url),
+  ),
+  "utf8",
+);
+const blocksEventsJsonl = readFileSync(
+  fileURLToPath(new URL("../../../../fixtures/chat-blocks/events.jsonl", import.meta.url)),
+  "utf8",
+);
+const blocksScenarioJson = readFileSync(
+  fileURLToPath(new URL("../../../../fixtures/chat-blocks/scenario.json", import.meta.url)),
+  "utf8",
+);
 
 function makeEvent(
   seq: number,
@@ -219,6 +239,89 @@ describe("reducer", () => {
       { code: "retrieval_failed", message: "知识库检索失败", seq: 6 },
     ]);
     expect(state.status).toBe("completed");
+  });
+
+  it("segments streaming Markdown into stable blocks", () => {
+    const initial = createRunState({
+      runId: "run_test",
+      threadId: "thread_test",
+      kind: "chat",
+    });
+    const started = [
+      makeEvent(1, "run.started", { kind: "chat" }),
+      makeEvent(2, "message.started", { messageId: "msg_1", role: "assistant" }),
+      makeEvent(3, "text.delta", { messageId: "msg_1", delta: "## Title\n\nhello" }),
+    ].reduce(reduce, initial);
+
+    expect(started.messages["msg_1"]?.blockIds).toEqual(["msg_1:b0", "msg_1:b1"]);
+    expect(started.blocks["msg_1:b0"]?.kind).toBe("heading");
+    expect(started.blocks["msg_1:b0"]?.status).toBe("closed");
+    expect(started.blocks["msg_1:b1"]?.raw).toBe("hello");
+
+    const grown = reduce(
+      started,
+      makeEvent(4, "text.delta", { messageId: "msg_1", delta: " world" }),
+    );
+
+    expect(grown.blocks["msg_1:b0"]?.raw).toBe("## Title");
+    expect(grown.blocks["msg_1:b1"]?.raw).toBe("hello world");
+    expect(grown.blocks["msg_1:b1"]?.status).toBe("open");
+
+    const completed = reduce(
+      grown,
+      makeEvent(5, "message.completed", { messageId: "msg_1", stopReason: "stop" }),
+    );
+
+    expect(completed.blocks["msg_1:b1"]?.status).toBe("closed");
+    expect(completed.messages["msg_1"]?.status).toBe("completed");
+  });
+
+  it("segments the release fixture into closed Markdown blocks", () => {
+    const release = parseFixture(releaseScenarioJson, releaseEventsJsonl);
+    const first = release.events[0]!;
+    const state = release.events.reduce(
+      reduce,
+      createRunState({
+        runId: first.runId,
+        threadId: first.threadId,
+        kind: "chat",
+      }),
+    );
+    const message = state.messages["msg_release_001"];
+    const blockIds = message?.blockIds ?? [];
+    const kinds = blockIds.map((id) => state.blocks[id]?.kind);
+
+    expect(blockIds.length).toBeGreaterThan(5);
+    expect(blockIds.every((id) => state.blocks[id]?.status === "closed")).toBe(true);
+    expect(kinds).toContain("heading");
+    expect(kinds).toContain("list");
+    expect(kinds).toContain("blockquote");
+  });
+
+  it("covers all supported block kinds in the blocks fixture", () => {
+    const fixture = parseFixture(blocksScenarioJson, blocksEventsJsonl);
+    const first = fixture.events[0]!;
+    const state = fixture.events.reduce(
+      reduce,
+      createRunState({
+        runId: first.runId,
+        threadId: first.threadId,
+        kind: "chat",
+      }),
+    );
+    const message = state.messages["msg_chat_blocks"];
+    const kinds = new Set(
+      (message?.blockIds ?? []).map((id) => state.blocks[id]?.kind),
+    );
+
+    expect(kinds).toEqual(
+      new Set(["heading", "paragraph", "list", "code", "table", "blockquote"]),
+    );
+    expect(
+      (message?.blockIds ?? []).every(
+        (id) => state.blocks[id]?.status === "closed",
+      ),
+    ).toBe(true);
   });
 
   it("does not mutate a closed block", () => {

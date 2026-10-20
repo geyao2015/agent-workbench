@@ -80,6 +80,10 @@
   }
 }
 
+.markdown-block + .markdown-block {
+  margin-top: 0.5rem;
+}
+
 .markdown {
   font-size: 0.875rem;
   line-height: 1.75;

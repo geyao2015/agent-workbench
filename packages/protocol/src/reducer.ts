@@ -1,3 +1,5 @@
+import { segmentMarkdownBlocks } from "./blocks.js";
+import type { BlockKind } from "./blocks.js";
 import { isKnownEventType } from "./events.js";
 import type {
   AgentEvent,
@@ -56,7 +58,7 @@ export interface BlockState {
   index: number;
   raw: string;
   status: "open" | "closed";
-  kind?: "paragraph" | "heading" | "list" | "code" | "table" | "blockquote";
+  kind?: BlockKind;
 }
 
 export interface ToolCallState {
@@ -157,34 +159,64 @@ function appendTextDelta(
     return state;
   }
 
-  let resolvedBlockId =
-    blockId ?? message.blockIds.find((id) => state.blocks[id]?.status === "open");
-  const existing = resolvedBlockId ? state.blocks[resolvedBlockId] : undefined;
+  if (blockId) {
+    const existing = state.blocks[blockId];
 
-  if (existing?.status === "closed") {
-    return state;
+    if (existing?.status === "closed") {
+      return state;
+    }
+
+    const block: BlockState = existing ?? {
+      id: blockId,
+      messageId: message.id,
+      index: message.blockIds.length,
+      raw: "",
+      status: "open",
+    };
+    const blocks = {
+      ...state.blocks,
+      [blockId]: { ...block, raw: block.raw + delta },
+    };
+    const blockIds = existing ? message.blockIds : [...message.blockIds, blockId];
+    const messages = {
+      ...state.messages,
+      [message.id]: { ...message, text: message.text + delta, blockIds },
+    };
+
+    return { ...state, messages, blocks };
   }
 
-  if (!resolvedBlockId) {
-    resolvedBlockId = `${message.id}:b${message.blockIds.length}`;
+  const text = message.text + delta;
+  const segments = segmentMarkdownBlocks(message.id, text);
+  const blocks: Record<string, BlockState> = { ...state.blocks };
+
+  for (const [id, block] of Object.entries(blocks)) {
+    if (block.messageId === message.id) {
+      delete blocks[id];
+    }
   }
 
-  const block: BlockState = existing ?? {
-    id: resolvedBlockId,
-    messageId: message.id,
-    index: message.blockIds.length,
-    raw: "",
-    status: "open",
-  };
+  for (const segment of segments) {
+    const previous = state.blocks[segment.id];
+    const frozen = previous?.status === "closed";
 
-  const blocks = {
-    ...state.blocks,
-    [resolvedBlockId]: { ...block, raw: block.raw + delta },
-  };
-  const blockIds = existing ? message.blockIds : [...message.blockIds, resolvedBlockId];
+    blocks[segment.id] = {
+      id: segment.id,
+      messageId: message.id,
+      index: segment.index,
+      raw: frozen ? previous.raw : segment.raw,
+      status: frozen ? "closed" : segment.status,
+      kind: segment.kind,
+    };
+  }
+
   const messages = {
     ...state.messages,
-    [message.id]: { ...message, text: message.text + delta, blockIds },
+    [message.id]: {
+      ...message,
+      text,
+      blockIds: segments.map((segment) => segment.id),
+    },
   };
 
   return { ...state, messages, blocks };
@@ -297,8 +329,18 @@ function applyKnownEvent(state: RunState, event: AgentEvent): RunState {
         return state;
       }
 
+      const blocks = Object.fromEntries(
+        Object.entries(state.blocks).map(([id, block]) => [
+          id,
+          block.messageId === message.id && block.status === "open"
+            ? { ...block, status: "closed" as const }
+            : block,
+        ]),
+      );
+
       return {
         ...state,
+        blocks,
         messages: {
           ...state.messages,
           [message.id]: { ...message, status: "completed" },

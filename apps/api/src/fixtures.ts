@@ -1,4 +1,4 @@
-import { readFileSync, readdirSync } from "node:fs";
+import { readFileSync, readdirSync, watch } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -37,4 +37,29 @@ export function loadFixtures(): Map<string, FixtureDefinition> {
   }
 
   return fixtures;
+}
+
+export function watchFixtures(onChange: () => void): () => void {
+  let timer: NodeJS.Timeout | undefined;
+
+  try {
+    const watcher = watch(fixturesRoot, { recursive: true }, () => {
+      if (timer) {
+        clearTimeout(timer);
+      }
+
+      timer = setTimeout(onChange, 150);
+    });
+
+    return () => {
+      if (timer) {
+        clearTimeout(timer);
+      }
+
+      watcher.close();
+    };
+  } catch (cause) {
+    console.warn("fixture 目录监听不可用，新增 fixture 后需重启 API", cause);
+    return () => {};
+  }
 }

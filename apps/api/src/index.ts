@@ -11,13 +11,22 @@ import { streamSSE } from "hono/streaming";
 
 import type { AgentEvent, Timing } from "@agent-workbench/protocol";
 
-import { loadFixtures } from "./fixtures.js";
+import { loadFixtures, watchFixtures } from "./fixtures.js";
 import type { FixtureDefinition } from "./fixtures.js";
 
 const port = Number(process.env.PORT ?? 8787);
 const webDist = resolve(dirname(fileURLToPath(import.meta.url)), "../../web/dist");
 const hasWebBuild = existsSync(webDist);
-const fixtures = loadFixtures();
+let fixtures = loadFixtures();
+
+watchFixtures(() => {
+  try {
+    fixtures = loadFixtures();
+    console.log(`Reloaded fixtures: ${[...fixtures.keys()].join(", ")}`);
+  } catch (cause) {
+    console.error("fixture 重载失败", cause);
+  }
+});
 
 interface MockRun {
   runId: string;

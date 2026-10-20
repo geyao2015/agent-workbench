@@ -22,7 +22,7 @@ import {
 } from "@agent-workbench/protocol";
 
 import { EventInspector } from "@/components/event-inspector";
-import { Markdown } from "@/components/markdown";
+import { MarkdownBlock } from "@/components/markdown";
 import { Button } from "@/components/ui/button";
 import {
   cancelRun,
@@ -33,14 +33,16 @@ import {
 
 const QUICK_PROMPTS = [
   {
-    fixture: "chat-release-notes",
-    label: "1.2.0 发版注意事项",
-    prompt: "1.2.0 发版有哪些注意事项？",
+    fixture: "chat-general",
+    label: "一般对话",
+    prompt: "你在 Agent Workbench 里能做什么？",
+    description: "多轮聊天、历史保留、事件记录",
   },
   {
-    fixture: "chat-short",
-    label: "快速发版确认",
-    prompt: "发版前需要确认什么？",
+    fixture: "chat-blocks",
+    label: "模块渲染",
+    prompt: "展示一下 Markdown 块渲染能力。",
+    description: "标题、列表、代码块、表格、引用",
   },
 ];
 
@@ -431,6 +433,7 @@ export default function App() {
                           <AssistantMessage
                             key={`${run.runId}:${message.id}`}
                             message={message}
+                            blocks={run.state.blocks}
                             runStatus={run.state.status}
                           />
                         );
@@ -573,7 +576,7 @@ function EmptyState({
             className="rounded-xl border bg-card p-4 text-left shadow-xs transition-colors hover:bg-accent"
           >
             <p className="text-sm font-medium">{item.label}</p>
-            <p className="mt-1 text-xs text-muted-foreground">{item.prompt}</p>
+            <p className="mt-1 text-xs text-muted-foreground">{item.description}</p>
           </button>
         ))}
       </div>
@@ -593,12 +596,16 @@ function UserMessage({ text }: { text: string }) {
 
 function AssistantMessage({
   message,
+  blocks,
   runStatus,
 }: {
   message: MessageState;
+  blocks: RunState["blocks"];
   runStatus: RunState["status"];
 }) {
   const streaming = message.status === "streaming" && runStatus === "running";
+  const lastBlockId = message.blockIds.at(-1);
+  const lastBlock = lastBlockId ? blocks[lastBlockId] : undefined;
 
   return (
     <div className="flex gap-3">
@@ -625,8 +632,31 @@ function AssistantMessage({
         </div>
 
         <div className="text-sm">
-          {message.text ? (
-            <Markdown>{message.text + (streaming ? " ▍" : "")}</Markdown>
+          {message.blockIds.length > 0 ? (
+            <>
+              {message.blockIds.map((blockId) => {
+                const block = blocks[blockId];
+
+                if (!block) {
+                  return null;
+                }
+
+                return (
+                  <MarkdownBlock
+                    key={block.id}
+                    raw={block.raw}
+                    showCursor={
+                      streaming &&
+                      block.id === lastBlockId &&
+                      block.status === "open"
+                    }
+                  />
+                );
+              })}
+              {streaming && lastBlock?.status === "closed" ? (
+                <span className="ml-0.5 inline-block h-4 w-1 animate-pulse rounded-full bg-foreground align-middle" />
+              ) : null}
+            </>
           ) : (
             <span className="text-muted-foreground">思考中…</span>
           )}
