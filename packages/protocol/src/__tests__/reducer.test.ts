@@ -3,6 +3,7 @@ import { fileURLToPath } from "node:url";
 
 import { describe, expect, it } from "vitest";
 
+import { segmentMarkdownBlocks } from "../blocks";
 import type { AgentEvent, AgentEventEnvelope } from "../events";
 import { parseFixture } from "../fixture";
 import { createRunState, reduce } from "../reducer";
@@ -35,6 +36,18 @@ const blocksEventsJsonl = readFileSync(
 );
 const blocksScenarioJson = readFileSync(
   fileURLToPath(new URL("../../../../fixtures/chat-blocks/scenario.json", import.meta.url)),
+  "utf8",
+);
+const longResponseEventsJsonl = readFileSync(
+  fileURLToPath(
+    new URL("../../../../fixtures/chat-long-response/events.jsonl", import.meta.url),
+  ),
+  "utf8",
+);
+const longResponseScenarioJson = readFileSync(
+  fileURLToPath(
+    new URL("../../../../fixtures/chat-long-response/scenario.json", import.meta.url),
+  ),
   "utf8",
 );
 
@@ -322,6 +335,43 @@ describe("reducer", () => {
         (id) => state.blocks[id]?.status === "closed",
       ),
     ).toBe(true);
+  });
+
+  it("matches full segmentation after incremental deltas", () => {
+    const fixture = parseFixture(
+      longResponseScenarioJson,
+      longResponseEventsJsonl,
+    );
+    const first = fixture.events[0]!;
+    const state = fixture.events.reduce(
+      reduce,
+      createRunState({
+        runId: first.runId,
+        threadId: first.threadId,
+        kind: "chat",
+      }),
+    );
+    const message = state.messages["msg_chat_long_response"];
+
+    expect(message).toBeDefined();
+
+    if (!message) {
+      return;
+    }
+
+    const full = segmentMarkdownBlocks(message.id, message.text);
+    const incremental = message.blockIds.flatMap((id) => {
+      const block = state.blocks[id];
+      return block ? [block] : [];
+    });
+
+    expect(incremental.map((block) => block.id)).toEqual(
+      full.map((block) => block.id),
+    );
+    expect(
+      incremental.map((block) => [block.index, block.kind, block.raw]),
+    ).toEqual(full.map((block) => [block.index, block.kind, block.raw]));
+    expect(incremental.every((block) => block.status === "closed")).toBe(true);
   });
 
   it("does not mutate a closed block", () => {

@@ -18,12 +18,12 @@ describe("segmentMarkdownBlocks", () => {
     });
   });
 
-  it("treats a single trailing newline as open", () => {
+  it("keeps a single trailing newline on the open block", () => {
     const blocks = segmentMarkdownBlocks(messageId, "hello\n");
 
     expect(blocks).toHaveLength(1);
     expect(blocks[0]?.status).toBe("open");
-    expect(blocks[0]?.raw).toBe("hello");
+    expect(blocks[0]?.raw).toBe("hello\n");
   });
 
   it("closes blocks separated by blank lines", () => {
@@ -85,6 +85,16 @@ describe("segmentMarkdownBlocks", () => {
     expect(blocks.map((block) => block.kind)).toEqual(["table", "blockquote"]);
     expect(blocks[0]?.status).toBe("closed");
     expect(blocks[1]?.status).toBe("open");
+  });
+
+  it("offsets ids and indexes for incremental tails", () => {
+    const blocks = segmentMarkdownBlocks(messageId, "a\n\nb", 3);
+
+    expect(blocks.map((block) => block.id)).toEqual([
+      "msg_test:b3",
+      "msg_test:b4",
+    ]);
+    expect(blocks.map((block) => block.index)).toEqual([3, 4]);
   });
 
   it("keeps closed block ids and raw text stable as text grows", () => {

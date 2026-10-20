@@ -39,11 +39,13 @@ function detectKind(line: string): BlockKind {
 export function segmentMarkdownBlocks(
   messageId: string,
   text: string,
+  startIndex = 0,
 ): MarkdownSegment[] {
   if (!text.trim()) {
     return [];
   }
 
+  const endsWithNewline = text.endsWith("\n");
   const rawLines = text.split("\n");
   let trailingBlankCount = 0;
 
@@ -74,8 +76,11 @@ export function segmentMarkdownBlocks(
     chunkKind = null;
   };
 
-  for (const line of lines) {
+  for (let lineIndex = 0; lineIndex < lines.length; lineIndex += 1) {
+    const line = lines[lineIndex] ?? "";
     const trimmed = line.trim();
+    const isLastLine = lineIndex === lines.length - 1;
+    const isIncompleteLastLine = isLastLine && !endsWithNewline;
 
     if (fence) {
       chunk.push(line);
@@ -108,14 +113,23 @@ export function segmentMarkdownBlocks(
       flush(true);
       chunkKind = "heading";
       chunk.push(line);
-      flush(true);
+
+      if (!isLastLine || endsWithNewline) {
+        flush(true);
+      }
+
       continue;
     }
 
     const isIndentedContinuation =
       chunkKind !== null && chunkKind !== "paragraph" && /^\s+/.test(line);
 
-    if (chunkKind !== null && chunkKind !== kind && !isIndentedContinuation) {
+    if (
+      chunkKind !== null &&
+      chunkKind !== kind &&
+      !isIndentedContinuation &&
+      !isIncompleteLastLine
+    ) {
       flush(true);
     }
 
@@ -131,11 +145,22 @@ export function segmentMarkdownBlocks(
     flush(hasTrailingBlankLine || closedByFence);
   }
 
-  return chunks.map((entry, index) => ({
-    id: `${messageId}:b${index}`,
-    index,
-    kind: entry.kind,
-    raw: entry.lines.join("\n"),
-    status: entry.closed ? "closed" : "open",
-  }));
+  const preserveTrailingNewline =
+    !hasTrailingBlankLine && trailingBlankCount === 1;
+
+  return chunks.map((entry, offset) => {
+    const index = startIndex + offset;
+    const isLastChunk = offset === chunks.length - 1;
+    const raw =
+      entry.lines.join("\n") +
+      (isLastChunk && !entry.closed && preserveTrailingNewline ? "\n" : "");
+
+    return {
+      id: `${messageId}:b${index}`,
+      index,
+      kind: entry.kind,
+      raw,
+      status: entry.closed ? "closed" : "open",
+    };
+  });
 }

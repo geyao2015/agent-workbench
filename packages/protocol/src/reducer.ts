@@ -186,36 +186,47 @@ function appendTextDelta(
     return { ...state, messages, blocks };
   }
 
+  const previousBlockIds = message.blockIds;
+  const lastBlockId = previousBlockIds.at(-1);
+  const lastBlock = lastBlockId ? state.blocks[lastBlockId] : undefined;
+  const hasOpenTail = lastBlock?.status === "open";
+  const prefixBlockIds = hasOpenTail
+    ? previousBlockIds.slice(0, -1)
+    : previousBlockIds;
+  const tailText = hasOpenTail ? lastBlock.raw : "";
   const text = message.text + delta;
-  const segments = segmentMarkdownBlocks(message.id, text);
+  const segments = segmentMarkdownBlocks(
+    message.id,
+    tailText + delta,
+    prefixBlockIds.length,
+  );
   const blocks: Record<string, BlockState> = { ...state.blocks };
 
-  for (const [id, block] of Object.entries(blocks)) {
-    if (block.messageId === message.id) {
-      delete blocks[id];
-    }
+  if (hasOpenTail && lastBlockId) {
+    delete blocks[lastBlockId];
   }
 
   for (const segment of segments) {
-    const previous = state.blocks[segment.id];
-    const frozen = previous?.status === "closed";
-
     blocks[segment.id] = {
       id: segment.id,
       messageId: message.id,
       index: segment.index,
-      raw: frozen ? previous.raw : segment.raw,
-      status: frozen ? "closed" : segment.status,
+      raw: segment.raw,
+      status: segment.status,
       kind: segment.kind,
     };
   }
 
+  const blockIds = [
+    ...prefixBlockIds,
+    ...segments.map((segment) => segment.id),
+  ];
   const messages = {
     ...state.messages,
     [message.id]: {
       ...message,
       text,
-      blockIds: segments.map((segment) => segment.id),
+      blockIds,
     },
   };
 
