@@ -6,7 +6,7 @@
 
 1. `README.md` — 产品事实与当前状态
 2. `docs/decision.md` — 技术选型、架构决策、待确认项
-3. `docs/plan.md` — 阶段规划、M0 执行清单、验收标准
+3. `docs/plan.md` — 阶段规划、阶段状态、M0 执行清单、验收标准
 4. `docs/protocol.md` — 事件协议契约
 5. `AGENTS.md` — 本文件
 
@@ -14,7 +14,7 @@
 
 ## 2. 阶段门禁
 
-- 当前阶段以 `README.md` 的「状态」为准。
+- 当前项目阶段以 `README.md` 的「状态」为准；M0–M4 各阶段状态以 `docs/plan.md` 为准。
 - 用户明确说「开始 M0」之前：不初始化 package.json / pnpm workspace，不安装依赖，不创建 `apps/`、`packages/` 代码，不写产品代码。
 - 当前允许：完善文档、协议草案、架构图、决策记录。
 - 用户说「开始 M0」后，按 `docs/plan.md §3` 执行；写代码前先确认 `docs/decision.md §9` 的待确认项。
@@ -37,9 +37,9 @@
 
 | 内容 | 唯一来源 |
 | --- | --- |
-| 项目定位、场景、演示流程、功能范围、非目标、当前状态、仓库结构、文档索引 | `README.md` |
+| 项目定位、场景、演示流程、功能范围、非目标、项目状态摘要、仓库结构、文档索引 | `README.md` |
 | 技术选型、架构与范围决策、求职叙事、待确认项、变更记录 | `docs/decision.md` |
-| 阶段划分、能力成长、M0 执行清单、时间盒与验收标准 | `docs/plan.md` |
+| 阶段划分、阶段状态、能力成长、M0 执行清单、时间盒与验收标准 | `docs/plan.md` |
 | AgentEvent / Span、reducer、fixture、transport | `docs/protocol.md` |
 | AI 工作规则、阶段门禁、文档维护约定 | `AGENTS.md` |
 | 加载入口 | `CLAUDE.md`（只引用，不写事实） |
@@ -49,7 +49,7 @@
 - 修改事实先改来源文档，再检查其他文档的引用是否需要更新。
 - 待确认项只在 `docs/decision.md §9` 维护。
 - 决策变化写入 `docs/decision.md §10` 变更记录（日期 / 变更 / 理由）。
-- `README.md` 的状态行随阶段更新。
+- `README.md` 的项目状态摘要随阶段更新；M0–M4 的阶段状态只在 `docs/plan.md` 维护。
 - 不新增零散文档；确需新增时先确认，并更新 `README.md` 的文档索引。
 
 ## 5. 执行阶段

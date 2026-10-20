@@ -103,14 +103,14 @@ agent-workbench/
 
 ## 9. 当前阶段
 
-当前处于**设计与文档阶段**，尚未开始 M0。
+当前处于**设计与文档阶段**，代码尚未初始化。
 
-阶段划分、交付物、时间盒与退出条件见 [docs/plan.md](docs/plan.md)。
+各阶段状态、交付物、时间盒与退出条件见 [docs/plan.md](docs/plan.md)。
 
 ## 10. 文档索引
 
 - [docs/decision.md](docs/decision.md) — 技术选型、架构与范围决策、求职叙事、待确认项、变更记录
-- [docs/plan.md](docs/plan.md) — 阶段划分、M0 执行清单、时间盒与验收标准
+- [docs/plan.md](docs/plan.md) — 阶段划分、阶段状态、M0 执行清单、时间盒与验收标准
 - [docs/protocol.md](docs/protocol.md) — AgentEvent / Span 协议草案与 fixture 格式
 - [AGENTS.md](AGENTS.md) — AI 工作规则与文档来源约定
 - [CLAUDE.md](CLAUDE.md) — Claude Code 加载入口
