@@ -16,6 +16,7 @@ import {
   ArrowUp,
   BookOpen,
   Gauge,
+  Hourglass,
   Loader2,
   Pause,
   Play,
@@ -28,11 +29,14 @@ import {
   createRunState,
   reduce,
   type AgentEvent,
+  type ApprovalState,
   type RunState,
+  type ToolCallState,
 } from "@agent-workbench/protocol";
 
 import { EventInspector } from "@/components/event-inspector";
 import { MarkdownBlock } from "@/components/markdown";
+import { ToolCallCard } from "@/components/tool-card";
 import { Button } from "@/components/ui/button";
 import {
   getRenderStats,
@@ -49,6 +53,7 @@ import {
   cancelRun,
   fetchLongConversation,
   pauseRun,
+  resolveApproval as resolveApprovalRequest,
   startChatRun,
   streamRunEvents,
 } from "@/transport/sse";
@@ -89,6 +94,14 @@ const QUICK_PROMPTS: QuickPrompt[] = [
     description: "标题、列表、代码块、表格、引用",
   },
   {
+    kind: "run",
+    group: "功能测试",
+    fixture: "chat-tool-approval",
+    label: "工具与审批",
+    prompt: "处理一下 1.2.0 的合并冲突。",
+    description: "流式工具参数、暂停审批、批准或拒绝",
+  },
+  {
     kind: "history",
     group: "性能测试",
     label: "长会话",
@@ -124,7 +137,7 @@ type ChatRow =
   | {
       kind: "assistant-header";
       key: string;
-      runStatus: RunState["status"];
+      runStatus: RunState["status"] | null;
       streaming: boolean;
     }
   | {
@@ -136,6 +149,15 @@ type ChatRow =
       showCursor: boolean;
     }
   | { kind: "assistant-thinking"; key: string }
+  | {
+      kind: "tool";
+      key: string;
+      runId: string;
+      toolCall: ToolCallState;
+      approval?: ApprovalState;
+      canResolve: boolean;
+      resolving: boolean;
+    }
   | { kind: "cursor"; key: string }
   | { kind: "citations"; key: string; count: number }
   | { kind: "paused"; key: string; seq: number }
@@ -149,6 +171,7 @@ function buildChatRows(input: {
   error: string | null;
   reconnectAttempt: number;
   isLoadingHistory: boolean;
+  resolvingApprovalId: string | null;
 }): ChatRow[] {
   const rows: ChatRow[] = [];
 
@@ -169,8 +192,59 @@ function buildChatRows(input: {
   }
 
   for (const run of input.runs) {
+    const lastAssistantMessageId = [...run.state.messageOrder]
+      .reverse()
+      .find((messageId) => run.state.messages[messageId]?.role === "assistant");
+    const timeline: Array<
+      | { seq: number; kind: "message"; messageId: string }
+      | { seq: number; kind: "tool"; toolCallId: string }
+    > = [];
+
     for (const messageId of run.state.messageOrder) {
       const message = run.state.messages[messageId];
+
+      if (message) {
+        timeline.push({ seq: message.startedAtSeq, kind: "message", messageId });
+      }
+    }
+
+    for (const toolCallId of run.state.toolCallOrder) {
+      const toolCall = run.state.toolCalls[toolCallId];
+
+      if (toolCall) {
+        timeline.push({ seq: toolCall.startedAtSeq, kind: "tool", toolCallId });
+      }
+    }
+
+    timeline.sort((left, right) => left.seq - right.seq);
+
+    for (const item of timeline) {
+      if (item.kind === "tool") {
+        const toolCall = run.state.toolCalls[item.toolCallId];
+
+        if (!toolCall) {
+          continue;
+        }
+
+        const approval = toolCall.approvalId
+          ? run.state.approvals[toolCall.approvalId]
+          : undefined;
+
+        rows.push({
+          kind: "tool",
+          key: `${run.runId}:tool:${toolCall.id}`,
+          runId: run.runId,
+          toolCall,
+          approval,
+          canResolve:
+            approval?.status === "pending" &&
+            run.state.status === "waiting_approval",
+          resolving: approval ? input.resolvingApprovalId === approval.id : false,
+        });
+        continue;
+      }
+
+      const message = run.state.messages[item.messageId];
 
       if (!message) {
         continue;
@@ -193,7 +267,8 @@ function buildChatRows(input: {
       rows.push({
         kind: "assistant-header",
         key: `${run.runId}:${message.id}:header`,
-        runStatus: run.state.status,
+        runStatus:
+          message.id === lastAssistantMessageId ? run.state.status : null,
         streaming,
       });
 
@@ -286,6 +361,9 @@ export default function App() {
   const [isStopping, setIsStopping] = useState(false);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const [reconnectAttempt, setReconnectAttempt] = useState(0);
+  const [resolvingApprovalId, setResolvingApprovalId] = useState<string | null>(
+    null,
+  );
   const [followVersion, setFollowVersion] = useState(0);
   const abortRef = useRef<AbortController | null>(null);
   const runIdRef = useRef<string | null>(null);
@@ -554,13 +632,14 @@ export default function App() {
     });
   }
 
-  function resumeCurrentRun() {
-    const runId = runIdRef.current;
+  function resumeRunFromCursor(runId: string) {
     const lastEventId = lastEventIdRef.current;
 
-    if (!runId || !lastEventId || isStreaming) {
+    if (!lastEventId) {
       return;
     }
+
+    abortRef.current?.abort();
 
     const controller = new AbortController();
     abortRef.current = controller;
@@ -578,6 +657,17 @@ export default function App() {
         onRetry: setReconnectAttempt,
       }),
     );
+  }
+
+  function resumeCurrentRun() {
+    const runId = runIdRef.current;
+    const lastEventId = lastEventIdRef.current;
+
+    if (!runId || !lastEventId || isStreaming) {
+      return;
+    }
+
+    resumeRunFromCursor(runId);
   }
 
   function cancelCurrentRun() {
@@ -620,6 +710,31 @@ export default function App() {
     })();
   }
 
+  async function resolveToolApproval(
+    runId: string,
+    approvalId: string,
+    approved: boolean,
+  ) {
+    if (resolvingApprovalId) {
+      return;
+    }
+
+    setResolvingApprovalId(approvalId);
+    setError(null);
+
+    try {
+      await resolveApprovalRequest(runId, approvalId, { approved });
+
+      if (runIdRef.current === runId) {
+        resumeRunFromCursor(runId);
+      }
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "提交审批失败");
+    } finally {
+      setResolvingApprovalId(null);
+    }
+  }
+
   function resetConversation() {
     const runId = runIdRef.current;
 
@@ -650,6 +765,7 @@ export default function App() {
 
   const activeRun = runs.at(-1)?.state ?? null;
   const isPaused = activeRun?.status === "paused";
+  const isWaitingApproval = activeRun?.status === "waiting_approval";
   const chatRows = useMemo(
     () =>
       buildChatRows({
@@ -659,8 +775,17 @@ export default function App() {
         error,
         reconnectAttempt,
         isLoadingHistory,
+        resolvingApprovalId,
       }),
-    [runs, isStreaming, isPaused, error, reconnectAttempt, isLoadingHistory],
+    [
+      runs,
+      isStreaming,
+      isPaused,
+      error,
+      reconnectAttempt,
+      isLoadingHistory,
+      resolvingApprovalId,
+    ],
   );
   const totalBlocks = useMemo(
     () =>
@@ -677,7 +802,7 @@ export default function App() {
 
     const text = input.trim();
 
-    if (!text || isStreaming || isPaused) {
+    if (!text || isStreaming || isPaused || isWaitingApproval) {
       return;
     }
 
@@ -743,6 +868,7 @@ export default function App() {
               version={events.length}
               followVersion={followVersion}
               streaming={isStreaming}
+              onResolveApproval={resolveToolApproval}
             />
           ) : (
             <div className="flex-1 overflow-y-auto">
@@ -761,22 +887,31 @@ export default function App() {
                 <input
                   value={input}
                   onChange={(event) => setInput(event.target.value)}
-                  disabled={isStreaming || isPaused || isLoadingHistory}
+                  disabled={
+                    isStreaming ||
+                    isPaused ||
+                    isWaitingApproval ||
+                    isLoadingHistory
+                  }
                   placeholder={
                     isLoadingHistory
                       ? "正在加载长会话…"
-                      : isPaused
-                        ? "已暂停，点击继续生成或开始新对话"
-                        : "问一个工程问题，例如 1.2.0 发版有哪些注意事项？"
+                      : isWaitingApproval
+                        ? "等待审批：请在工具卡片中批准或拒绝"
+                        : isPaused
+                          ? "已暂停，点击继续生成或开始新对话"
+                          : "问一个工程问题，例如 1.2.0 发版有哪些注意事项？"
                   }
                   className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground disabled:opacity-60"
                 />
                 <p className="mt-1 text-[11px] text-muted-foreground">
                   {isLoadingHistory
                     ? "正在加载长会话历史事件"
-                    : isPaused
-                      ? `断点 seq ${activeRun?.lastSeq ?? 0} · 可继续或取消`
-                      : "Mock 模式 · 回答来自本地 fixture"}
+                    : isWaitingApproval
+                      ? "run 已暂停，审批后从事件日志恢复"
+                      : isPaused
+                        ? `断点 seq ${activeRun?.lastSeq ?? 0} · 可继续或取消`
+                        : "Mock 模式 · 回答来自本地 fixture"}
                 </p>
               </div>
 
@@ -823,6 +958,11 @@ export default function App() {
                   >
                     {isStopping ? <Loader2 className="animate-spin" /> : <X />}
                   </Button>
+                </div>
+              ) : isWaitingApproval ? (
+                <div className="flex items-center gap-1.5 rounded-lg border border-amber-500/30 bg-amber-500/10 px-2.5 py-1.5 text-xs text-amber-700 dark:text-amber-300">
+                  <Hourglass className="size-3.5" />
+                  等待审批
                 </div>
               ) : isLoadingHistory ? (
                 <Button
@@ -880,11 +1020,17 @@ const ChatFeed = memo(function ChatFeed({
   version,
   followVersion,
   streaming,
+  onResolveApproval,
 }: {
   rows: ChatRow[];
   version: number;
   followVersion: number;
   streaming: boolean;
+  onResolveApproval: (
+    runId: string,
+    approvalId: string,
+    approved: boolean,
+  ) => void;
 }) {
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const stickToBottomRef = useRef(true);
@@ -894,7 +1040,11 @@ const ChatFeed = memo(function ChatFeed({
     count: rows.length,
     getScrollElement: () => scrollRef.current,
     estimateSize: (index) =>
-      rows[index]?.kind === "assistant-block" ? 72 : 48,
+      rows[index]?.kind === "tool"
+        ? 140
+        : rows[index]?.kind === "assistant-block"
+          ? 72
+          : 48,
     overscan: 8,
     getItemKey: (index) => rows[index]?.key ?? index,
   });
@@ -1016,7 +1166,10 @@ const ChatFeed = memo(function ChatFeed({
                     virtualItem.index === rows.length - 1 && "pb-8",
                   )}
                 >
-                  <ChatRowView row={row} />
+                  <ChatRowView
+                    row={row}
+                    onResolveApproval={onResolveApproval}
+                  />
                 </div>
               </div>
             );
@@ -1027,7 +1180,17 @@ const ChatFeed = memo(function ChatFeed({
   );
 });
 
-function ChatRowView({ row }: { row: ChatRow }) {
+function ChatRowView({
+  row,
+  onResolveApproval,
+}: {
+  row: ChatRow;
+  onResolveApproval: (
+    runId: string,
+    approvalId: string,
+    approved: boolean,
+  ) => void;
+}) {
   switch (row.kind) {
     case "reconnect":
       return (
@@ -1061,6 +1224,21 @@ function ChatRowView({ row }: { row: ChatRow }) {
             showCursor={row.showCursor}
           />
         </div>
+      );
+
+    case "tool":
+      return (
+        <ToolCallCard
+          toolCall={row.toolCall}
+          approval={row.approval}
+          canResolve={row.canResolve}
+          resolving={row.resolving}
+          onResolve={(approved) => {
+            if (row.approval) {
+              onResolveApproval(row.runId, row.approval.id, approved);
+            }
+          }}
+        />
       );
 
     case "assistant-thinking":
@@ -1108,7 +1286,7 @@ function AssistantHeader({
   runStatus,
   streaming,
 }: {
-  runStatus: RunState["status"];
+  runStatus: RunState["status"] | null;
   streaming: boolean;
 }) {
   return (

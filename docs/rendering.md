@@ -13,19 +13,41 @@ SSE → Zod 校验 → 纯函数 reducer → 行级投影 → 虚拟列表。
 - `@tanstack/react-virtual` 只挂载视口附近的行，动态测量高度
 - 流式时自动跟随底部；用户上滚后停止跟随，发送新消息时恢复
 
-## 2. 增量 Markdown 分段
+## 2. 工具与引用的渲染边界
 
-### 2.1 问题
+- assistant 文本、代码、表格等静态内容按 Markdown block 渲染
+- 工具调用、审批、阶段、artifact 等有生命周期或交互的内容作为独立时间线行，由 AgentEvent 投影，不进入 Markdown AST
+- 引用等只读、轻量信息可以内联到 Markdown
+- 不执行模型输出中的 MDX、JSX 或原始 HTML；需要内联结构化内容时只接受受控占位符，并映射到事件状态
+- 工具卡片内部可以用 Markdown 渲染结果预览
+
+### 卡片容器
+
+- `AgentCard` 统一头部、状态、内容、操作与底栏；工具、审批及后续异构内容（音视频、PDF、流程卡）复用同一容器
+- 时间线按 `startedAtSeq` 合并消息与工具调用，保证同一 run 内文本与工具卡片正确交错
+- 工具卡片由 `ToolCallState` 投影：参数半截到达时按原文展示，`tool.ready` 后展示结构化参数，结果与耗时来自 `tool.result`
+- 审批作为工具卡片底栏，由 `ApprovalState` 投影；决定通过 `POST /api/approvals/:approvalId` 追加 `tool.approval_resolved` / `run.resumed` 事件，客户端按 `lastEventId` 恢复，前端状态不作为事实源
+
+选择理由：
+
+- 工具参数会半截到达，状态会多次变化，审批还会中断和恢复；Markdown 只适合静态文本
+- 事件日志是唯一状态源，卡片必须从 reducer 投影，才能回放和断线恢复
+- 避免模型输出直接注入组件，减少 XSS 与 prompt injection 风险
+- 独立行可以复用虚拟化和 memo，嵌入 Markdown 会破坏块冻结与更新粒度
+
+## 3. 增量 Markdown 分段
+
+### 3.1 问题
 
 每个 `text.delta` 都对整条消息重新分段并重建全部 block，复杂度约为 O(增量数 × 当前块数)。10k 块、500 增量时 reducer 约 2.39s。
 
-### 2.2 不变量
+### 3.2 不变量
 
 - block 闭合后不可变
 - 只有最后一个 open block 会继续增长
 - 已闭合前缀不需要重新解析
 
-### 2.3 算法
+### 3.3 算法
 
 1. 取消息最后一个 block
 2. 若为 open，前缀为其余 block，tail 为该 block 的 raw；否则前缀为全部 block，tail 为空
@@ -34,17 +56,17 @@ SSE → Zod 校验 → 纯函数 reducer → 行级投影 → 虚拟列表。
 
 显式携带 `blockId` 的事件保留原有路径。
 
-### 2.4 流式边界
+### 3.4 流式边界
 
 - 标题行未收到换行时保持 open
 - open block 保留单个尾部换行，避免跨增量拼接时行粘连
 - 最后一行未收到换行时不按 block 类型切换拆块，避免 `3.` 被截成 `3`
 
-## 3. 正确性
+## 4. 正确性
 
 差分测试把 5k 字 fixture 增量喂给 reducer，再对最终全文一次性分段，比较 block ID、index、kind、raw，结果完全一致（58 块）。
 
-## 4. 性能数据
+## 5. 性能数据
 
 | 场景 | 优化前 | 优化后 |
 | --- | --- | --- |
@@ -54,7 +76,7 @@ SSE → Zod 校验 → 纯函数 reducer → 行级投影 → 虚拟列表。
 
 浏览器 10k 块实测：同时挂载约 11–22 个 block，60fps，最大提交约 12ms；JS Heap 约 407MB，主线程阻塞约 3.5%。
 
-## 5. 剩余限制
+## 6. 剩余限制
 
 - 每次增量仍复制 blocks map、blockIds 和完整 message.text
 - 单个永不闭合的块或代码围栏会让 tail 持续增长，最坏仍会退化

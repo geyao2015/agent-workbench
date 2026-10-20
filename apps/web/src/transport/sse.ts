@@ -138,6 +138,34 @@ export async function cancelRun(runId: string): Promise<void> {
   }
 }
 
+export interface ApprovalDecision {
+  approved: boolean;
+  note?: string;
+}
+
+export async function resolveApproval(
+  runId: string,
+  approvalId: string,
+  decision: ApprovalDecision,
+): Promise<void> {
+  const response = await fetch(
+    `/api/approvals/${encodeURIComponent(approvalId)}`,
+    {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ ...decision, runId }),
+    },
+  );
+
+  if (!response.ok) {
+    const detail = await response.text().catch(() => "");
+    throw new HttpError(
+      response.status,
+      `提交审批失败：HTTP ${response.status}${detail ? `（${detail}）` : ""}`,
+    );
+  }
+}
+
 export async function pauseRun(runId: string): Promise<void> {
   const response = await fetch(`/api/runs/${encodeURIComponent(runId)}/pause`, {
     method: "POST",

@@ -77,6 +77,7 @@ export interface ToolCallState {
   result?: string;
   error?: { code: string; message: string };
   approvalId?: string;
+  durationMs?: number;
   startedAtSeq: number;
 }
 
@@ -449,6 +450,7 @@ function applyKnownEvent(state: RunState, event: AgentEvent): RunState {
             ...toolCall,
             status: event.payload.status,
             result: event.payload.content,
+            durationMs: event.payload.durationMs,
             error:
               event.payload.status === "error"
                 ? { code: "tool_error", message: event.payload.content }

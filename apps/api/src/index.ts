@@ -37,7 +37,9 @@ interface MockRun {
   activeStreams: number;
   cancelRequested: boolean;
   paused: boolean;
+  pausedReason: "user" | "approval" | null;
   pauseRequested: boolean;
+  awaitingApproval: string | null;
   finished: boolean;
 }
 
@@ -378,6 +380,65 @@ function buildResumedEvent(run: MockRun, atIndex: number): AgentEvent {
   };
 }
 
+function buildApprovalTail(
+  run: MockRun,
+  toolCallId: string,
+  approvalId: string,
+  approved: boolean,
+  note?: string,
+): AgentEvent[] {
+  const messageId = `msg_approval_result_${randomUUID()}`;
+  const fromSeq = run.events.length;
+  const events: AgentEvent[] = [];
+  let seq = fromSeq;
+
+  const push = (type: string, payload: unknown) => {
+    seq += 1;
+    events.push({
+      v: 1,
+      eventId: `${run.runId}:${seq}`,
+      seq,
+      runId: run.runId,
+      threadId: run.threadId,
+      ts: Date.now(),
+      type,
+      payload,
+    } as AgentEvent);
+  };
+
+  push("tool.approval_resolved", {
+    toolCallId,
+    approvalId,
+    approved,
+    ...(note ? { note } : {}),
+  });
+  push("run.resumed", { fromSeq });
+
+  if (approved) {
+    push("tool.result", {
+      toolCallId,
+      status: "success",
+      content: "已应用补丁：src/checkout/client.ts（3 处冲突）",
+      durationMs: 260,
+    });
+  }
+
+  push("message.started", { messageId, role: "assistant" });
+  push("text.delta", {
+    messageId,
+    delta: approved
+      ? "补丁已应用，文件冲突已解决。下一步可以运行冒烟测试。\n"
+      : "已跳过补丁应用，文件保持不变。你可以调整冲突解决策略后再试。\n",
+  });
+  push("message.completed", { messageId, stopReason: "stop" });
+  push("run.completed", {
+    status: "done",
+    usage: { inputTokens: 820, outputTokens: 240 },
+  });
+
+  return events;
+}
+
 function insertEventAt(run: MockRun, index: number, event: AgentEvent): void {
   const tail = run.events.slice(index).map((existing) => {
     const seq = existing.seq + 1;
@@ -467,7 +528,9 @@ app.post("/api/runs", async (c) => {
     activeStreams: 0,
     cancelRequested: false,
     paused: false,
+    pausedReason: null,
     pauseRequested: false,
+    awaitingApproval: null,
     finished: false,
   });
 
@@ -497,6 +560,8 @@ app.post("/api/runs/:runId/cancel", (c) => {
     run.events = [...run.events.slice(0, run.emittedCount), cancelled];
     run.emittedCount = run.events.length;
     run.paused = false;
+    run.pausedReason = null;
+    run.awaitingApproval = null;
     run.finished = true;
   }
 
@@ -525,10 +590,65 @@ app.post("/api/runs/:runId/pause", (c) => {
     insertEventAt(run, run.emittedCount, paused);
     run.emittedCount += 1;
     run.paused = true;
+    run.pausedReason = "user";
     run.pauseRequested = false;
   }
 
   return c.json({ paused: true });
+});
+
+app.post("/api/approvals/:approvalId", async (c) => {
+  const body = await c.req
+    .json<{ approved?: unknown; note?: unknown; runId?: unknown }>()
+    .catch(() => null);
+  const approved = body?.approved;
+
+  if (typeof approved !== "boolean") {
+    return c.json({ error: "approved 必填且为布尔值" }, 400);
+  }
+
+  const approvalId = c.req.param("approvalId");
+  const requestedRun =
+    typeof body?.runId === "string" ? runs.get(body.runId) : undefined;
+  const run = requestedRun
+    ? requestedRun.awaitingApproval === approvalId
+      ? requestedRun
+      : undefined
+    : [...runs.values()].find(
+        (candidate) => candidate.awaitingApproval === approvalId,
+      );
+
+  if (!run) {
+    return c.json({ error: "审批不存在或已处理" }, 404);
+  }
+
+  const approvalEvent = run.events.find(
+    (event) =>
+      event.type === "tool.approval_required" &&
+      event.payload.approvalId === approvalId,
+  );
+
+  if (!approvalEvent || approvalEvent.type !== "tool.approval_required") {
+    return c.json({ error: "缺少对应的 tool.approval_required 事件" }, 500);
+  }
+
+  const note =
+    typeof body?.note === "string" && body.note.length > 0 ? body.note : undefined;
+  const tail = buildApprovalTail(
+    run,
+    approvalEvent.payload.toolCallId,
+    approvalId,
+    approved,
+    note,
+  );
+
+  run.events = [...run.events, ...tail];
+  run.emittedCount = run.events.length;
+  run.paused = false;
+  run.pausedReason = null;
+  run.awaitingApproval = null;
+
+  return c.json({ resolved: true, runId: run.runId, approved });
 });
 
 app.get("/api/runs/:runId/events", (c) => {
@@ -538,11 +658,12 @@ app.get("/api/runs/:runId/events", (c) => {
     return c.json({ error: "run 不存在" }, 404);
   }
 
-  if (run.paused && !run.finished) {
+  if (run.paused && run.pausedReason === "user" && !run.finished) {
     const resumed = buildResumedEvent(run, run.emittedCount);
     insertEventAt(run, run.emittedCount, resumed);
     run.emittedCount += 1;
     run.paused = false;
+    run.pausedReason = null;
   }
 
   const lastEventId = c.req.header("last-event-id") ?? c.req.query("lastEventId");
@@ -563,6 +684,8 @@ app.get("/api/runs/:runId/events", (c) => {
       run.events = [...run.events.slice(0, index), cancelled];
       run.emittedCount = index + 1;
       run.paused = false;
+      run.pausedReason = null;
+      run.awaitingApproval = null;
       run.finished = true;
       await stream.writeSSE({
         id: cancelled.eventId,
@@ -575,6 +698,7 @@ app.get("/api/runs/:runId/events", (c) => {
       insertEventAt(run, index, paused);
       run.emittedCount = index + 1;
       run.paused = true;
+      run.pausedReason = "user";
       run.pauseRequested = false;
       await stream.writeSSE({
         id: paused.eventId,
@@ -626,6 +750,15 @@ app.get("/api/runs/:runId/events", (c) => {
           return;
         }
 
+        const approvalPause =
+          event.type === "run.paused" && event.payload.reason === "approval";
+
+        if (approvalPause) {
+          run.paused = true;
+          run.pausedReason = "approval";
+          run.awaitingApproval = event.payload.approvalId ?? null;
+        }
+
         await stream.writeSSE({
           id: event.eventId,
           data: JSON.stringify({ ...event, ts: Date.now() }),
@@ -635,6 +768,10 @@ app.get("/api/runs/:runId/events", (c) => {
 
         if (event.type === "run.completed" || event.type === "run.failed") {
           run.finished = true;
+          return;
+        }
+
+        if (approvalPause) {
           return;
         }
       }

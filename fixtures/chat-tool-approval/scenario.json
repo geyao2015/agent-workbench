@@ -1,0 +1,14 @@
+{
+  "name": "chat-tool-approval",
+  "description": "工具调用与人工审批：检查冲突、补丁审批、批准或拒绝",
+  "runKind": "chat",
+  "threadId": "thread_fixture",
+  "timing": {
+    "mode": "delays",
+    "defaultMs": 90,
+    "bySeq": {
+      "1": 0,
+      "2": 20
+    }
+  }
+}

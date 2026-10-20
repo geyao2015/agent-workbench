@@ -44,6 +44,7 @@
 1. 流式 Markdown：块级增量解析、稳定 blockId、闭合块冻结、未闭合 fence/表格/强调降级；避免每 token 全量 parse 和整树重渲染。
 2. 长会话性能：块级虚拟化、闭合块 memo、按块订阅（`useSyncExternalStore`）、rAF 合并 token 增量；目标 10k 块稳定 60fps。
 3. 工具调用与运行状态：半截 JSON 参数解析、工具状态机、reasoning 折叠、interrupt/审批 UI。
+- 工具调用、审批、阶段、artifact 等有生命周期或交互的内容作为事件驱动的时间线行，不嵌入 Markdown；引用等只读轻量信息可内联到 Markdown。理由见 [rendering.md §2](rendering.md#2-工具与引用的渲染边界)。
 
 所有深挖点都要有可量化证据：渲染次数、帧率、首 token 延迟、内存。
 
@@ -94,3 +95,4 @@
 | 2026-10-20 | 前端 React + Vite、后端 Hono + Node、pnpm、Vitest 按默认值确认 | 用户确认技术选型 |
 | 2026-10-20 | M0 改为本地运行，部署平台暂缓，不纳入 M0 验收 | 用户决定先本地运行 |
 | 2026-10-20 | 样式采用 Tailwind CSS + shadcn/ui；开发期 Vite 代理 `/api` 到 Hono，构建后单进程托管 | 启动 M0，确认样式待定项 |
+| 2026-10-20 | 工具调用/审批作为事件驱动时间线行，不嵌入 Markdown；引用等只读内容可内联 | 生命周期、审批与回放必须由事件日志驱动，避免注入和流式占位同步问题 |
