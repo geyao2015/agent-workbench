@@ -119,6 +119,7 @@ pnpm build && pnpm start    # 单 URL http://localhost:8787
 - [docs/decision.md](docs/decision.md) — 技术选型、架构与范围决策、求职叙事、待确认项、变更记录
 - [docs/plan.md](docs/plan.md) — 阶段划分、阶段状态、M0 执行清单、时间盒与验收标准
 - [docs/protocol.md](docs/protocol.md) — AgentEvent / Span 协议草案与 fixture 格式
+- [docs/rendering.md](docs/rendering.md) — 渲染实现、增量分段与性能数据
 - [AGENTS.md](AGENTS.md) — AI 工作规则与文档来源约定
 - [CLAUDE.md](CLAUDE.md) — Claude Code 加载入口
 

@@ -41,6 +41,7 @@
 | 技术选型、架构与范围决策、求职叙事、待确认项、变更记录 | `docs/decision.md` |
 | 阶段划分、阶段状态、能力成长、M0 执行清单、时间盒与验收标准 | `docs/plan.md` |
 | AgentEvent / Span、reducer、fixture、transport | `docs/protocol.md` |
+| 渲染实现、增量分段、性能数据 | `docs/rendering.md` |
 | AI 工作规则、阶段门禁、文档维护约定 | `AGENTS.md` |
 | 加载入口 | `CLAUDE.md`（只引用，不写事实） |
 
