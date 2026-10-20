@@ -43,6 +43,7 @@ import {
   resetRenderStats,
   subscribeRenderStats,
 } from "@/lib/render-stats";
+import { useRuntimeMetrics } from "@/lib/runtime-metrics";
 import { cn } from "@/lib/utils";
 import {
   cancelRun,
@@ -1209,6 +1210,37 @@ function Metric({ label, value }: { label: string; value: string }) {
   );
 }
 
+function RuntimeMetrics() {
+  const runtime = useRuntimeMetrics();
+
+  return (
+    <>
+      <Metric
+        label="内存（JS Heap）"
+        value={
+          runtime.memorySupported
+            ? `${(runtime.memoryUsedMB ?? 0).toFixed(1)} / 峰值 ${(
+                runtime.memoryPeakMB ?? 0
+              ).toFixed(1)} MB`
+            : "不支持"
+        }
+      />
+      <Metric
+        label="CPU（阻塞近似）"
+        value={
+          runtime.cpuSupported
+            ? `${Math.round(runtime.blockingMs)}ms · ${runtime.blockingRatio.toFixed(1)}%`
+            : "不支持"
+        }
+      />
+      <Metric
+        label="长帧"
+        value={runtime.cpuSupported ? String(runtime.longFrames) : "—"}
+      />
+    </>
+  );
+}
+
 function PerformancePanel({
   active,
   totalBlocks,
@@ -1219,11 +1251,12 @@ function PerformancePanel({
   onClose: () => void;
 }) {
   const stats = useSyncExternalStore(subscribeRenderStats, getRenderStats);
+  const [runtimeEpoch, setRuntimeEpoch] = useState(0);
 
   useFps(active);
 
   return (
-    <aside className="fixed right-4 bottom-4 z-40 w-[calc(100%-2rem)] max-w-sm rounded-xl border bg-background/95 p-4 shadow-lg backdrop-blur">
+    <aside className="fixed right-4 bottom-4 z-40 max-h-[calc(100vh-2rem)] w-[calc(100%-2rem)] max-w-sm overflow-y-auto rounded-xl border bg-background/95 p-4 shadow-lg backdrop-blur">
       <div className="flex items-start justify-between gap-2">
         <div>
           <p className="text-sm font-medium">渲染性能</p>
@@ -1260,13 +1293,21 @@ function PerformancePanel({
         />
         <Metric label="最近提交" value={`${stats.lastCommitMs}ms`} />
         <Metric label="最大提交" value={`${stats.maxCommitMs}ms`} />
+        <RuntimeMetrics key={runtimeEpoch} />
       </dl>
 
       <div className="mt-3 flex items-start justify-between gap-3">
         <p className="text-[10px] leading-4 text-muted-foreground">
-          开发模式 StrictMode 会重复计数，生产构建更准确。
+          StrictMode 会重复计数；CPU 为浏览器可观测的主线程阻塞近似值，内存仅 Chrome/Edge 支持。
         </p>
-        <Button variant="outline" size="sm" onClick={resetRenderStats}>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            resetRenderStats();
+            setRuntimeEpoch((value) => value + 1);
+          }}
+        >
           重置
         </Button>
       </div>
