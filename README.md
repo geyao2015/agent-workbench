@@ -104,7 +104,7 @@ agent-workbench/
 
 ## 8. 当前阶段
 
-**M1 进行中**：M0 的流式 Chat 已可运行；当前推进块级增量 Markdown、闭合块冻结与按块渲染。
+**M1 进行中**：M0 的流式 Chat 已可运行；当前推进块级增量 Markdown、闭合块冻结与长内容虚拟化。
 
 ```bash
 pnpm install

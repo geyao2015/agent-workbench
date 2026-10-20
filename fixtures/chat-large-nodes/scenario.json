@@ -1,0 +1,14 @@
+{
+  "name": "chat-large-nodes",
+  "description": "大量文本节点：10000 个 Markdown 块，500 个增量",
+  "runKind": "chat",
+  "threadId": "thread_fixture",
+  "timing": {
+    "mode": "delays",
+    "defaultMs": 15,
+    "bySeq": {
+      "1": 0,
+      "2": 0
+    }
+  }
+}

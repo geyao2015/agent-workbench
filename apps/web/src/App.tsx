@@ -2,11 +2,14 @@ import {
   memo,
   Profiler,
   useEffect,
+  useMemo,
   useRef,
   useState,
   useSyncExternalStore,
 } from "react";
 import type { FormEvent } from "react";
+
+import { useVirtualizer } from "@tanstack/react-virtual";
 
 import {
   Activity,
@@ -25,7 +28,6 @@ import {
   createRunState,
   reduce,
   type AgentEvent,
-  type MessageState,
   type RunState,
 } from "@agent-workbench/protocol";
 
@@ -41,31 +43,196 @@ import {
   resetRenderStats,
   subscribeRenderStats,
 } from "@/lib/render-stats";
+import { cn } from "@/lib/utils";
 import {
   cancelRun,
+  fetchLongConversation,
   pauseRun,
   startChatRun,
   streamRunEvents,
 } from "@/transport/sse";
 
-const QUICK_PROMPTS = [
+type QuickPrompt =
+  | {
+      kind: "run";
+      fixture: string;
+      label: string;
+      prompt: string;
+      description: string;
+    }
+  | {
+      kind: "history";
+      label: string;
+      description: string;
+    };
+
+const QUICK_PROMPTS: QuickPrompt[] = [
   {
+    kind: "run",
     fixture: "chat-general",
     label: "一般对话",
     prompt: "你在 Agent Workbench 里能做什么？",
     description: "多轮聊天、历史保留、事件记录",
   },
   {
+    kind: "run",
     fixture: "chat-blocks",
     label: "模块渲染",
     prompt: "展示一下 Markdown 块渲染能力。",
     description: "标题、列表、代码块、表格、引用",
+  },
+  {
+    kind: "history",
+    label: "长会话",
+    description: "100 轮 / 10000 块历史",
+  },
+  {
+    kind: "run",
+    fixture: "chat-large-nodes",
+    label: "超长返回",
+    prompt: "一次返回大量文本节点。",
+    description: "单条 10000 块 / 500 增量",
   },
 ];
 
 interface ChatRun {
   runId: string;
   state: RunState;
+}
+
+type ChatRow =
+  | { kind: "reconnect"; key: string; attempt: number }
+  | { kind: "error"; key: string; message: string }
+  | { kind: "user"; key: string; text: string }
+  | {
+      kind: "assistant-header";
+      key: string;
+      runStatus: RunState["status"];
+      streaming: boolean;
+    }
+  | {
+      kind: "assistant-block";
+      key: string;
+      blockId: string;
+      raw: string;
+      closed: boolean;
+      showCursor: boolean;
+    }
+  | { kind: "assistant-thinking"; key: string }
+  | { kind: "cursor"; key: string }
+  | { kind: "citations"; key: string; count: number }
+  | { kind: "paused"; key: string; seq: number }
+  | { kind: "pending"; key: string }
+  | { kind: "loading"; key: string };
+
+function buildChatRows(input: {
+  runs: ChatRun[];
+  isStreaming: boolean;
+  isPaused: boolean;
+  error: string | null;
+  reconnectAttempt: number;
+  isLoadingHistory: boolean;
+}): ChatRow[] {
+  const rows: ChatRow[] = [];
+
+  if (input.isLoadingHistory) {
+    rows.push({ kind: "loading", key: "loading" });
+  }
+
+  if (input.reconnectAttempt > 0 && input.isStreaming) {
+    rows.push({
+      kind: "reconnect",
+      key: "reconnect",
+      attempt: input.reconnectAttempt,
+    });
+  }
+
+  if (input.error) {
+    rows.push({ kind: "error", key: "error", message: input.error });
+  }
+
+  for (const run of input.runs) {
+    for (const messageId of run.state.messageOrder) {
+      const message = run.state.messages[messageId];
+
+      if (!message) {
+        continue;
+      }
+
+      if (message.role === "user") {
+        rows.push({
+          kind: "user",
+          key: `${run.runId}:${message.id}`,
+          text: message.text,
+        });
+        continue;
+      }
+
+      const streaming =
+        message.status === "streaming" && run.state.status === "running";
+      const lastBlockId = message.blockIds.at(-1);
+      const lastBlock = lastBlockId ? run.state.blocks[lastBlockId] : undefined;
+
+      rows.push({
+        kind: "assistant-header",
+        key: `${run.runId}:${message.id}:header`,
+        runStatus: run.state.status,
+        streaming,
+      });
+
+      if (message.blockIds.length === 0 && streaming) {
+        rows.push({
+          kind: "assistant-thinking",
+          key: `${run.runId}:${message.id}:thinking`,
+        });
+      }
+
+      for (const blockId of message.blockIds) {
+        const block = run.state.blocks[blockId];
+
+        if (!block) {
+          continue;
+        }
+
+        rows.push({
+          kind: "assistant-block",
+          key: `${run.runId}:${blockId}`,
+          blockId: block.id,
+          raw: block.raw,
+          closed: block.status === "closed",
+          showCursor:
+            streaming && block.id === lastBlockId && block.status === "open",
+        });
+      }
+
+      if (streaming && lastBlock?.status === "closed") {
+        rows.push({
+          kind: "cursor",
+          key: `${run.runId}:${message.id}:cursor`,
+        });
+      }
+
+      if (message.citations.length > 0) {
+        rows.push({
+          kind: "citations",
+          key: `${run.runId}:${message.id}:citations`,
+          count: message.citations.length,
+        });
+      }
+    }
+  }
+
+  const activeRun = input.runs.at(-1)?.state;
+
+  if (input.isPaused && activeRun) {
+    rows.push({ kind: "paused", key: "paused", seq: activeRun.lastSeq });
+  }
+
+  if (input.isStreaming && input.runs.length === 0) {
+    rows.push({ kind: "pending", key: "pending" });
+  }
+
+  return rows;
 }
 
 function isAbortError(cause: unknown): boolean {
@@ -100,13 +267,14 @@ export default function App() {
   const [showInspector, setShowInspector] = useState(false);
   const [showPerformance, setShowPerformance] = useState(false);
   const [isStopping, setIsStopping] = useState(false);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const [reconnectAttempt, setReconnectAttempt] = useState(0);
+  const [followVersion, setFollowVersion] = useState(0);
   const abortRef = useRef<AbortController | null>(null);
   const runIdRef = useRef<string | null>(null);
   const threadIdRef = useRef<string | null>(null);
   const lastEventIdRef = useRef<string | null>(null);
   const stopTimerRef = useRef<number | null>(null);
-  const bottomRef = useRef<HTMLDivElement | null>(null);
   const runStartedAtRef = useRef<number | null>(null);
   const firstTokenSeenRef = useRef(false);
   const userMessageIdsRef = useRef<Set<string>>(new Set());
@@ -120,10 +288,6 @@ export default function App() {
       }
     };
   }, []);
-
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ block: "end" });
-  }, [events.length]);
 
   function clearStopTimer() {
     if (stopTimerRef.current !== null) {
@@ -235,7 +399,9 @@ export default function App() {
     setError(null);
     setIsStreaming(true);
     setIsStopping(false);
+    setIsLoadingHistory(false);
     setReconnectAttempt(0);
+    setFollowVersion((value) => value + 1);
 
     try {
       const run = await startChatRun(
@@ -259,6 +425,91 @@ export default function App() {
 
       finishRun(controller);
     }
+  }
+
+  async function loadLongConversation() {
+    abortRef.current?.abort();
+
+    const controller = new AbortController();
+    abortRef.current = controller;
+    runIdRef.current = null;
+    threadIdRef.current = null;
+    lastEventIdRef.current = null;
+    runStartedAtRef.current = null;
+    firstTokenSeenRef.current = false;
+    userMessageIdsRef.current = new Set();
+    clearStopTimer();
+    resetRenderStats();
+
+    setInput("");
+    setRuns([]);
+    setEvents([]);
+    setError(null);
+    setIsStreaming(false);
+    setIsStopping(false);
+    setIsLoadingHistory(true);
+    setReconnectAttempt(0);
+
+    try {
+      const demo = await fetchLongConversation(controller.signal);
+      const nextRuns: ChatRun[] = [];
+      const allEvents: AgentEvent[] = [];
+
+      for (const run of demo.runs) {
+        let state: RunState | null = null;
+
+        for (const event of run.events) {
+          allEvents.push(event);
+
+          if (event.type === "text.delta") {
+            recordTextUpdate();
+          }
+
+          state = state
+            ? reduce(state, event)
+            : reduce(
+                createRunState({
+                  runId: event.runId,
+                  threadId: event.threadId,
+                  kind: "chat",
+                }),
+                event,
+              );
+        }
+
+        if (state) {
+          nextRuns.push({ runId: run.runId, state });
+        }
+      }
+
+      if (controller.signal.aborted) {
+        return;
+      }
+
+      threadIdRef.current = demo.threadId;
+      lastEventIdRef.current = allEvents.at(-1)?.eventId ?? null;
+      setRuns(nextRuns);
+      setEvents(allEvents);
+      setFollowVersion((value) => value + 1);
+    } catch (cause) {
+      if (!isAbortError(cause)) {
+        setError(cause instanceof Error ? cause.message : "加载长会话失败");
+      }
+    } finally {
+      if (abortRef.current === controller) {
+        abortRef.current = null;
+        setIsLoadingHistory(false);
+      }
+    }
+  }
+
+  function handleQuickPick(item: QuickPrompt) {
+    if (item.kind === "history") {
+      void loadLongConversation();
+      return;
+    }
+
+    void startRun(item.fixture, item.prompt);
   }
 
   function pauseCurrentRun() {
@@ -300,6 +551,7 @@ export default function App() {
     setIsStreaming(true);
     setIsStopping(false);
     setReconnectAttempt(0);
+    setFollowVersion((value) => value + 1);
 
     void consumeEvents(
       controller,
@@ -375,12 +627,33 @@ export default function App() {
     setError(null);
     setIsStreaming(false);
     setIsStopping(false);
+    setIsLoadingHistory(false);
     setReconnectAttempt(0);
   }
 
   const activeRun = runs.at(-1)?.state ?? null;
   const isPaused = activeRun?.status === "paused";
-  const hasConversation = runs.length > 0 || isStreaming || error !== null;
+  const chatRows = useMemo(
+    () =>
+      buildChatRows({
+        runs,
+        isStreaming,
+        isPaused,
+        error,
+        reconnectAttempt,
+        isLoadingHistory,
+      }),
+    [runs, isStreaming, isPaused, error, reconnectAttempt, isLoadingHistory],
+  );
+  const totalBlocks = useMemo(
+    () =>
+      chatRows.reduce(
+        (count, row) => (row.kind === "assistant-block" ? count + 1 : count),
+        0,
+      ),
+    [chatRows],
+  );
+  const hasConversation = chatRows.length > 0;
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -447,45 +720,20 @@ export default function App() {
 
       <div className="flex min-h-0 flex-1">
         <main className="flex min-h-0 flex-1 flex-col">
-          <div className="flex-1 overflow-y-auto">
-            <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-8 md:px-8">
-              {!hasConversation ? (
-                <EmptyState
-                  onPick={(item) => {
-                    void startRun(item.fixture, item.prompt);
-                  }}
-                />
-              ) : (
-                <>
-                  {reconnectAttempt > 0 && isStreaming ? (
-                    <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-2 text-xs text-amber-800 dark:text-amber-200">
-                      连接中断，正在重连（第 {reconnectAttempt} 次）…
-                    </div>
-                  ) : null}
-
-                  {error ? (
-                    <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
-                      出错了：{error}
-                    </div>
-                  ) : null}
-
-                  {runs.length > 0 ? (
-                    <Conversation runs={runs} />
-                  ) : isStreaming ? (
-                    <PendingAssistant />
-                  ) : null}
-
-                  {isPaused ? (
-                    <div className="rounded-lg border bg-muted/40 px-4 py-2 text-xs text-muted-foreground">
-                      已暂停在 seq {activeRun?.lastSeq}，点击“继续”从断点恢复。
-                    </div>
-                  ) : null}
-
-                  <div ref={bottomRef} />
-                </>
-              )}
+          {chatRows.length > 0 ? (
+            <ChatFeed
+              rows={chatRows}
+              version={events.length}
+              followVersion={followVersion}
+              streaming={isStreaming}
+            />
+          ) : (
+            <div className="flex-1 overflow-y-auto">
+              <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-8 md:px-8">
+                <EmptyState onPick={handleQuickPick} />
+              </div>
             </div>
-          </div>
+          )}
 
           <div className="border-t bg-background/90 p-4 backdrop-blur md:px-8">
             <form
@@ -496,18 +744,22 @@ export default function App() {
                 <input
                   value={input}
                   onChange={(event) => setInput(event.target.value)}
-                  disabled={isStreaming || isPaused}
+                  disabled={isStreaming || isPaused || isLoadingHistory}
                   placeholder={
-                    isPaused
-                      ? "已暂停，点击继续生成或开始新对话"
-                      : "问一个工程问题，例如 1.2.0 发版有哪些注意事项？"
+                    isLoadingHistory
+                      ? "正在加载长会话…"
+                      : isPaused
+                        ? "已暂停，点击继续生成或开始新对话"
+                        : "问一个工程问题，例如 1.2.0 发版有哪些注意事项？"
                   }
                   className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground disabled:opacity-60"
                 />
                 <p className="mt-1 text-[11px] text-muted-foreground">
-                  {isPaused
-                    ? `断点 seq ${activeRun?.lastSeq ?? 0} · 可继续或取消`
-                    : "Mock 模式 · 回答来自本地 fixture"}
+                  {isLoadingHistory
+                    ? "正在加载长会话历史事件"
+                    : isPaused
+                      ? `断点 seq ${activeRun?.lastSeq ?? 0} · 可继续或取消`
+                      : "Mock 模式 · 回答来自本地 fixture"}
                 </p>
               </div>
 
@@ -555,6 +807,15 @@ export default function App() {
                     {isStopping ? <Loader2 className="animate-spin" /> : <X />}
                   </Button>
                 </div>
+              ) : isLoadingHistory ? (
+                <Button
+                  type="button"
+                  size="icon"
+                  disabled
+                  aria-label="加载长会话"
+                >
+                  <Loader2 className="animate-spin" />
+                </Button>
               ) : (
                 <Button
                   type="submit"
@@ -580,7 +841,8 @@ export default function App() {
 
       {showPerformance ? (
         <PerformancePanel
-          active={isStreaming}
+          active={isStreaming || runs.length > 0}
+          totalBlocks={totalBlocks}
           onClose={() => setShowPerformance(false)}
         />
       ) : null}
@@ -596,43 +858,268 @@ function handleProfilerRender(
   recordCommit(actualDuration);
 }
 
-const Conversation = memo(function Conversation({ runs }: { runs: ChatRun[] }) {
-  return (
-    <Profiler id="chat-messages" onRender={handleProfilerRender}>
-      <div className="contents">
-        {runs.map((run) =>
-          run.state.messageOrder.map((messageId) => {
-            const message = run.state.messages[messageId];
+const ChatFeed = memo(function ChatFeed({
+  rows,
+  version,
+  followVersion,
+  streaming,
+}: {
+  rows: ChatRow[];
+  version: number;
+  followVersion: number;
+  streaming: boolean;
+}) {
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+  const stickToBottomRef = useRef(true);
+  const autoScrollingRef = useRef(false);
+  const lastScrollTopRef = useRef(0);
+  const rowVirtualizer = useVirtualizer({
+    count: rows.length,
+    getScrollElement: () => scrollRef.current,
+    estimateSize: (index) =>
+      rows[index]?.kind === "assistant-block" ? 72 : 48,
+    overscan: 8,
+    getItemKey: (index) => rows[index]?.key ?? index,
+  });
 
-            if (!message) {
+  useEffect(() => {
+    stickToBottomRef.current = true;
+  }, [followVersion]);
+
+  useEffect(() => {
+    if (!stickToBottomRef.current || rows.length === 0) {
+      return;
+    }
+
+    autoScrollingRef.current = true;
+    let frames = 0;
+    let frameId = 0;
+
+    const tick = () => {
+      const element = scrollRef.current;
+
+      if (!element || !stickToBottomRef.current) {
+        autoScrollingRef.current = false;
+        return;
+      }
+
+      lastScrollTopRef.current = element.scrollTop;
+      element.scrollTop = element.scrollHeight;
+      frames += 1;
+
+      const distance =
+        element.scrollHeight - element.scrollTop - element.clientHeight;
+
+      if (frames < 60 && distance > 2) {
+        frameId = requestAnimationFrame(tick);
+      } else {
+        lastScrollTopRef.current = element.scrollTop;
+        autoScrollingRef.current = false;
+      }
+    };
+
+    frameId = requestAnimationFrame(tick);
+
+    return () => {
+      cancelAnimationFrame(frameId);
+      autoScrollingRef.current = false;
+    };
+  }, [rows.length, version]);
+
+  function handleScroll() {
+    if (streaming || autoScrollingRef.current) {
+      return;
+    }
+
+    const element = scrollRef.current;
+
+    if (!element) {
+      return;
+    }
+
+    const current = element.scrollTop;
+    const previous = lastScrollTopRef.current;
+    lastScrollTopRef.current = current;
+
+    if (current < previous - 2) {
+      stickToBottomRef.current = false;
+      return;
+    }
+
+    if (element.scrollHeight - current - element.clientHeight < 120) {
+      stickToBottomRef.current = true;
+    }
+  }
+
+  return (
+    <div
+      ref={scrollRef}
+      onScroll={handleScroll}
+      onWheel={() => {
+        stickToBottomRef.current = false;
+      }}
+      onTouchMove={() => {
+        stickToBottomRef.current = false;
+      }}
+      className="min-h-0 flex-1 overflow-y-auto"
+    >
+      <Profiler id="chat-feed" onRender={handleProfilerRender}>
+        <div
+          style={{
+            height: rowVirtualizer.getTotalSize(),
+            position: "relative",
+            width: "100%",
+          }}
+        >
+          {rowVirtualizer.getVirtualItems().map((virtualItem) => {
+            const row = rows[virtualItem.index];
+
+            if (!row) {
               return null;
             }
 
-            return message.role === "user" ? (
-              <UserMessage
-                key={`${run.runId}:${message.id}`}
-                text={message.text}
-              />
-            ) : (
-              <AssistantMessage
-                key={`${run.runId}:${message.id}`}
-                message={message}
-                blocks={run.state.blocks}
-                runStatus={run.state.status}
-              />
+            return (
+              <div
+                key={row.key}
+                data-index={virtualItem.index}
+                ref={rowVirtualizer.measureElement}
+                style={{
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  width: "100%",
+                  transform: `translateY(${virtualItem.start}px)`,
+                }}
+              >
+                <div
+                  className={cn(
+                    "mx-auto w-full max-w-3xl px-4 md:px-8",
+                    row.kind === "assistant-block" ? "py-1" : "py-2",
+                    virtualItem.index === 0 && "pt-8",
+                    virtualItem.index === rows.length - 1 && "pb-8",
+                  )}
+                >
+                  <ChatRowView row={row} />
+                </div>
+              </div>
             );
-          }),
-        )}
-      </div>
-    </Profiler>
+          })}
+        </div>
+      </Profiler>
+    </div>
   );
 });
 
-function EmptyState({
-  onPick,
+function ChatRowView({ row }: { row: ChatRow }) {
+  switch (row.kind) {
+    case "reconnect":
+      return (
+        <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-2 text-xs text-amber-800 dark:text-amber-200">
+          连接中断，正在重连（第 {row.attempt} 次）…
+        </div>
+      );
+
+    case "error":
+      return (
+        <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          出错了：{row.message}
+        </div>
+      );
+
+    case "user":
+      return <UserMessage text={row.text} />;
+
+    case "assistant-header":
+      return (
+        <AssistantHeader runStatus={row.runStatus} streaming={row.streaming} />
+      );
+
+    case "assistant-block":
+      return (
+        <div className="pl-11">
+          <MarkdownBlock
+            blockId={row.blockId}
+            raw={row.raw}
+            closed={row.closed}
+            showCursor={row.showCursor}
+          />
+        </div>
+      );
+
+    case "assistant-thinking":
+      return <div className="pl-11 text-sm text-muted-foreground">思考中…</div>;
+
+    case "cursor":
+      return (
+        <div className="pl-11">
+          <span className="inline-block h-4 w-1 animate-pulse rounded-full bg-foreground align-middle" />
+        </div>
+      );
+
+    case "citations":
+      return (
+        <div className="flex items-center gap-1.5 pl-11 text-xs text-muted-foreground">
+          <BookOpen className="size-3" />
+          引用 {row.count} 条
+        </div>
+      );
+
+    case "paused":
+      return (
+        <div className="rounded-lg border bg-muted/40 px-4 py-2 text-xs text-muted-foreground">
+          已暂停在 seq {row.seq}，点击“继续”从断点恢复。
+        </div>
+      );
+
+    case "pending":
+      return <PendingAssistant />;
+
+    case "loading":
+      return (
+        <div className="flex items-center gap-3 text-sm text-muted-foreground">
+          <Loader2 className="size-4 animate-spin" />
+          正在加载长会话…
+        </div>
+      );
+
+    default:
+      return null;
+  }
+}
+
+function AssistantHeader({
+  runStatus,
+  streaming,
 }: {
-  onPick: (item: (typeof QUICK_PROMPTS)[number]) => void;
+  runStatus: RunState["status"];
+  streaming: boolean;
 }) {
+  return (
+    <div className="flex gap-3">
+      <div className="flex size-8 shrink-0 items-center justify-center rounded-lg border bg-background">
+        <Sparkles className="size-4" />
+      </div>
+      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+        <span className="font-medium text-foreground">Agent</span>
+        {streaming ? (
+          <span className="flex items-center gap-1">
+            <Loader2 className="size-3 animate-spin" />
+            生成中
+          </span>
+        ) : runStatus === "paused" ? (
+          <span className="flex items-center gap-1">
+            <Pause className="size-3" />
+            已暂停
+          </span>
+        ) : runStatus === "cancelled" ? (
+          <span>已取消</span>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+function EmptyState({ onPick }: { onPick: (item: QuickPrompt) => void }) {
   return (
     <div className="mx-auto flex max-w-2xl flex-col items-center gap-6 py-14 text-center">
       <div className="flex size-14 items-center justify-center rounded-2xl border bg-background shadow-sm">
@@ -649,7 +1136,7 @@ function EmptyState({
       <div className="grid w-full gap-3 sm:grid-cols-2">
         {QUICK_PROMPTS.map((item) => (
           <button
-            key={item.fixture}
+            key={item.kind === "run" ? item.fixture : item.label}
             type="button"
             onClick={() => onPick(item)}
             className="rounded-xl border bg-card p-4 text-left shadow-xs transition-colors hover:bg-accent"
@@ -668,87 +1155,6 @@ const UserMessage = memo(function UserMessage({ text }: { text: string }) {
     <div className="flex justify-end">
       <div className="max-w-[85%] rounded-2xl rounded-br-md bg-primary px-4 py-3 text-sm leading-6 text-primary-foreground">
         {text}
-      </div>
-    </div>
-  );
-});
-
-const AssistantMessage = memo(function AssistantMessage({
-  message,
-  blocks,
-  runStatus,
-}: {
-  message: MessageState;
-  blocks: RunState["blocks"];
-  runStatus: RunState["status"];
-}) {
-  const streaming = message.status === "streaming" && runStatus === "running";
-  const lastBlockId = message.blockIds.at(-1);
-  const lastBlock = lastBlockId ? blocks[lastBlockId] : undefined;
-
-  return (
-    <div className="flex gap-3">
-      <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg border bg-background">
-        <Sparkles className="size-4" />
-      </div>
-
-      <div className="min-w-0 flex-1 space-y-2">
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <span className="font-medium text-foreground">Agent</span>
-          {streaming ? (
-            <span className="flex items-center gap-1">
-              <Loader2 className="size-3 animate-spin" />
-              生成中
-            </span>
-          ) : runStatus === "paused" ? (
-            <span className="flex items-center gap-1">
-              <Pause className="size-3" />
-              已暂停
-            </span>
-          ) : runStatus === "cancelled" ? (
-            <span>已取消</span>
-          ) : null}
-        </div>
-
-        <div className="text-sm">
-          {message.blockIds.length > 0 ? (
-            <>
-              {message.blockIds.map((blockId) => {
-                const block = blocks[blockId];
-
-                if (!block) {
-                  return null;
-                }
-
-                return (
-                  <MarkdownBlock
-                    key={block.id}
-                    blockId={block.id}
-                    raw={block.raw}
-                    closed={block.status === "closed"}
-                    showCursor={
-                      streaming &&
-                      block.id === lastBlockId &&
-                      block.status === "open"
-                    }
-                  />
-                );
-              })}
-              {streaming && lastBlock?.status === "closed" ? (
-                <span className="ml-0.5 inline-block h-4 w-1 animate-pulse rounded-full bg-foreground align-middle" />
-              ) : null}
-            </>
-          ) : (
-            <span className="text-muted-foreground">思考中…</span>
-          )}
-        </div>
-
-        {message.citations.length > 0 ? (
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <BookOpen className="size-3" />
-            引用 {message.citations.length} 条
-          </div>
-        ) : null}
       </div>
     </div>
   );
@@ -805,9 +1211,11 @@ function Metric({ label, value }: { label: string; value: string }) {
 
 function PerformancePanel({
   active,
+  totalBlocks,
   onClose,
 }: {
   active: boolean;
+  totalBlocks: number;
   onClose: () => void;
 }) {
   const stats = useSyncExternalStore(subscribeRenderStats, getRenderStats);
@@ -838,6 +1246,7 @@ function PerformancePanel({
           value={`${stats.closedBlockRenders} / ${stats.uniqueBlocks} 块`}
         />
         <Metric label="开放块渲染" value={String(stats.openBlockRenders)} />
+        <Metric label="总块数" value={String(totalBlocks)} />
         <Metric label="文本增量" value={String(stats.textUpdates)} />
         <Metric
           label="首 token"

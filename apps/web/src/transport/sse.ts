@@ -27,6 +27,61 @@ export interface StartedRun {
   events: AsyncGenerator<AgentEvent, void, void>;
 }
 
+export interface DemoRun {
+  runId: string;
+  events: AgentEvent[];
+}
+
+export interface DemoThread {
+  threadId: string;
+  runs: DemoRun[];
+}
+
+export async function fetchLongConversation(
+  signal?: AbortSignal,
+): Promise<DemoThread> {
+  const response = await fetch("/api/demo/long-conversation", {
+    method: "POST",
+    signal,
+  });
+
+  if (!response.ok) {
+    const detail = await response.text().catch(() => "");
+    throw new HttpError(
+      response.status,
+      `加载长会话失败：HTTP ${response.status}${detail ? `（${detail}）` : ""}`,
+    );
+  }
+
+  const input = (await response.json()) as {
+    threadId?: unknown;
+    runs?: unknown;
+  };
+
+  if (typeof input.threadId !== "string" || !Array.isArray(input.runs)) {
+    throw new Error("长会话数据格式不正确");
+  }
+
+  return {
+    threadId: input.threadId,
+    runs: input.runs.map((run) => {
+      const candidate = run as { runId?: unknown; events?: unknown };
+
+      if (
+        typeof candidate.runId !== "string" ||
+        !Array.isArray(candidate.events)
+      ) {
+        throw new Error("长会话 run 格式不正确");
+      }
+
+      return {
+        runId: candidate.runId,
+        events: candidate.events.map(parseAgentEvent),
+      };
+    }),
+  };
+}
+
 const MAX_RETRIES = 3;
 const RETRY_BASE_MS = 300;
 
