@@ -8,7 +8,7 @@
 
 - **两个场景，不合并界面**：Chat 与 Release 共享 runtime、协议和组件，但保持独立界面。理由：Chat 是渲染能力主展示面，Release 是结构化执行面，合并会同时牺牲两者。
 - **Chat 保持 Agent 属性**：保留工具循环、会话记忆和多步任务；不得退化为纯 RAG 问答链。
-- **协议优先**：先定义 append-only `AgentEvent` v1（`runId / messageId / blockId / toolCallId / seq`），再做 UI；M0 起草、M1 用 fixture 验证、M2 接入真实后端后冻结 v1，后续只做加法。
+- **协议优先**：先定义 append-only `AgentEvent` v1（`runId / messageId / blockId / toolCallId / seq`），再做 UI；冻结与版本规则见 [protocol.md §9](protocol.md#9-版本与兼容)。
 - **Mock 是事件 fixture 回放器**，不是"关键词 → 假文本"；快捷选项对应完整事件序列。
 - **transport 统一抽象**为 `AsyncIterable<AgentEvent>`；mock 与真实 SSE 共用同一个 reducer。
 - **领域事件与 telemetry 分离**：`AgentEvent` 驱动 UI；`Span`（OTel 风格）进 trace store，通过 `runId / spanId / toolCallId` 关联，不混入事件流。
@@ -16,7 +16,7 @@
 - **Release UI 是事件投影**：阶段视图由事件驱动，不能硬编码流程。
 - **确定性优先**：发版步骤尽量是确定性工作流；LLM 只用于冲突解决、文案生成、风险摘要等有边界任务。
 - **不做通用平台**：共享协议、transport、组件即可，不为复用做通用 Agent / 知识库 / 日志平台抽象。
-- **前端先行**：M0–M1 在 mock/fixture 上完成渲染层；M2 只替换 transport 和 runtime，不重写 UI。
+- **前端先行**：M2 只替换 transport 和 runtime，不重写 M0–M1 完成的渲染层。
 
 ## 2. 技术选型与运行方式
 
@@ -32,8 +32,6 @@
 | 测试 | Vitest；Playwright（后期 E2E） | 已确认 |
 | 检索 | 本地索引 → SQLite FTS | 已定方向 |
 | 存储 | 内存 / JSONL → SQLite FTS；checkpointer 先内存 | 已定方向 |
-| 样式 | 待定 | 待确认 |
-| 部署 | M0 先本地运行；部署形态与平台待定 | 待确认 |
 
 - M0 运行方式：单个 Hono 进程在本地同时服务 web 静态资源和 API；不引入部署平台。
 - 不选 Next.js 全栈作为主方案：serverless 对长连接、长任务、取消/恢复限制多；若用需自托管 Node。
@@ -71,9 +69,8 @@
 
 ## 6. Release 场景决策
 
-- 使用本地玩具仓库 + 模拟 CI。理由：作品集不需要真实部署，同时避免真实凭证与环境风险；审批、审计、回滚仍可完整演示。
-- LLM 只用于冲突解决、文案生成、风险摘要等有边界任务；其余步骤保持确定性工作流。
-- 不使用前雇主的代码、数据、内部 prompt、架构图或系统名；独立重构 + 合成数据，注意 NDA。
+- Release 在模拟环境中执行。理由：作品集不需要真实环境，同时避免真实凭证与 NDA 风险；审批、审计、回滚仍可完整演示。
+- 数据与合规要求见 [README.md §8](../README.md#8-非目标) 与 [§11](../README.md#11-数据与合规)。
 
 ## 7. 阶段与能力成长
 
@@ -96,12 +93,9 @@
 
 ### 关键约束
 
-- M0–M1 全部基于 mock / fixture，不接真实模型。
-- M2 只替换 transport 和 runtime，不重写渲染层。
-- M0 先本地运行，部署平台待定，不纳入 M0 验收；部署后公开 demo 需标注 mock runtime。
+- M0–M1 全部基于 mock / fixture，不接真实模型；部署后公开 demo 需标注 mock runtime。
 - M0–M1 合计不超过 5 周；M1 结束必须能演示三个前端深挖点。
 - 每个阶段退出条件：可运行、端到端场景、测试通过、1–3 个量化指标、README 更新、能回答 3 个面试追问。
-- 协议在 M2 接入真实后端后冻结 v1。
 
 ## 8. 求职叙事
 
