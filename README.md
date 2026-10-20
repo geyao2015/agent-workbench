@@ -2,7 +2,7 @@
 
 > 从知识库对话到可审计发版。一个用于求职展示的研发 Agent 工作台：Chat 基于工程知识库对话，Release 执行可审计的发版流程。
 
-**状态：设计与文档阶段，代码尚未初始化。** 技术选型、阶段规划与待确认项见 [docs/decision.md](docs/decision.md)；协议草案见 [docs/protocol.md](docs/protocol.md)。
+**状态：设计与文档阶段，代码尚未初始化。** 技术选型与待确认项见 [docs/decision.md](docs/decision.md)；执行计划见 [docs/plan.md](docs/plan.md)；协议草案见 [docs/protocol.md](docs/protocol.md)。
 
 本文件是产品事实的唯一来源：项目定位、场景、演示流程、功能范围、非目标、当前状态、仓库结构与文档索引。
 
@@ -105,11 +105,12 @@ agent-workbench/
 
 当前处于**设计与文档阶段**，尚未开始 M0。
 
-阶段划分、交付物、时间盒与退出条件见 [docs/decision.md §7](docs/decision.md#7-阶段与能力成长)。
+阶段划分、交付物、时间盒与退出条件见 [docs/plan.md](docs/plan.md)。
 
 ## 10. 文档索引
 
-- [docs/decision.md](docs/decision.md) — 技术选型、架构与范围决策、阶段规划、求职叙事、待确认项、变更记录
+- [docs/decision.md](docs/decision.md) — 技术选型、架构与范围决策、求职叙事、待确认项、变更记录
+- [docs/plan.md](docs/plan.md) — 阶段划分、M0 执行清单、时间盒与验收标准
 - [docs/protocol.md](docs/protocol.md) — AgentEvent / Span 协议草案与 fixture 格式
 - [AGENTS.md](AGENTS.md) — AI 工作规则与文档来源约定
 - [CLAUDE.md](CLAUDE.md) — Claude Code 加载入口
