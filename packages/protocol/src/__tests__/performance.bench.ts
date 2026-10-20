@@ -38,6 +38,24 @@ const events: AgentEvent[] = [
   ),
 ];
 
+const largeStreamEvents: AgentEvent[] = [
+  makeEvent(1, "run.started", { kind: "chat" }),
+  makeEvent(2, "message.started", { messageId: "msg_10k", role: "assistant" }),
+  ...Array.from({ length: 500 }, (_, index) => {
+    const start = index * 10;
+    const delta = Array.from(
+      { length: 10 },
+      (_, offset) =>
+        `## Section ${start + offset}\n\nParagraph ${start + offset} with **bold** text.\n\n`,
+    ).join("");
+
+    return makeEvent(index + 3, "text.delta", {
+      messageId: "msg_10k",
+      delta,
+    });
+  }),
+];
+
 test("block segmentation", async ({ bench }) => {
   await bench.compare(
     bench("2000 blocks, full text", () => {
@@ -58,6 +76,18 @@ test("reducer streaming", async ({ bench }) => {
     });
 
     for (const event of events) {
+      state = reduce(state, event);
+    }
+  }).run();
+
+  await bench("500 deltas / 10k blocks", () => {
+    let state = createRunState({
+      runId: "run_bench",
+      threadId: "thread_bench",
+      kind: "chat",
+    });
+
+    for (const event of largeStreamEvents) {
       state = reduce(state, event);
     }
   }).run();

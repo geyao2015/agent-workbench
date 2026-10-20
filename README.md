@@ -2,7 +2,7 @@
 
 > 从知识库对话到可审计发版。一个用于求职展示的研发 Agent 工作台：Chat 基于工程知识库对话，Release 执行可审计的发版流程。
 
-**状态：M1 进行中。** 技术选型与待确认项见 [docs/decision.md](docs/decision.md)；执行计划见 [docs/plan.md](docs/plan.md)；协议草案见 [docs/protocol.md](docs/protocol.md)。
+**状态：M1 已完成，准备进入 M2。** 技术选型与待确认项见 [docs/decision.md](docs/decision.md)；执行计划见 [docs/plan.md](docs/plan.md)；协议草案见 [docs/protocol.md](docs/protocol.md)。
 
 本文件是产品事实的唯一来源：项目定位、场景、演示流程、功能范围、非目标、当前状态、仓库结构与文档索引。
 
@@ -105,7 +105,7 @@ agent-workbench/
 
 ## 8. 当前阶段
 
-**M1 进行中**：M0 的流式 Chat 已可运行；当前推进块级增量 Markdown、闭合块冻结与长内容虚拟化。
+**M1 已完成**：流式 Chat、增量 Markdown、工具/审批、reasoning、引用、长会话虚拟化与性能基准均已落地。下一步进入 M2：Hono + LangGraph、真实模型与知识库 RAG。
 
 ```bash
 pnpm install
