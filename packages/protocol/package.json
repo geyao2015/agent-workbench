@@ -6,6 +6,7 @@
     ".": "./src/index.ts"
   },
   "scripts": {
+    "bench": "vitest bench --run --reporter=verbose",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
   },

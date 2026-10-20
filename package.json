@@ -9,6 +9,7 @@
     "dev": "pnpm -r --parallel dev",
     "build": "pnpm --filter @agent-workbench/web build && pnpm --filter @agent-workbench/api build",
     "start": "pnpm --filter @agent-workbench/api start",
+    "bench": "pnpm -r bench",
     "test": "pnpm -r test",
     "typecheck": "pnpm -r typecheck"
   }

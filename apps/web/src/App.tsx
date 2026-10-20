@@ -1,10 +1,18 @@
-import { useEffect, useRef, useState } from "react";
+import {
+  memo,
+  Profiler,
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import type { FormEvent } from "react";
 
 import {
   Activity,
   ArrowUp,
   BookOpen,
+  Gauge,
   Loader2,
   Pause,
   Play,
@@ -24,6 +32,15 @@ import {
 import { EventInspector } from "@/components/event-inspector";
 import { MarkdownBlock } from "@/components/markdown";
 import { Button } from "@/components/ui/button";
+import {
+  getRenderStats,
+  recordCommit,
+  recordFirstToken,
+  recordFps,
+  recordTextUpdate,
+  resetRenderStats,
+  subscribeRenderStats,
+} from "@/lib/render-stats";
 import {
   cancelRun,
   pauseRun,
@@ -81,6 +98,7 @@ export default function App() {
   const [isStreaming, setIsStreaming] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showInspector, setShowInspector] = useState(false);
+  const [showPerformance, setShowPerformance] = useState(false);
   const [isStopping, setIsStopping] = useState(false);
   const [reconnectAttempt, setReconnectAttempt] = useState(0);
   const abortRef = useRef<AbortController | null>(null);
@@ -89,6 +107,9 @@ export default function App() {
   const lastEventIdRef = useRef<string | null>(null);
   const stopTimerRef = useRef<number | null>(null);
   const bottomRef = useRef<HTMLDivElement | null>(null);
+  const runStartedAtRef = useRef<number | null>(null);
+  const firstTokenSeenRef = useRef(false);
+  const userMessageIdsRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     return () => {
@@ -147,6 +168,24 @@ export default function App() {
 
         lastEventIdRef.current = event.eventId;
         setReconnectAttempt(0);
+
+        if (event.type === "message.started" && event.payload.role === "user") {
+          userMessageIdsRef.current.add(event.payload.messageId);
+        }
+
+        if (event.type === "text.delta") {
+          recordTextUpdate();
+
+          if (
+            !firstTokenSeenRef.current &&
+            !userMessageIdsRef.current.has(event.payload.messageId) &&
+            runStartedAtRef.current !== null
+          ) {
+            firstTokenSeenRef.current = true;
+            recordFirstToken(performance.now() - runStartedAtRef.current);
+          }
+        }
+
         setEvents((previous) => [...previous, event]);
         setRuns((previous) => {
           const index = previous.findIndex((run) => run.runId === event.runId);
@@ -188,6 +227,9 @@ export default function App() {
     abortRef.current = controller;
     runIdRef.current = null;
     lastEventIdRef.current = null;
+    runStartedAtRef.current = performance.now();
+    firstTokenSeenRef.current = false;
+    userMessageIdsRef.current = new Set();
     clearStopTimer();
 
     setError(null);
@@ -321,7 +363,11 @@ export default function App() {
     runIdRef.current = null;
     threadIdRef.current = null;
     lastEventIdRef.current = null;
+    runStartedAtRef.current = null;
+    firstTokenSeenRef.current = false;
+    userMessageIdsRef.current = new Set();
     clearStopTimer();
+    resetRenderStats();
 
     setInput("");
     setRuns([]);
@@ -380,6 +426,14 @@ export default function App() {
             {events.length}
           </Button>
           <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowPerformance((value) => !value)}
+          >
+            <Gauge />
+            <span className="hidden sm:inline">性能</span>
+          </Button>
+          <Button
             variant="ghost"
             size="sm"
             onClick={resetConversation}
@@ -416,29 +470,7 @@ export default function App() {
                   ) : null}
 
                   {runs.length > 0 ? (
-                    runs.map((run) =>
-                      run.state.messageOrder.map((messageId) => {
-                        const message = run.state.messages[messageId];
-
-                        if (!message) {
-                          return null;
-                        }
-
-                        return message.role === "user" ? (
-                          <UserMessage
-                            key={`${run.runId}:${message.id}`}
-                            text={message.text}
-                          />
-                        ) : (
-                          <AssistantMessage
-                            key={`${run.runId}:${message.id}`}
-                            message={message}
-                            blocks={run.state.blocks}
-                            runStatus={run.state.status}
-                          />
-                        );
-                      }),
-                    )
+                    <Conversation runs={runs} />
                   ) : isStreaming ? (
                     <PendingAssistant />
                   ) : null}
@@ -545,9 +577,56 @@ export default function App() {
           />
         ) : null}
       </div>
+
+      {showPerformance ? (
+        <PerformancePanel
+          active={isStreaming}
+          onClose={() => setShowPerformance(false)}
+        />
+      ) : null}
     </div>
   );
 }
+
+function handleProfilerRender(
+  _id: string,
+  _phase: string,
+  actualDuration: number,
+) {
+  recordCommit(actualDuration);
+}
+
+const Conversation = memo(function Conversation({ runs }: { runs: ChatRun[] }) {
+  return (
+    <Profiler id="chat-messages" onRender={handleProfilerRender}>
+      <div className="contents">
+        {runs.map((run) =>
+          run.state.messageOrder.map((messageId) => {
+            const message = run.state.messages[messageId];
+
+            if (!message) {
+              return null;
+            }
+
+            return message.role === "user" ? (
+              <UserMessage
+                key={`${run.runId}:${message.id}`}
+                text={message.text}
+              />
+            ) : (
+              <AssistantMessage
+                key={`${run.runId}:${message.id}`}
+                message={message}
+                blocks={run.state.blocks}
+                runStatus={run.state.status}
+              />
+            );
+          }),
+        )}
+      </div>
+    </Profiler>
+  );
+});
 
 function EmptyState({
   onPick,
@@ -584,7 +663,7 @@ function EmptyState({
   );
 }
 
-function UserMessage({ text }: { text: string }) {
+const UserMessage = memo(function UserMessage({ text }: { text: string }) {
   return (
     <div className="flex justify-end">
       <div className="max-w-[85%] rounded-2xl rounded-br-md bg-primary px-4 py-3 text-sm leading-6 text-primary-foreground">
@@ -592,9 +671,9 @@ function UserMessage({ text }: { text: string }) {
       </div>
     </div>
   );
-}
+});
 
-function AssistantMessage({
+const AssistantMessage = memo(function AssistantMessage({
   message,
   blocks,
   runStatus,
@@ -644,7 +723,9 @@ function AssistantMessage({
                 return (
                   <MarkdownBlock
                     key={block.id}
+                    blockId={block.id}
                     raw={block.raw}
+                    closed={block.status === "closed"}
                     showCursor={
                       streaming &&
                       block.id === lastBlockId &&
@@ -671,7 +752,7 @@ function AssistantMessage({
       </div>
     </div>
   );
-}
+});
 
 function PendingAssistant() {
   return (
@@ -681,5 +762,105 @@ function PendingAssistant() {
       </div>
       正在创建 run…
     </div>
+  );
+}
+
+function useFps(active: boolean): void {
+  useEffect(() => {
+    if (!active) {
+      return;
+    }
+
+    let frames = 0;
+    let last = performance.now();
+    let raf = 0;
+
+    const loop = (now: number) => {
+      frames += 1;
+      const elapsed = now - last;
+
+      if (elapsed >= 500) {
+        recordFps(Math.round((frames * 1000) / elapsed));
+        frames = 0;
+        last = now;
+      }
+
+      raf = requestAnimationFrame(loop);
+    };
+
+    raf = requestAnimationFrame(loop);
+
+    return () => cancelAnimationFrame(raf);
+  }, [active]);
+}
+
+function Metric({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-md border bg-muted/30 px-2 py-1.5">
+      <dt className="text-[10px] text-muted-foreground">{label}</dt>
+      <dd className="font-mono text-xs">{value}</dd>
+    </div>
+  );
+}
+
+function PerformancePanel({
+  active,
+  onClose,
+}: {
+  active: boolean;
+  onClose: () => void;
+}) {
+  const stats = useSyncExternalStore(subscribeRenderStats, getRenderStats);
+
+  useFps(active);
+
+  return (
+    <aside className="fixed right-4 bottom-4 z-40 w-[calc(100%-2rem)] max-w-sm rounded-xl border bg-background/95 p-4 shadow-lg backdrop-blur">
+      <div className="flex items-start justify-between gap-2">
+        <div>
+          <p className="text-sm font-medium">渲染性能</p>
+          <p className="text-xs text-muted-foreground">当前对话累计</p>
+        </div>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={onClose}
+          aria-label="关闭性能面板"
+        >
+          <X />
+        </Button>
+      </div>
+
+      <dl className="mt-3 grid grid-cols-2 gap-2">
+        <Metric label="块渲染" value={String(stats.blockRenders)} />
+        <Metric
+          label="闭合块渲染"
+          value={`${stats.closedBlockRenders} / ${stats.uniqueBlocks} 块`}
+        />
+        <Metric label="开放块渲染" value={String(stats.openBlockRenders)} />
+        <Metric label="文本增量" value={String(stats.textUpdates)} />
+        <Metric
+          label="首 token"
+          value={stats.firstTokenMs === null ? "—" : `${stats.firstTokenMs}ms`}
+        />
+        <Metric
+          label="帧率（最近）"
+          value={
+            stats.fps > 0 ? `${stats.fps}fps` : active ? "测量中…" : "—"
+          }
+        />
+        <Metric label="最近提交" value={`${stats.lastCommitMs}ms`} />
+        <Metric label="最大提交" value={`${stats.maxCommitMs}ms`} />
+      </dl>
+
+      <div className="mt-3 flex items-start justify-between gap-3">
+        <p className="text-[10px] leading-4 text-muted-foreground">
+          开发模式 StrictMode 会重复计数，生产构建更准确。
+        </p>
+        <Button variant="outline" size="sm" onClick={resetRenderStats}>
+          重置
+        </Button>
+      </div>
+    </aside>
   );
 }
