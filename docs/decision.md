@@ -32,8 +32,10 @@
 | 测试 | Vitest；Playwright（后期 E2E） | 已确认 |
 | 检索 | 本地索引 → SQLite FTS | 已定方向 |
 | 存储 | 内存 / JSONL → SQLite FTS；checkpointer 先内存 | 已定方向 |
+| 样式 | Tailwind CSS + shadcn/ui | 已确认 |
 
 - M0 运行方式：单个 Hono 进程在本地同时服务 web 静态资源和 API；不引入部署平台。
+- 开发期使用 Vite dev server（HMR），`/api` 代理到 Hono；构建后由 Hono 单进程托管 web 静态资源。
 - 不选 Next.js 全栈作为主方案：serverless 对长连接、长任务、取消/恢复限制多；若用需自托管 Node。
 - Express 只需达到"能读、能改、能解释区别"，不深研；Koa 不作为新项目选项。
 
@@ -81,7 +83,6 @@
 
 ## 8. 待确认
 
-- 样式 / UI 库方案（M0 开始前确认）。
 - 部署形态与平台（M0 不阻塞，当前本地运行）。
 
 ## 9. 变更记录
@@ -92,3 +93,4 @@
 | 2026-10-20 | 示例领域定为研发领域，不设公司品牌名，以服务名 + 事故编号为锚点 | 用户确认不需要公司名 |
 | 2026-10-20 | 前端 React + Vite、后端 Hono + Node、pnpm、Vitest 按默认值确认 | 用户确认技术选型 |
 | 2026-10-20 | M0 改为本地运行，部署平台暂缓，不纳入 M0 验收 | 用户决定先本地运行 |
+| 2026-10-20 | 样式采用 Tailwind CSS + shadcn/ui；开发期 Vite 代理 `/api` 到 Hono，构建后单进程托管 | 启动 M0，确认样式待定项 |
