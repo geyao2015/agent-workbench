@@ -23,7 +23,7 @@
 
 - 动手前用 1–3 句话说明：任务、影响文件、验收标准。
 - 一次只做一个可验证的纵向切片；不顺手扩大范围；目标超出当前阶段时停下确认。
-- 新增依赖前说明理由；框架或协议变更必须先问。
+- 新增依赖前说明理由，变更后同步 `docs/dependencies.md`；框架或协议变更必须先问。
 - 不擅自改变 `README.md` / `docs/decision.md` / `docs/plan.md` / `docs/protocol.md` 中的事实与决策；发现冲突先指出并请求确认。
 - 测试默认离线；不请求真实模型、Embedding 或追踪服务。
 - 不提交 secrets、真实日志、真实 API Key。
@@ -42,6 +42,7 @@
 | 阶段划分、阶段状态、能力成长、M0 执行清单、时间盒与验收标准 | `docs/plan.md` |
 | AgentEvent / Span、reducer、fixture、transport | `docs/protocol.md` |
 | 渲染实现、增量分段、性能数据 | `docs/rendering.md` |
+| 三方依赖、版本与用途 | `docs/dependencies.md` |
 | AI 工作规则、阶段门禁、文档维护约定 | `AGENTS.md` |
 | 加载入口 | `CLAUDE.md`（只引用，不写事实） |
 
