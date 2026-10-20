@@ -67,8 +67,11 @@ export function ChatComposer({
   }, [input]);
 
   return (
-    <div className="border-t bg-background/90 p-4 backdrop-blur md:px-8">
-      <form onSubmit={onSubmit} className="mx-auto w-full max-w-3xl">
+    <div className="border-t bg-background/90 py-4 backdrop-blur">
+      <form
+        onSubmit={onSubmit}
+        className="mx-auto w-full max-w-3xl px-4 md:px-8"
+      >
         <div className="rounded-xl border bg-background transition-colors duration-150 focus-within:border-foreground/30">
           <div className="min-w-0 px-3 pt-2">
             <textarea
