@@ -42,13 +42,20 @@ export interface RunState {
   errors: Array<{ code: string; message: string; seq: number }>;
 }
 
+export interface CitationState {
+  id: string;
+  sourceId: string;
+  title?: string;
+  locator?: string;
+}
+
 export interface MessageState {
   id: string;
   role: "user" | "assistant";
   status: "streaming" | "completed" | "error";
   text: string;
   blockIds: string[];
-  citations: string[];
+  citations: CitationState[];
   startedAtSeq: number;
 }
 
@@ -363,9 +370,21 @@ function applyKnownEvent(state: RunState, event: AgentEvent): RunState {
     case "citation.added": {
       const message = state.messages[event.payload.messageId];
 
-      if (!message || message.citations.includes(event.payload.citationId)) {
+      if (
+        !message ||
+        message.citations.some(
+          (citation) => citation.id === event.payload.citationId,
+        )
+      ) {
         return state;
       }
+
+      const citation: CitationState = {
+        id: event.payload.citationId,
+        sourceId: event.payload.sourceId,
+        ...(event.payload.title ? { title: event.payload.title } : {}),
+        ...(event.payload.locator ? { locator: event.payload.locator } : {}),
+      };
 
       return {
         ...state,
@@ -373,7 +392,7 @@ function applyKnownEvent(state: RunState, event: AgentEvent): RunState {
           ...state.messages,
           [message.id]: {
             ...message,
-            citations: [...message.citations, event.payload.citationId],
+            citations: [...message.citations, citation],
           },
         },
       };

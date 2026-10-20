@@ -15,6 +15,7 @@ import {
   Activity,
   ArrowUp,
   BookOpen,
+  ChevronRight,
   Gauge,
   Hourglass,
   Loader2,
@@ -30,6 +31,7 @@ import {
   reduce,
   type AgentEvent,
   type ApprovalState,
+  type CitationState,
   type RunState,
   type ToolCallState,
 } from "@agent-workbench/protocol";
@@ -102,6 +104,14 @@ const QUICK_PROMPTS: QuickPrompt[] = [
     description: "流式工具参数、暂停审批、批准或拒绝",
   },
   {
+    kind: "run",
+    group: "功能测试",
+    fixture: "chat-release-notes",
+    label: "发版问答",
+    prompt: "1.2.0 发版有哪些注意事项？",
+    description: "流式 Markdown + 多条来源引用",
+  },
+  {
     kind: "history",
     group: "性能测试",
     label: "长会话",
@@ -159,7 +169,7 @@ type ChatRow =
       resolving: boolean;
     }
   | { kind: "cursor"; key: string }
-  | { kind: "citations"; key: string; count: number }
+  | { kind: "citations"; key: string; citations: CitationState[] }
   | { kind: "paused"; key: string; seq: number }
   | { kind: "pending"; key: string }
   | { kind: "loading"; key: string };
@@ -308,7 +318,7 @@ function buildChatRows(input: {
         rows.push({
           kind: "citations",
           key: `${run.runId}:${message.id}:citations`,
-          count: message.citations.length,
+          citations: message.citations,
         });
       }
     }
@@ -1252,12 +1262,7 @@ function ChatRowView({
       );
 
     case "citations":
-      return (
-        <div className="flex items-center gap-1.5 pl-11 text-xs text-muted-foreground">
-          <BookOpen className="size-3" />
-          引用 {row.count} 条
-        </div>
-      );
+      return <CitationList citations={row.citations} />;
 
     case "paused":
       return (
@@ -1361,6 +1366,44 @@ const UserMessage = memo(function UserMessage({ text }: { text: string }) {
         {text}
       </div>
     </div>
+  );
+});
+
+const CitationList = memo(function CitationList({
+  citations,
+}: {
+  citations: CitationState[];
+}) {
+  return (
+    <details className="group pl-11 text-xs text-muted-foreground">
+      <summary className="flex w-fit cursor-pointer list-none items-center gap-1.5 rounded-md py-0.5 pr-1 hover:text-foreground [&::-webkit-details-marker]:hidden">
+        <BookOpen className="size-3" />
+        引用 {citations.length} 条
+        <ChevronRight className="size-3 transition-transform group-open:rotate-90" />
+      </summary>
+
+      <ol className="mt-2 space-y-1.5">
+        {citations.map((citation, index) => (
+          <li
+            key={citation.id}
+            className="flex gap-2 rounded-lg border bg-card px-2.5 py-2"
+          >
+            <span className="mt-0.5 flex size-4 shrink-0 items-center justify-center rounded bg-muted font-mono text-[10px] text-muted-foreground">
+              {index + 1}
+            </span>
+            <div className="min-w-0">
+              <p className="truncate text-xs text-foreground">
+                {citation.title ?? citation.sourceId}
+              </p>
+              <p className="mt-0.5 truncate font-mono text-[10px] text-muted-foreground">
+                {citation.sourceId}
+                {citation.locator ? ` · ${citation.locator}` : ""}
+              </p>
+            </div>
+          </li>
+        ))}
+      </ol>
+    </details>
   );
 });
 

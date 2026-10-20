@@ -187,13 +187,20 @@ interface RunState {
 关键状态：
 
 ```ts
+interface CitationState {
+  id: string;
+  sourceId: string;
+  title?: string;
+  locator?: string;
+}
+
 interface MessageState {
   id: string;
   role: "user" | "assistant";
   status: "streaming" | "completed" | "error";
   text: string;
   blockIds: string[];
-  citations: string[];
+  citations: CitationState[];
   startedAtSeq: number;
 }
 
@@ -216,6 +223,7 @@ interface ToolCallState {
   result?: string;
   error?: { code: string; message: string };
   approvalId?: string;
+  durationMs?: number;
   startedAtSeq: number;
 }
 
@@ -414,3 +422,4 @@ export interface Span {
 | --- | --- | --- |
 | 2026-10-20 | v0 | 初稿：信封、事件类型、reducer、fixture、transport、Span |
 | 2026-10-20 | v0 | 用户输入纳入事件流（`message.started` 支持 user 角色）；多轮 run 共用 thread |
+| 2026-10-20 | v0 | reducer 状态保留引用元数据（`CitationState`）与工具耗时（`ToolCallState.durationMs`） |

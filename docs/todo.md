@@ -13,5 +13,10 @@
   - 增加音视频上传
 
 
+引用下钻（后续）
+- `citation.added` 增加 `blockId`、`chunkId`、`quote`；完整文档只通过 source API / artifact 引用，不放进事件流
+- block 尾部显示引用标记，点击弹层展示原文摘录；「查看原文」打开右侧文档面板，按 `chunkId` 定位并高亮
+- M2 接真实 RAG：检索工具产出 chunk，侧栏拉取原文；M4 关联 retrieval span，补引用准确率/忠实度评测
+
 整理文档
 - 难点分析单独归类

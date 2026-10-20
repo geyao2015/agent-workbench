@@ -17,7 +17,7 @@ SSE → Zod 校验 → 纯函数 reducer → 行级投影 → 虚拟列表。
 
 - assistant 文本、代码、表格等静态内容按 Markdown block 渲染
 - 工具调用、审批、阶段、artifact 等有生命周期或交互的内容作为独立时间线行，由 AgentEvent 投影，不进入 Markdown AST
-- 引用等只读、轻量信息可以内联到 Markdown
+- 引用等只读、轻量信息可以内联到 Markdown；当前以消息底部的可展开来源行展示，保留 `title / sourceId / locator`
 - 不执行模型输出中的 MDX、JSX 或原始 HTML；需要内联结构化内容时只接受受控占位符，并映射到事件状态
 - 工具卡片内部可以用 Markdown 渲染结果预览
 

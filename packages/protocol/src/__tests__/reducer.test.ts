@@ -85,11 +85,42 @@ describe("reducer", () => {
     expect(message?.text).toBe(
       "1.2.0 发版前需要确认两件事：合并冲突已解决，以及回归测试通过。",
     );
-    expect(message?.citations).toEqual(["cit_short_001"]);
+    expect(message?.citations).toEqual([
+      { id: "cit_short_001", sourceId: "doc_release_runbook", title: "发版规范" },
+    ]);
 
     const block = state.blocks["msg_short_001:b0"];
     expect(block?.raw).toBe(message?.text);
     expect(block?.status).toBe("closed");
+  });
+
+  it("keeps citation metadata and ignores duplicate citation ids", () => {
+    let state = createRunState({
+      runId: "run_test",
+      threadId: "thread_test",
+      kind: "chat",
+    });
+
+    state = reduce(state, makeEvent(1, "run.started", { kind: "chat" }));
+    state = reduce(
+      state,
+      makeEvent(2, "message.started", { messageId: "msg_1", role: "assistant" }),
+    );
+
+    const citation = {
+      messageId: "msg_1",
+      citationId: "cit_1",
+      sourceId: "doc_a",
+      title: "文档 A",
+      locator: "§1",
+    };
+
+    state = reduce(state, makeEvent(3, "citation.added", citation));
+    state = reduce(state, makeEvent(4, "citation.added", citation));
+
+    expect(state.messages["msg_1"]?.citations).toEqual([
+      { id: "cit_1", sourceId: "doc_a", title: "文档 A", locator: "§1" },
+    ]);
   });
 
   it("is idempotent for duplicate events", () => {
