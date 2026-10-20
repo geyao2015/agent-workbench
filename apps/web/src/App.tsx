@@ -9,13 +9,13 @@ import {
 } from "@agent-workbench/protocol";
 
 import { AppHeader } from "@/components/app-header";
-import { ChatComposer } from "@/components/chat-composer";
-import { ChatFeed } from "@/components/chat-feed";
-import { EmptyState } from "@/components/empty-state";
-import { EventInspector } from "@/components/event-inspector";
-import { PerformancePanel } from "@/components/performance-panel";
-import { buildChatRows, type ChatRun } from "@/lib/chat-rows";
-import type { QuickPrompt } from "@/lib/quick-prompts";
+import { ChatComposer } from "@/components/chat/chat-composer";
+import { ChatFeed } from "@/components/chat/chat-feed";
+import { EmptyState } from "@/components/chat/empty-state";
+import { EventInspector } from "@/components/devtools/event-inspector";
+import { PerformancePanel } from "@/components/devtools/performance-panel";
+import { buildChatRows, type ChatRun } from "@/lib/chat/chat-rows";
+import type { QuickPrompt } from "@/lib/chat/quick-prompts";
 import {
   recordFirstToken,
   recordTextUpdate,

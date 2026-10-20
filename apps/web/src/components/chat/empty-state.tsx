@@ -1,6 +1,6 @@
 import { Sparkles } from "lucide-react";
 
-import { QUICK_PROMPTS, type QuickPrompt } from "@/lib/quick-prompts";
+import { QUICK_PROMPTS, type QuickPrompt } from "@/lib/chat/quick-prompts";
 
 export function EmptyState({ onPick }: { onPick: (item: QuickPrompt) => void }) {
   return (

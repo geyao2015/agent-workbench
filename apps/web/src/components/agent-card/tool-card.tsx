@@ -17,7 +17,7 @@ import {
   type ToolCallState,
 } from "@agent-workbench/protocol";
 
-import { AgentCard, type CardTone } from "@/components/agent-card";
+import { AgentCard, type CardTone } from "./agent-card";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 

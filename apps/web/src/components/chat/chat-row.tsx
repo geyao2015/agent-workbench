@@ -11,10 +11,10 @@ import {
 
 import type { CitationState, RunState } from "@agent-workbench/protocol";
 
+import { ReasoningCard } from "@/components/agent-card/reasoning-card";
+import { ToolCallCard } from "@/components/agent-card/tool-card";
 import { MarkdownBlock } from "@/components/markdown";
-import { ReasoningCard } from "@/components/reasoning-card";
-import { ToolCallCard } from "@/components/tool-card";
-import type { ChatRow } from "@/lib/chat-rows";
+import type { ChatRow } from "@/lib/chat/chat-rows";
 import { cn } from "@/lib/utils";
 
 interface ChatRowViewProps {

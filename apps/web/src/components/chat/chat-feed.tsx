@@ -2,8 +2,8 @@ import { memo, Profiler, useEffect, useRef } from "react";
 
 import { useVirtualizer } from "@tanstack/react-virtual";
 
-import { ChatRowView } from "@/components/chat-row";
-import type { ChatRow } from "@/lib/chat-rows";
+import { ChatRowView } from "@/components/chat/chat-row";
+import type { ChatRow } from "@/lib/chat/chat-rows";
 import { recordCommit } from "@/lib/render-stats";
 import { cn } from "@/lib/utils";
 

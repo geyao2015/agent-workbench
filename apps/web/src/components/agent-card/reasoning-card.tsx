@@ -2,7 +2,7 @@ import { memo, useState } from "react";
 
 import { Brain, ChevronDown, Loader2 } from "lucide-react";
 
-import { AgentCard } from "@/components/agent-card";
+import { AgentCard } from "./agent-card";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
