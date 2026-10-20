@@ -53,9 +53,12 @@ import {
   streamRunEvents,
 } from "@/transport/sse";
 
+type QuickPromptGroup = "功能测试" | "性能测试";
+
 type QuickPrompt =
   | {
       kind: "run";
+      group: QuickPromptGroup;
       fixture: string;
       label: string;
       prompt: string;
@@ -63,6 +66,7 @@ type QuickPrompt =
     }
   | {
       kind: "history";
+      group: QuickPromptGroup;
       label: string;
       description: string;
     };
@@ -70,6 +74,7 @@ type QuickPrompt =
 const QUICK_PROMPTS: QuickPrompt[] = [
   {
     kind: "run",
+    group: "功能测试",
     fixture: "chat-general",
     label: "一般对话",
     prompt: "你在 Agent Workbench 里能做什么？",
@@ -77,6 +82,7 @@ const QUICK_PROMPTS: QuickPrompt[] = [
   },
   {
     kind: "run",
+    group: "功能测试",
     fixture: "chat-blocks",
     label: "模块渲染",
     prompt: "展示一下 Markdown 块渲染能力。",
@@ -84,11 +90,21 @@ const QUICK_PROMPTS: QuickPrompt[] = [
   },
   {
     kind: "history",
+    group: "性能测试",
     label: "长会话",
     description: "100 轮 / 10000 块历史",
   },
   {
     kind: "run",
+    group: "性能测试",
+    fixture: "chat-long-response",
+    label: "长返回",
+    prompt: "给我一份简明的 1.2.0 发版检查结果。",
+    description: "约 5000 字 / 表格与代码块",
+  },
+  {
+    kind: "run",
+    group: "性能测试",
     fixture: "chat-large-nodes",
     label: "超长返回",
     prompt: "一次返回大量文本节点。",
@@ -1134,19 +1150,28 @@ function EmptyState({ onPick }: { onPick: (item: QuickPrompt) => void }) {
         </p>
       </div>
 
-      <div className="grid w-full gap-3 sm:grid-cols-2">
-        {QUICK_PROMPTS.map((item) => (
-          <button
-            key={item.kind === "run" ? item.fixture : item.label}
-            type="button"
-            onClick={() => onPick(item)}
-            className="rounded-xl border bg-card p-4 text-left shadow-xs transition-colors hover:bg-accent"
-          >
-            <p className="text-sm font-medium">{item.label}</p>
-            <p className="mt-1 text-xs text-muted-foreground">{item.description}</p>
-          </button>
-        ))}
-      </div>
+      {(["功能测试", "性能测试"] as const).map((group) => (
+        <div key={group} className="w-full space-y-2 text-left">
+          <p className="px-1 text-xs font-medium tracking-wide text-muted-foreground">
+            {group}
+          </p>
+          <div className="grid w-full gap-3 sm:grid-cols-2">
+            {QUICK_PROMPTS.filter((item) => item.group === group).map((item) => (
+              <button
+                key={item.kind === "run" ? item.fixture : item.label}
+                type="button"
+                onClick={() => onPick(item)}
+                className="rounded-xl border bg-card p-4 text-left shadow-xs transition-colors hover:bg-accent"
+              >
+                <p className="text-sm font-medium">{item.label}</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {item.description}
+                </p>
+              </button>
+            ))}
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
