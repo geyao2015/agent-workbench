@@ -26,12 +26,9 @@ export function AppHeader({
         <div className="min-w-0">
           <div className="flex items-center gap-2">
             <h1 className="truncate text-sm font-semibold">Agent Workbench</h1>
-            <span className="shrink-0 rounded-full border px-2 py-0.5 text-[10px] text-muted-foreground">
-              Chat · M1
-            </span>
           </div>
           <p className="truncate text-xs text-muted-foreground">
-            本地 fixture 回放 · 不调用模型
+            Mock 模式 · 本地 fixture 回放，不调用模型
           </p>
         </div>
       </div>
