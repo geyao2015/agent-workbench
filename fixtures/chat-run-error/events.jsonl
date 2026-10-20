@@ -1,0 +1,5 @@
+{"v":1,"eventId":"evt_run_error_001","seq":1,"runId":"run_fixture_run_error","threadId":"thread_fixture","ts":0,"type":"run.started","payload":{"kind":"chat","title":"汇总发版检查结果"}}
+{"v":1,"eventId":"evt_run_error_002","seq":2,"runId":"run_fixture_run_error","threadId":"thread_fixture","ts":0,"type":"message.started","payload":{"messageId":"msg_run_error_001","role":"assistant"}}
+{"v":1,"eventId":"evt_run_error_003","seq":3,"runId":"run_fixture_run_error","threadId":"thread_fixture","ts":0,"type":"text.delta","payload":{"messageId":"msg_run_error_001","delta":"正在汇总发版检查结果…\n\n"}}
+{"v":1,"eventId":"evt_run_error_004","seq":4,"runId":"run_fixture_run_error","threadId":"thread_fixture","ts":0,"type":"error","payload":{"code":"tool_retry_exhausted","message":"日志检索重试 3 次失败","retryable":true}}
+{"v":1,"eventId":"evt_run_error_005","seq":5,"runId":"run_fixture_run_error","threadId":"thread_fixture","ts":0,"type":"run.failed","payload":{"code":"model_timeout","message":"模型响应超时（30s），本次运行已终止。","retryable":true}}

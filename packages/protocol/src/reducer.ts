@@ -39,7 +39,13 @@ export interface RunState {
   approvals: Record<string, ApprovalState>;
   artifacts: Record<string, ArtifactState>;
 
-  errors: Array<{ code: string; message: string; seq: number }>;
+  errors: Array<{
+    code: string;
+    message: string;
+    seq: number;
+    retryable: boolean;
+    fatal: boolean;
+  }>;
 }
 
 export interface CitationState {
@@ -269,8 +275,17 @@ function findReasoning(
   return undefined;
 }
 
-function appendError(state: RunState, code: string, message: string, seq: number): RunState {
-  return { ...state, errors: [...state.errors, { code, message, seq }] };
+function appendError(
+  state: RunState,
+  code: string,
+  message: string,
+  seq: number,
+  options: { retryable: boolean; fatal: boolean },
+): RunState {
+  return {
+    ...state,
+    errors: [...state.errors, { code, message, seq, ...options }],
+  };
 }
 
 function applyKnownEvent(state: RunState, event: AgentEvent): RunState {
@@ -307,6 +322,7 @@ function applyKnownEvent(state: RunState, event: AgentEvent): RunState {
         event.payload.code,
         event.payload.message,
         event.seq,
+        { retryable: event.payload.retryable, fatal: true },
       );
     }
 
@@ -653,6 +669,7 @@ function applyKnownEvent(state: RunState, event: AgentEvent): RunState {
         event.payload.code,
         event.payload.message,
         event.seq,
+        { retryable: event.payload.retryable, fatal: false },
       );
     }
 

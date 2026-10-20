@@ -180,7 +180,13 @@ interface RunState {
   approvals: Record<string, ApprovalState>;
   artifacts: Record<string, ArtifactState>;
 
-  errors: Array<{ code: string; message: string; seq: number }>;
+  errors: Array<{
+    code: string;
+    message: string;
+    seq: number;
+    retryable: boolean;
+    fatal: boolean;
+  }>;
 }
 ```
 
@@ -433,3 +439,4 @@ export interface Span {
 | 2026-10-20 | v0 | 用户输入纳入事件流（`message.started` 支持 user 角色）；多轮 run 共用 thread |
 | 2026-10-20 | v0 | reducer 状态保留引用元数据（`CitationState`）与工具耗时（`ToolCallState.durationMs`） |
 | 2026-10-20 | v0 | reducer 记录 reasoning 块（`ReasoningState`）；UI 默认展开并限高 |
+| 2026-10-20 | v0 | `RunState.errors` 记录 `retryable / fatal`，区分局部错误与致命错误 |

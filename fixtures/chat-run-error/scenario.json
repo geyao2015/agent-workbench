@@ -1,0 +1,14 @@
+{
+  "name": "chat-run-error",
+  "description": "运行失败：局部错误与致命错误",
+  "runKind": "chat",
+  "threadId": "thread_fixture",
+  "timing": {
+    "mode": "delays",
+    "defaultMs": 80,
+    "bySeq": {
+      "1": 0,
+      "2": 20
+    }
+  }
+}

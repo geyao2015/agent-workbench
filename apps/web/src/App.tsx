@@ -13,6 +13,7 @@ import { useVirtualizer } from "@tanstack/react-virtual";
 
 import {
   Activity,
+  AlertTriangle,
   ArrowUp,
   BookOpen,
   ChevronRight,
@@ -118,7 +119,23 @@ const QUICK_PROMPTS: QuickPrompt[] = [
     fixture: "chat-reasoning",
     label: "推理折叠",
     prompt: "INC-042 支付回调为什么一直重试？",
-    description: "默认折叠的思考过程 + 结论与引用",
+    description: "默认展开的思考过程 + 结论与引用",
+  },
+  {
+    kind: "run",
+    group: "功能测试",
+    fixture: "chat-tool-error",
+    label: "工具失败",
+    prompt: "查一下 INC-042 的日志。",
+    description: "工具报错后 Agent 继续解释",
+  },
+  {
+    kind: "run",
+    group: "功能测试",
+    fixture: "chat-run-error",
+    label: "运行失败",
+    prompt: "汇总一下发版检查结果。",
+    description: "局部错误与致命错误行",
   },
   {
     kind: "history",
@@ -186,6 +203,14 @@ type ChatRow =
   | { kind: "cursor"; key: string }
   | { kind: "citations"; key: string; citations: CitationState[] }
   | { kind: "paused"; key: string; seq: number }
+  | {
+      kind: "run-error";
+      key: string;
+      code: string;
+      message: string;
+      retryable: boolean;
+      fatal: boolean;
+    }
   | { kind: "pending"; key: string }
   | { kind: "loading"; key: string };
 
@@ -223,6 +248,7 @@ function buildChatRows(input: {
     const timeline: Array<
       | { seq: number; kind: "message"; messageId: string }
       | { seq: number; kind: "tool"; toolCallId: string }
+      | { seq: number; kind: "error"; index: number }
     > = [];
 
     for (const messageId of run.state.messageOrder) {
@@ -239,6 +265,10 @@ function buildChatRows(input: {
       if (toolCall) {
         timeline.push({ seq: toolCall.startedAtSeq, kind: "tool", toolCallId });
       }
+    }
+
+    for (const [index, error] of run.state.errors.entries()) {
+      timeline.push({ seq: error.seq, kind: "error", index });
     }
 
     timeline.sort((left, right) => left.seq - right.seq);
@@ -266,6 +296,23 @@ function buildChatRows(input: {
             run.state.status === "waiting_approval",
           resolving: approval ? input.resolvingApprovalId === approval.id : false,
         });
+        continue;
+      }
+
+      if (item.kind === "error") {
+        const error = run.state.errors[item.index];
+
+        if (error) {
+          rows.push({
+            kind: "run-error",
+            key: `${run.runId}:error:${error.seq}`,
+            code: error.code,
+            message: error.message,
+            retryable: error.retryable,
+            fatal: error.fatal,
+          });
+        }
+
         continue;
       }
 
@@ -1303,6 +1350,41 @@ function ChatRowView({
       return (
         <div className="rounded-lg border bg-muted/40 px-4 py-2 text-xs text-muted-foreground">
           已暂停在 seq {row.seq}，点击“继续”从断点恢复。
+        </div>
+      );
+
+    case "run-error":
+      return (
+        <div
+          className={cn(
+            "rounded-xl border px-4 py-3",
+            row.fatal
+              ? "border-destructive/30 bg-destructive/10"
+              : "border-amber-500/30 bg-amber-500/10",
+          )}
+        >
+          <div
+            className={cn(
+              "flex items-center gap-2 text-sm font-medium",
+              row.fatal
+                ? "text-destructive"
+                : "text-amber-700 dark:text-amber-300",
+            )}
+          >
+            <AlertTriangle className="size-4" />
+            {row.fatal ? "运行失败" : "局部错误"}
+            {row.retryable ? (
+              <span className="rounded-full border px-1.5 py-0.5 text-[10px] font-normal">
+                可重试
+              </span>
+            ) : null}
+          </div>
+          <p className="mt-1 text-xs leading-5 text-muted-foreground">
+            {row.message}
+          </p>
+          <p className="mt-1 font-mono text-[10px] text-muted-foreground/70">
+            {row.code}
+          </p>
         </div>
       );
 

@@ -27,6 +27,7 @@ SSE → Zod 校验 → 纯函数 reducer → 行级投影 → 虚拟列表。
 - 时间线按 `startedAtSeq` 合并消息与工具调用，保证同一 run 内文本与工具卡片正确交错
 - 工具卡片由 `ToolCallState` 投影：参数半截到达时尝试容错解析并展示部分结构，解析失败回退原文；`tool.ready` 后展示结构化参数，结果与耗时来自 `tool.result`
 - 审批作为工具卡片底栏，由 `ApprovalState` 投影；决定通过 `POST /api/approvals/:approvalId` 追加 `tool.approval_resolved` / `run.resumed` 事件，客户端按 `lastEventId` 恢复，前端状态不作为事实源
+- 运行错误由 `RunState.errors` 投影为时间线错误行，区分局部错误与致命错误；工具错误仍留在工具卡内
 
 选择理由：
 

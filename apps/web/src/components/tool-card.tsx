@@ -148,7 +148,8 @@ export const ToolCallCard = memo(function ToolCallCard({
     toolCall.status === "streaming" ||
     toolCall.status === "ready" ||
     toolCall.status === "running" ||
-    toolCall.status === "awaiting_approval";
+    toolCall.status === "awaiting_approval" ||
+    toolCall.status === "error";
 
   return (
     <div className="pl-11">

@@ -192,6 +192,50 @@ describe("reducer", () => {
     ]);
   });
 
+  it("records recoverable and fatal errors", () => {
+    let state = createRunState({
+      runId: "run_test",
+      threadId: "thread_test",
+      kind: "chat",
+    });
+
+    state = reduce(state, makeEvent(1, "run.started", { kind: "chat" }));
+    state = reduce(
+      state,
+      makeEvent(2, "error", {
+        code: "tool_retry",
+        message: "工具重试失败",
+        retryable: true,
+      }),
+    );
+    state = reduce(
+      state,
+      makeEvent(3, "run.failed", {
+        code: "model_timeout",
+        message: "模型响应超时",
+        retryable: false,
+      }),
+    );
+
+    expect(state.status).toBe("failed");
+    expect(state.errors).toEqual([
+      {
+        code: "tool_retry",
+        message: "工具重试失败",
+        seq: 2,
+        retryable: true,
+        fatal: false,
+      },
+      {
+        code: "model_timeout",
+        message: "模型响应超时",
+        seq: 3,
+        retryable: false,
+        fatal: true,
+      },
+    ]);
+  });
+
   it("is idempotent for duplicate events", () => {
     const state = applyAll();
     const lastEvent = events.at(-1);
@@ -349,7 +393,13 @@ describe("reducer", () => {
     expect(state.artifacts["art_1"]?.title).toBe("冲突 diff（已审阅）");
     expect(state.artifacts["art_1"]?.status).toBe("ready");
     expect(state.errors).toEqual([
-      { code: "retrieval_failed", message: "知识库检索失败", seq: 6 },
+      {
+        code: "retrieval_failed",
+        message: "知识库检索失败",
+        seq: 6,
+        retryable: true,
+        fatal: false,
+      },
     ]);
     expect(state.status).toBe("completed");
   });
