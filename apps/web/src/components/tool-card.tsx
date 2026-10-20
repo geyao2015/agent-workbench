@@ -1,4 +1,4 @@
-import { memo, useState } from "react";
+import { memo, useMemo, useState } from "react";
 
 import {
   CheckCircle2,
@@ -10,7 +10,12 @@ import {
   XCircle,
 } from "lucide-react";
 
-import type { ApprovalState, Risk, ToolCallState } from "@agent-workbench/protocol";
+import {
+  parsePartialJson,
+  type ApprovalState,
+  type Risk,
+  type ToolCallState,
+} from "@agent-workbench/protocol";
 
 import { AgentCard, type CardTone } from "@/components/agent-card";
 import { Button } from "@/components/ui/button";
@@ -65,14 +70,6 @@ function toolLabel(name: string): string {
   return TOOL_LABELS[name] ?? name.replaceAll("_", " ");
 }
 
-function formatArgs(toolCall: ToolCallState): string | null {
-  if (toolCall.args !== undefined) {
-    return JSON.stringify(toolCall.args, null, 2);
-  }
-
-  return toolCall.argsText.length > 0 ? toolCall.argsText : null;
-}
-
 function StatusBadge({ status }: { status: ToolCallState["status"] }) {
   const meta = STATUS_META[status];
 
@@ -125,8 +122,27 @@ export const ToolCallCard = memo(function ToolCallCard({
 }: ToolCallCardProps) {
   const [expanded, setExpanded] = useState(false);
   const meta = STATUS_META[toolCall.status];
-  const args = formatArgs(toolCall);
-  const hasDetails = Boolean(args || toolCall.result);
+  const argsPreview = useMemo(() => {
+    if (toolCall.args !== undefined) {
+      return { text: JSON.stringify(toolCall.args, null, 2), label: "参数" };
+    }
+
+    if (toolCall.argsText.length === 0) {
+      return { text: null, label: "参数" };
+    }
+
+    const partial = parsePartialJson(toolCall.argsText);
+
+    if (partial === undefined) {
+      return { text: toolCall.argsText, label: "参数（流式接收中）" };
+    }
+
+    return {
+      text: JSON.stringify(partial, null, 2),
+      label: "参数（流式接收中 · 已解析部分）",
+    };
+  }, [toolCall.args, toolCall.argsText]);
+  const hasDetails = Boolean(argsPreview.text || toolCall.result);
   const showBody =
     expanded ||
     toolCall.status === "streaming" ||
@@ -175,13 +191,13 @@ export const ToolCallCard = memo(function ToolCallCard({
       >
         {showBody ? (
           <div className="space-y-2">
-            {args ? (
+            {argsPreview.text ? (
               <div>
                 <p className="mb-1 text-[10px] font-medium tracking-wide text-muted-foreground">
-                  {toolCall.args === undefined ? "参数（流式接收中）" : "参数"}
+                  {argsPreview.label}
                 </p>
                 <pre className="max-h-40 overflow-auto rounded-md bg-muted/50 p-2 font-mono text-[11px] leading-4 whitespace-pre-wrap break-all">
-                  {args}
+                  {argsPreview.text}
                 </pre>
               </div>
             ) : null}
