@@ -128,7 +128,7 @@ export const ChatFeed = memo(function ChatFeed({
       onTouchMove={() => {
         stickToBottomRef.current = false;
       }}
-      className="scroll-slim min-h-0 flex-1 overflow-y-auto"
+      className="min-h-0 flex-1 overflow-y-auto overscroll-contain [scrollbar-gutter:stable]"
     >
       <Profiler id="chat-feed" onRender={handleProfilerRender}>
         <div

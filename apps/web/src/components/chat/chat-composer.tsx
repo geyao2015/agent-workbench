@@ -104,7 +104,7 @@ export function ChatComposer({
                       : "问一个工程问题，例如 1.2.0 发版有哪些注意事项？"
               }
               aria-label="消息输入"
-              className="scroll-slim block w-full resize-none bg-transparent text-sm leading-6 outline-none placeholder:text-muted-foreground disabled:opacity-60"
+              className="block w-full resize-none bg-transparent text-sm leading-6 outline-none placeholder:text-muted-foreground disabled:opacity-60"
             />
             {isLoadingHistory || isWaitingApproval || isPaused ? (
               <p className="mt-1 text-[11px] text-muted-foreground">

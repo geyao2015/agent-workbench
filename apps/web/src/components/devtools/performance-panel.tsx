@@ -95,7 +95,7 @@ export function PerformancePanel({
   useFps(active);
 
   return (
-    <aside className="scroll-slim fixed right-4 bottom-4 z-40 max-h-[calc(100vh-2rem)] w-[calc(100%-2rem)] max-w-sm overflow-y-auto rounded-xl border bg-background/95 p-4 shadow-lg backdrop-blur">
+    <aside className="fixed right-4 bottom-4 z-40 max-h-[calc(100vh-2rem)] w-[calc(100%-2rem)] max-w-sm overflow-y-auto rounded-xl border bg-background/95 p-4 shadow-lg backdrop-blur">
       <div className="flex items-start justify-between gap-2">
         <div>
           <p className="text-sm font-medium">渲染性能</p>

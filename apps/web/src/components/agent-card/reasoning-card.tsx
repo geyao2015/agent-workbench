@@ -41,7 +41,7 @@ export const ReasoningCard = memo(function ReasoningCard({
         }
       >
         {expanded ? (
-          <p className="scroll-slim max-h-56 overflow-y-auto whitespace-pre-wrap text-xs leading-5 text-muted-foreground">
+          <p className="max-h-56 overflow-y-auto overscroll-contain whitespace-pre-wrap text-xs leading-5 text-muted-foreground">
             {text}
           </p>
         ) : null}
