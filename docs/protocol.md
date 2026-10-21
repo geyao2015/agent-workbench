@@ -430,6 +430,7 @@ export interface Span {
 6. **Reasoning 可见性**：时间线默认展开，内容区限高滚动；调试抽屉仍可查看原文，避免长推理挤压正文。
 7. **同一 thread 的并发 run**：默认单活跃 run；后续再设计队列。
 8. **Token 统计粒度**：默认在 `run.completed.usage` + span attributes；是否增加 `usage.updated` 待定。
+9. **历史会话加载**：M2 接入真实后端时改进。打开已有 thread 不做流式回放，也不一次性返回全部历史事件；默认按 cursor 分页返回服务端物化的消息/块，原始事件只用于调试与回放。若分页直接返回原始事件，分页边界必须附带 checkpoint 快照，否则 reducer 无法从中间 `seq` 重建状态。`/api/demo/long-conversation` 这类批量生成接口只作为性能压测工具，不作为产品历史接口。
 
 ## 11. Changelog
 
