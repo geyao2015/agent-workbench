@@ -66,7 +66,8 @@ agent-workbench/
 │   ├── decision.md       决策与理由
 │   ├── plan.md           执行计划与阶段状态
 │   ├── protocol.md       事件协议草案
-│   └── dependencies.md   三方依赖清单
+│   ├── dependencies.md   三方依赖清单
+│   └── glossary.md       术语笔记
 ├── scripts/
 │   └── check-docs.mjs    文档一致性检查
 ├── AGENTS.md             AI Agent 工作规则
@@ -122,6 +123,7 @@ pnpm build && pnpm start    # 单 URL http://localhost:8787
 - [docs/protocol.md](docs/protocol.md) — AgentEvent / Span 协议草案与 fixture 格式
 - [docs/rendering.md](docs/rendering.md) — 渲染实现、增量分段与性能数据
 - [docs/dependencies.md](docs/dependencies.md) — 三方依赖、版本与用途
+- [docs/glossary.md](docs/glossary.md) — 个人术语笔记（Thread / Run 等概念）
 - [AGENTS.md](AGENTS.md) — AI 工作规则与文档来源约定
 - [CLAUDE.md](CLAUDE.md) — Claude Code 加载入口
 

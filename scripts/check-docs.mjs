@@ -12,6 +12,7 @@ const docs = [
   "docs/protocol.md",
   "docs/rendering.md",
   "docs/dependencies.md",
+  "docs/glossary.md",
 ];
 const budgets = {
   "README.md": 140,
@@ -22,6 +23,7 @@ const budgets = {
   "docs/protocol.md": 500,
   "docs/rendering.md": 100,
   "docs/dependencies.md": 100,
+  "docs/glossary.md": 80,
 };
 
 let failures = 0;
