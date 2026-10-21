@@ -120,6 +120,7 @@ export default function App() {
 
   async function consumeEvents(
     controller: AbortController,
+    runId: string,
     stream: AsyncGenerator<AgentEvent, void, void>,
   ) {
     try {
@@ -170,12 +171,9 @@ export default function App() {
         });
       }
     } catch (cause) {
-      if (!isAbortError(cause)) {
+      if (!isAbortError(cause) && abortRef.current === controller) {
         setError(cause instanceof Error ? cause.message : "请求失败");
-
-        if (runIdRef.current) {
-          finalizeRun(runIdRef.current, "failed");
-        }
+        finalizeRun(runId, "failed");
       }
     } finally {
       finishRun(controller);
@@ -215,7 +213,7 @@ export default function App() {
       );
       runIdRef.current = run.runId;
       threadIdRef.current = run.threadId;
-      await consumeEvents(controller, run.events);
+      await consumeEvents(controller, run.runId, run.events);
     } catch (cause) {
       if (!isAbortError(cause)) {
         setError(cause instanceof Error ? cause.message : "请求失败");
@@ -354,6 +352,7 @@ export default function App() {
 
     void consumeEvents(
       controller,
+      runId,
       streamRunEvents(runId, {
         signal: controller.signal,
         lastEventId,
@@ -396,6 +395,7 @@ export default function App() {
 
         await consumeEvents(
           controller,
+          runId,
           streamRunEvents(runId, {
             signal: controller.signal,
             lastEventId: lastEventIdRef.current ?? undefined,
