@@ -1,6 +1,6 @@
 # 渲染与性能实现
 
-最后更新：2026-10-20
+最后更新：2026-10-21
 
 本文件记录前端渲染实现、增量 Markdown 分段优化与性能数据。阶段划分见 [plan.md](plan.md)，协议契约见 [protocol.md](protocol.md)，渲染目标见 [decision.md §3](decision.md#3-前端三个深挖点)。
 
@@ -12,6 +12,14 @@ SSE → Zod 校验 → 纯函数 reducer → 行级投影 → 虚拟列表。
 - 长会话按行展开：用户消息、assistant 头、单个 block、引用、状态提示
 - `@tanstack/react-virtual` 只挂载视口附近的行，动态测量高度
 - 流式时自动跟随底部；用户上滚后停止跟随，发送新消息时恢复
+
+### 虚拟列表选型
+
+- 自研的真正成本不在算可见区间，而在行高动态变化：流式中代码高亮完成、表格换行、工具卡从运行中展开都会改变高度，视口上方的行变化还必须做滚动补偿，否则内容会跳动
+- `@tanstack/react-virtual` 已提供逐行 ResizeObserver 测量缓存、滚动补偿、二分查找可见区间；这些是它的主要价值，`overscan` 和 `getItemKey` 只是配置
+- headless：只接管定位与测量，不侵入 `ChatRowView` 的 DOM、样式与 memo 边界
+- 不用 react-window：`VariableSizeList` 需要预先给定行高，不适合流式未知高度
+- 贴底跟随、首末行留白、`Profiler` 埋点仍由 `ChatFeed` 自己实现，没有交给库
 
 ## 2. 工具与引用的渲染边界
 
