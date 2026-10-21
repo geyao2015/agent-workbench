@@ -120,7 +120,7 @@ export const ToolCallCard = memo(function ToolCallCard({
   resolving,
   onResolve,
 }: ToolCallCardProps) {
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState<boolean | null>(null);
   const meta = STATUS_META[toolCall.status];
   const argsPreview = useMemo(() => {
     if (toolCall.args !== undefined) {
@@ -143,13 +143,13 @@ export const ToolCallCard = memo(function ToolCallCard({
     };
   }, [toolCall.args, toolCall.argsText]);
   const hasDetails = Boolean(argsPreview.text || toolCall.result);
-  const showBody =
-    expanded ||
+  const activeStatus =
     toolCall.status === "streaming" ||
     toolCall.status === "ready" ||
     toolCall.status === "running" ||
     toolCall.status === "awaiting_approval" ||
     toolCall.status === "error";
+  const showBody = expanded ?? activeStatus;
 
   return (
     <div className="pl-11">
@@ -169,12 +169,12 @@ export const ToolCallCard = memo(function ToolCallCard({
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => setExpanded((value) => !value)}
-              aria-expanded={expanded}
+              onClick={() => setExpanded(!showBody)}
+              aria-expanded={showBody}
             >
-              {expanded ? "收起" : "详情"}
+              {showBody ? "收起" : "详情"}
               <ChevronDown
-                className={cn("transition-transform", expanded && "rotate-180")}
+                className={cn("transition-transform", showBody && "rotate-180")}
               />
             </Button>
           ) : null
