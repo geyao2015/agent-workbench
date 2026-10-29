@@ -29,7 +29,7 @@ export function AppHeader({
 
   return (
     <>
-      <header className="flex items-center justify-between gap-3 border-b bg-background/90 px-4 py-3 backdrop-blur md:px-6">
+      <header className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3 border-b bg-background/90 px-4 py-3 backdrop-blur md:px-6">
         <div className="flex min-w-0 items-center gap-3">
           <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
             <Sparkles className="size-4" />
@@ -40,7 +40,10 @@ export function AppHeader({
           </div>
         </div>
 
-        <nav className="flex shrink-0 items-center gap-0.5 rounded-lg border bg-muted/40 p-0.5">
+        <nav
+          aria-label="主导航"
+          className="flex shrink-0 items-center justify-self-center gap-0.5 rounded-lg border bg-muted/40 p-0.5"
+        >
           {NAV_ITEMS.map((item) => (
             <button
               key={item.id}
@@ -56,7 +59,7 @@ export function AppHeader({
           ))}
         </nav>
 
-        <div className="flex shrink-0 items-center gap-1.5">
+        <div className="flex min-w-0 items-center justify-self-end gap-1.5">
           <Button
             variant="ghost"
             size="sm"
