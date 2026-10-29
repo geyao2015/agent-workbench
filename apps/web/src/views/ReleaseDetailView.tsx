@@ -38,14 +38,15 @@ import {
   streamReleaseRunEvents,
 } from "@/transport/release";
 
-type Tab = "overview" | "logs" | "diff" | "audit" | "events";
+type Tab = "overview" | "logs" | "diff" | "trace" | "events" | "audit";
 
 const TAB_LABELS: Array<{ id: Tab; label: string }> = [
   { id: "overview", label: "Overview" },
   { id: "logs", label: "Logs" },
   { id: "diff", label: "Diff" },
-  { id: "audit", label: "Audit" },
+  { id: "trace", label: "Trace" },
   { id: "events", label: "Events" },
+  { id: "audit", label: "Audit" },
 ];
 
 const STATUS_LABEL: Record<RunState["status"], string> = {
@@ -549,11 +550,21 @@ export function ReleaseDetailView({
             <DiffViewer body={diffBody} loading={diffLoading} />
           ) : null}
 
-          {tab === "audit" ? (
-            <AuditTable body={auditBody} loading={auditLoading} />
+          {tab === "trace" ? (
+            <div className="rounded-xl border bg-card px-4 py-6 text-sm text-muted-foreground">
+              <p className="font-medium text-foreground">Trace 瀑布 · M4</p>
+              <p className="mt-1 leading-6">
+                Span 采集与 waterfall 将在 M4 接入。当前可在 Events 查看原始事件，
+                或在 Overview 查看各阶段耗时与审批 gate。
+              </p>
+            </div>
           ) : null}
 
           {tab === "events" ? <ReleaseEventLog events={events} /> : null}
+
+          {tab === "audit" ? (
+            <AuditTable body={auditBody} loading={auditLoading} />
+          ) : null}
         </div>
       </main>
     </div>

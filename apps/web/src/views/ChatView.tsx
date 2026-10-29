@@ -97,6 +97,7 @@ export function ChatView() {
   const runStartedAtRef = useRef<number | null>(null);
   const firstTokenSeenRef = useRef(false);
   const userMessageIdsRef = useRef<Set<string>>(new Set());
+  const handoffStartingRef = useRef(false);
 
   useEffect(() => {
     return () => {
@@ -460,12 +461,20 @@ export function ChatView() {
   }
 
   async function startReleaseFromHandoff(runId: string, scenarioId: string) {
+    if (handoffStartingRef.current) {
+      return;
+    }
+
+    handoffStartingRef.current = true;
+
     try {
       const run = await createReleaseRun(scenarioId, undefined, runId);
 
       navigate(`#/releases/${run.threadId}?run=${run.runId}`);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "创建发版失败");
+    } finally {
+      handoffStartingRef.current = false;
     }
   }
 
