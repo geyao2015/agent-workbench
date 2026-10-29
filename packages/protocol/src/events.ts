@@ -251,6 +251,12 @@ const eventSchemas = [
       scope: z.string().optional(),
     }),
   ),
+  event(
+    "guard.blocked",
+    z.object({
+      category: z.enum(["secret", "prompt", "jailbreak"]),
+    }),
+  ),
 ] as const;
 
 export const agentEventSchema = z.discriminatedUnion("type", eventSchemas);

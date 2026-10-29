@@ -46,6 +46,11 @@ export interface RunState {
     retryable: boolean;
     fatal: boolean;
   }>;
+
+  guards: Array<{
+    category: "secret" | "prompt" | "jailbreak";
+    seq: number;
+  }>;
 }
 
 export interface CitationState {
@@ -159,6 +164,7 @@ export function createRunState(input: {
     approvals: {},
     artifacts: {},
     errors: [],
+    guards: [],
   };
 }
 
@@ -722,6 +728,16 @@ function applyKnownEvent(state: RunState, event: AgentEvent): RunState {
         event.seq,
         { retryable: event.payload.retryable, fatal: false },
       );
+    }
+
+    case "guard.blocked": {
+      return {
+        ...state,
+        guards: [
+          ...state.guards,
+          { category: event.payload.category, seq: event.seq },
+        ],
+      };
     }
 
     case "reasoning.started": {

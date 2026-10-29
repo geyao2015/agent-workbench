@@ -394,6 +394,20 @@ describe("reducer", () => {
     expect(state.status).toBe("completed");
   });
 
+  it("records guard blocked events", () => {
+    const state = [
+      makeEvent(1, "run.started", { kind: "chat" }),
+      makeEvent(2, "guard.blocked", { category: "secret" }),
+      makeEvent(3, "run.completed", { status: "done" }),
+    ].reduce(
+      reduce,
+      createRunState({ runId: "run_test", threadId: "thread_test", kind: "chat" }),
+    );
+
+    expect(state.guards).toEqual([{ category: "secret", seq: 2 }]);
+    expect(state.status).toBe("completed");
+  });
+
   it("tracks stages, artifacts and recoverable errors", () => {
     const state = [
       makeEvent(1, "run.started", { kind: "release" }),
