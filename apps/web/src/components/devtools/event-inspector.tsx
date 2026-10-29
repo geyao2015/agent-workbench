@@ -1,8 +1,6 @@
-import { X } from "lucide-react";
-
 import type { AgentEvent, RunState } from "@agent-workbench/protocol";
 
-import { Button } from "@/components/ui/button";
+import { SidePanel } from "@/components/devtools/side-panel";
 
 function formatTime(ts: number): string {
   const time = new Date(ts).toLocaleTimeString("zh-CN", { hour12: false });
@@ -17,21 +15,12 @@ interface EventInspectorProps {
 
 export function EventInspector({ events, state, onClose }: EventInspectorProps) {
   return (
-    <aside className="fixed inset-0 z-30 flex flex-col border-l bg-background lg:static lg:z-auto lg:w-96 lg:shrink-0">
-      <div className="flex items-center justify-between border-b px-4 py-3">
-        <div>
-          <p className="text-sm font-medium">事件检查器</p>
-          <p className="text-xs text-muted-foreground">
-            {events.length} 个事件 · lastSeq {state?.lastSeq ?? 0} ·{" "}
-            {state?.status ?? "idle"}
-          </p>
-        </div>
-        <Button variant="ghost" size="icon" onClick={onClose} aria-label="关闭事件检查器">
-          <X />
-        </Button>
-      </div>
-
-      <div className="flex-1 space-y-2 overflow-y-auto p-3">
+    <SidePanel
+      title="事件检查器"
+      subtitle={`${events.length} 个事件 · lastSeq ${state?.lastSeq ?? 0} · ${state?.status ?? "idle"}`}
+      onClose={onClose}
+    >
+      <div className="space-y-2">
         {events.length === 0 ? (
           <p className="px-1 py-2 text-sm text-muted-foreground">尚无事件。</p>
         ) : (
@@ -63,6 +52,6 @@ export function EventInspector({ events, state, onClose }: EventInspectorProps) 
           ))
         )}
       </div>
-    </aside>
+    </SidePanel>
   );
 }
