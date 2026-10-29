@@ -16,18 +16,19 @@
 
 ## 2. 现有亮点
 
-| 领域 | 亮点 | 证据 | 演示入口 |
-| --- | --- | --- | --- |
-| 事件协议 | append-only AgentEvent v1、纯函数 reducer、SSE 重放/取消 | protocol 62 测试；事件检查器 | 事件面板 |
-| 流式渲染 | 块级增量分段、闭合块冻结、长会话虚拟列表 | 10k 块/500 增量 513ms；200 增量 1.81ms；60fps | 长会话 / 性能面板 |
-| 交互状态 | 工具状态机、半截 JSON、审批、reasoning、引用 | M1 演示；fixture 回放 | 功能测试快捷项 |
-| Agent runtime | Hono + LangGraph 工具循环、checkpointer、BM25 RAG | 16 篇文档；API 62 测试；离线假模型 E2E | 知识库问答 |
-| 历史会话 | 物化快照 + cursor 分页、JSONL 持久化、重启种子恢复 | 22 轮分页验证；同 thread 单 run 409 | 会话侧栏 |
-| 安全边界 | 输入 guard、独立拦截卡片、输出脱敏、检索数据分隔 | 拦截请求不调用模型；三类测试 | 安全拒答 |
-| 双运行时 | 无 Key 自动 mock；配置 Key 进入实时 Agent | 生产构建两种模式冒烟 | Header 运行时标识 |
-| 发版工作台 | 确定性阶段、阶段审批、LLM 冲突、失败 RCA、回滚 child run、Chat handoff | 10 阶段端到端；LLM/fallback；失败 RCA；回滚与 parent 审计；handoff 携带 sourceRunId | Releases |
-| 评测与 Trace | 50 题检索金标、10 个 RCA 案例、事件派生 Span 瀑布 | Recall@1 85.4%、Recall@4 100%、MRR 0.920；RCA 证据 100%、runbook@4 100% | 文档 + Trace tab |
-| UI 自动化 | Playwright 覆盖 Chat 流式、Release 审批、移动端 header/抽屉、320px tabs | `pnpm test:e2e` 4 条关键路径 | `e2e/` |
+| 领域 | 亮点 | 证据 | 代码 | 演示入口 |
+| --- | --- | --- | --- | --- |
+| 事件协议 | append-only AgentEvent v1、纯函数 reducer、SSE 重放/取消 | protocol 62 测试；事件检查器 | [events.ts](../packages/protocol/src/events.ts) · [reducer.ts](../packages/protocol/src/reducer.ts) | 事件面板 |
+| 流式渲染 | 块级增量分段、闭合块冻结、长会话虚拟列表 | 10k 块/500 增量 513ms；200 增量 1.81ms；60fps | [blocks.ts](../packages/protocol/src/blocks.ts) · [chat-feed.tsx](../apps/web/src/components/chat/chat-feed.tsx) | 长会话 / 性能面板 |
+| 交互状态 | 工具状态机、半截 JSON、审批、reasoning、引用 | M1 演示；fixture 回放 | [tool-card.tsx](../apps/web/src/components/agent-card/tool-card.tsx) · [chat-rows.ts](../apps/web/src/lib/chat/chat-rows.ts) | 功能测试快捷项 |
+| Agent runtime | Hono + LangGraph 工具循环、checkpointer、BM25 RAG | 16 篇文档；API 62 测试；离线假模型 E2E | [graph.ts](../apps/api/src/agent/graph.ts) · [tools.ts](../apps/api/src/agent/tools.ts) · [kb/index.ts](../apps/api/src/kb/index.ts) | 知识库问答 |
+| 历史会话 | 物化快照 + cursor 分页、JSONL 持久化、重启种子恢复 | 22 轮分页验证；同 thread 单 run 409 | [thread-store.ts](../apps/api/src/runs/thread-store.ts) | 会话侧栏 |
+| 安全边界 | 输入 guard、独立拦截卡片、输出脱敏、检索数据分隔 | 拦截请求不调用模型；三类测试 | [guard.ts](../apps/api/src/agent/guard.ts) · [runner.ts](../apps/api/src/agent/runner.ts) | 安全拒答 |
+| 双运行时 | 无 Key 自动 mock；配置 Key 进入实时 Agent | 生产构建两种模式冒烟 | [config.ts](../apps/api/src/config.ts) | Header 运行时标识 |
+| 发版工作台 | 确定性阶段、阶段审批、LLM 冲突、失败 RCA、回滚 child run、Chat handoff | 10 阶段端到端；LLM/fallback；失败 RCA；回滚与 parent 审计；handoff 携带 sourceRunId | [release/runtime.ts](../apps/api/src/release/runtime.ts) · [approvals.ts](../apps/api/src/release/approvals.ts) · [ReleaseDetailView.tsx](../apps/web/src/views/ReleaseDetailView.tsx) | Releases |
+| 评测与 Trace | 50 题检索金标、10 个 RCA 案例、事件派生 Span 瀑布 | Recall@1 85.4%、Recall@4 100%、MRR 0.920；RCA 证据 100%、runbook@4 100% | [eval/](../apps/api/src/eval/) · [spans/derive.ts](../apps/api/src/spans/derive.ts) | 文档 + Trace tab |
+| 渲染基准 | 数据集驱动的 reducer 与浏览器指标 | 200/2000/10000 块；10k 仅挂载 22% | [bench-streaming.mjs](../scripts/bench-streaming.mjs) · [data/bench/](../data/bench/) | [rendering.md §5](rendering.md#5-性能数据) |
+| UI 自动化 | Playwright 覆盖 Chat 流式、Release 审批、移动端 header/抽屉、320px tabs | `pnpm test:e2e` 4 条关键路径 | [e2e/](../e2e/) · [playwright.config.ts](../playwright.config.ts) | `pnpm test:e2e` |
 
 ## 3. 工程问题记录（面试钩子）
 
@@ -62,4 +63,5 @@
 - 每完成一个可演示能力，在 §2 增加一行，写清证据与入口。
 - 只有能指向代码、测试、指标或 Demo 的条目才算亮点。
 - §3 只收有取舍或可量化收益的工程问题，每条能引出至少一个追问。
+- 代码位置写到文件或符号，不写易漂移的行号；重构后同步更新链接。
 - 页面展示文案与数据以本文件为准；实现页面展示前先更新本文件。
