@@ -512,6 +512,7 @@ export function ReleaseDetailView({
                 </p>
               </div>
               <span
+                data-testid="release-status"
                 className={cn(
                   "rounded-full border px-2 py-0.5 text-[10px] font-medium",
                   state.status === "completed" &&
@@ -530,14 +531,20 @@ export function ReleaseDetailView({
             </section>
           ) : null}
 
-          <div className="flex items-center gap-1 border-b">
+          <div
+            role="tablist"
+            aria-label="Release 详情"
+            className="flex items-center gap-1 overflow-x-auto border-b [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          >
             {TAB_LABELS.map((item) => (
               <button
                 key={item.id}
                 type="button"
+                role="tab"
+                aria-selected={tab === item.id}
                 onClick={() => setTab(item.id)}
                 className={cn(
-                  "border-b-2 px-3 py-2 text-xs font-medium text-muted-foreground transition-colors",
+                  "shrink-0 border-b-2 px-3 py-2 text-xs font-medium whitespace-nowrap text-muted-foreground transition-colors",
                   tab === item.id
                     ? "border-foreground text-foreground"
                     : "border-transparent hover:text-foreground",
