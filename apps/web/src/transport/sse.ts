@@ -78,6 +78,7 @@ export interface StartChatRunOptions {
   signal?: AbortSignal;
   onRetry?: (attempt: number) => void;
   lastEventId?: string;
+  stopOnPause?: boolean;
 }
 
 export interface StartedRun {
@@ -145,7 +146,7 @@ export async function fetchLongConversation(
 const MAX_RETRIES = 3;
 const RETRY_BASE_MS = 300;
 
-class HttpError extends Error {
+export class HttpError extends Error {
   readonly status: number;
 
   constructor(status: number, message: string) {
@@ -314,6 +315,7 @@ async function* openEventStream(
   runId: string,
   lastEventId: string | undefined,
   signal?: AbortSignal,
+  path = "/api/runs",
 ): AsyncGenerator<AgentEvent, void, void> {
   const headers: Record<string, string> = { accept: "text/event-stream" };
 
@@ -321,7 +323,7 @@ async function* openEventStream(
     headers["Last-Event-ID"] = lastEventId;
   }
 
-  const response = await fetch(`/api/runs/${encodeURIComponent(runId)}/events`, {
+  const response = await fetch(`${path}/${encodeURIComponent(runId)}/events`, {
     headers,
     signal,
   });
@@ -385,6 +387,7 @@ async function* openEventStream(
 export async function* streamRunEvents(
   runId: string,
   options: StartChatRunOptions = {},
+  path = "/api/runs",
 ): AsyncGenerator<AgentEvent, void, void> {
   let lastEventId = options.lastEventId;
   let attempt = 0;
@@ -393,14 +396,19 @@ export async function* streamRunEvents(
     let stopped = false;
 
     try {
-      for await (const event of openEventStream(runId, lastEventId, options.signal)) {
+      for await (const event of openEventStream(
+        runId,
+        lastEventId,
+        options.signal,
+        path,
+      )) {
         lastEventId = event.eventId;
         attempt = 0;
 
         if (
           event.type === "run.completed" ||
           event.type === "run.failed" ||
-          event.type === "run.paused"
+          ((options.stopOnPause ?? true) && event.type === "run.paused")
         ) {
           stopped = true;
         }

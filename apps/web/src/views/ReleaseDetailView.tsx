@@ -1,0 +1,416 @@
+import { useEffect, useRef, useState } from "react";
+
+import {
+  ArrowLeft,
+  Loader2,
+  ShieldAlert,
+  XCircle,
+} from "lucide-react";
+
+import {
+  createRunState,
+  fromRunSnapshot,
+  reduce,
+  type AgentEvent,
+  type ApprovalState,
+  type RunState,
+} from "@agent-workbench/protocol";
+
+import { AppHeader } from "@/components/app-header";
+import { ApprovalPanel } from "@/components/approval-panel";
+import { AgentCard } from "@/components/agent-card/agent-card";
+import { AuditTable } from "@/components/release/audit-table";
+import { DiffViewer } from "@/components/release/diff-viewer";
+import { ReleaseEventLog } from "@/components/release/event-log";
+import { StageTimeline } from "@/components/release/stage-timeline";
+import { Button } from "@/components/ui/button";
+import { navigate } from "@/lib/hash-router";
+import { cn } from "@/lib/utils";
+import {
+  cancelReleaseRun,
+  fetchReleaseArtifact,
+  fetchReleaseEvents,
+  fetchReleaseRuns,
+  resolveReleaseApproval,
+  streamReleaseRunEvents,
+} from "@/transport/release";
+
+type Tab = "overview" | "diff" | "audit" | "events";
+
+const TAB_LABELS: Array<{ id: Tab; label: string }> = [
+  { id: "overview", label: "Overview" },
+  { id: "diff", label: "Diff" },
+  { id: "audit", label: "Audit" },
+  { id: "events", label: "Events" },
+];
+
+const STATUS_LABEL: Record<RunState["status"], string> = {
+  idle: "等待启动",
+  running: "执行中",
+  waiting_approval: "等待审批",
+  paused: "已暂停",
+  completed: "已完成",
+  failed: "失败",
+  cancelled: "已取消",
+};
+
+function isActive(state: RunState | null): boolean {
+  return (
+    state?.status === "running" ||
+    state?.status === "waiting_approval" ||
+    state?.status === "paused"
+  );
+}
+
+function latestArtifact(state: RunState, kind: "diff" | "document") {
+  return Object.values(state.artifacts)
+    .filter(
+      (artifact) =>
+        artifact.kind === kind &&
+        (kind !== "document" ||
+          artifact.stageId === "audit" ||
+          artifact.title.includes("审计")),
+    )
+    .at(-1);
+}
+
+export function ReleaseDetailView({
+  threadId,
+  runId,
+}: {
+  threadId?: string;
+  runId?: string;
+}) {
+  const [state, setState] = useState<RunState | null>(null);
+  const [events, setEvents] = useState<AgentEvent[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [tab, setTab] = useState<Tab>("overview");
+  const [diffBody, setDiffBody] = useState<string | null>(null);
+  const [diffLoading, setDiffLoading] = useState(false);
+  const [auditBody, setAuditBody] = useState<string | null>(null);
+  const [auditLoading, setAuditLoading] = useState(false);
+  const [resolving, setResolving] = useState(false);
+  const diffArtifactRef = useRef<string | null>(null);
+  const auditArtifactRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!threadId) {
+      setLoading(false);
+      setError("缺少发版会话");
+      return;
+    }
+
+    const controller = new AbortController();
+
+    setState(null);
+    setEvents([]);
+    setError(null);
+    setLoading(true);
+    setDiffBody(null);
+    setAuditBody(null);
+    setDiffLoading(false);
+    setAuditLoading(false);
+    diffArtifactRef.current = null;
+    auditArtifactRef.current = null;
+
+    void (async () => {
+      try {
+        const page = await fetchReleaseRuns(
+          threadId,
+          undefined,
+          controller.signal,
+        );
+        const snapshot = runId
+          ? page.runs.find((run) => run.runId === runId)
+          : page.runs.at(-1);
+        const activeRunId = snapshot?.runId ?? runId;
+
+        if (!activeRunId) {
+          if (!controller.signal.aborted) {
+            setError("没有找到发版 run");
+            setLoading(false);
+          }
+
+          return;
+        }
+
+        const log = await fetchReleaseEvents(
+          activeRunId,
+          controller.signal,
+        ).catch(() => [] as AgentEvent[]);
+
+        let base = snapshot
+          ? fromRunSnapshot(snapshot)
+          : createRunState({
+              runId: activeRunId,
+              threadId,
+              kind: "release",
+            });
+
+        for (const event of log) {
+          base = reduce(base, event);
+        }
+
+        if (controller.signal.aborted) {
+          return;
+        }
+
+        setState(base);
+        setEvents(log);
+        setLoading(false);
+
+        if (!isActive(base)) {
+          return;
+        }
+
+        const lastEventId = log.at(-1)?.eventId;
+
+        for await (const event of streamReleaseRunEvents(activeRunId, {
+          signal: controller.signal,
+          lastEventId,
+        })) {
+          if (controller.signal.aborted) {
+            break;
+          }
+
+          setEvents((previous) =>
+            previous.some((item) => item.eventId === event.eventId)
+              ? previous
+              : [...previous, event],
+          );
+          setState((previous) =>
+            reduce(
+              previous ??
+                createRunState({
+                  runId: event.runId,
+                  threadId: event.threadId,
+                  kind: "release",
+                }),
+              event,
+            ),
+          );
+        }
+      } catch (cause) {
+        if (!controller.signal.aborted) {
+          setError(
+            cause instanceof Error ? cause.message : "加载发版 run 失败",
+          );
+          setLoading(false);
+        }
+      }
+    })();
+
+    return () => controller.abort();
+  }, [threadId, runId]);
+
+  useEffect(() => {
+    if (!state) {
+      return;
+    }
+
+    const artifact = latestArtifact(state, "diff");
+
+    if (!artifact?.uri || diffArtifactRef.current === artifact.id) {
+      return;
+    }
+
+    diffArtifactRef.current = artifact.id;
+    const controller = new AbortController();
+    setDiffLoading(true);
+
+    void fetchReleaseArtifact(artifact.uri, controller.signal)
+      .then((content) => setDiffBody(content.body))
+      .catch(() => setDiffBody(null))
+      .finally(() => setDiffLoading(false));
+
+    return () => controller.abort();
+  }, [state]);
+
+  useEffect(() => {
+    if (!state) {
+      return;
+    }
+
+    const artifact = latestArtifact(state, "document");
+
+    if (!artifact?.uri || auditArtifactRef.current === artifact.id) {
+      return;
+    }
+
+    auditArtifactRef.current = artifact.id;
+    const controller = new AbortController();
+    setAuditLoading(true);
+
+    void fetchReleaseArtifact(artifact.uri, controller.signal)
+      .then((content) => setAuditBody(content.body))
+      .catch(() => setAuditBody(null))
+      .finally(() => setAuditLoading(false));
+
+    return () => controller.abort();
+  }, [state]);
+
+  const pendingApproval: ApprovalState | undefined = state
+    ? Object.values(state.approvals).find(
+        (approval) => approval.status === "pending" && approval.stageId,
+      )
+    : undefined;
+  const active = isActive(state);
+  const successCount = state
+    ? state.stageOrder.filter(
+        (stageId) => state.stages[stageId]?.status === "success",
+      ).length
+    : 0;
+  const stageCount = state?.stageOrder.length ?? 0;
+
+  async function resolveApproval(approved: boolean) {
+    if (!pendingApproval || resolving) {
+      return;
+    }
+
+    setResolving(true);
+    setError(null);
+
+    try {
+      await resolveReleaseApproval(pendingApproval.id, { approved });
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "提交审批失败");
+    } finally {
+      setResolving(false);
+    }
+  }
+
+  async function cancelCurrentRun() {
+    if (!state) {
+      return;
+    }
+
+    try {
+      await cancelReleaseRun(state.runId);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "取消失败");
+    }
+  }
+
+  return (
+    <div className="flex h-screen flex-col overflow-hidden bg-muted/20">
+      <AppHeader
+        subtitle="模拟发版环境 · 确定性阶段 + 人工审批"
+        activeView="releases"
+        onNavigate={(view) =>
+          navigate(view === "chat" ? "#/chat" : "#/releases")
+        }
+      >
+        <Button variant="ghost" size="sm" onClick={() => navigate("#/releases")}>
+          <ArrowLeft />
+          列表
+        </Button>
+        {active ? (
+          <Button variant="outline" size="sm" onClick={() => void cancelCurrentRun()}>
+            <XCircle />
+            取消
+          </Button>
+        ) : null}
+      </AppHeader>
+
+      <main className="min-h-0 flex-1 overflow-y-auto">
+        <div className="mx-auto w-full max-w-5xl space-y-4 px-4 py-6 md:px-8">
+          {loading ? (
+            <div className="flex items-center gap-2 rounded-xl border bg-card px-4 py-6 text-sm text-muted-foreground">
+              <Loader2 className="size-4 animate-spin" />
+              加载发版 run…
+            </div>
+          ) : null}
+
+          {error ? (
+            <div className="rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+              {error}
+            </div>
+          ) : null}
+
+          {state ? (
+            <section className="flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-card px-4 py-3">
+              <div>
+                <p className="text-sm font-medium">
+                  {STATUS_LABEL[state.status]}
+                  <span className="ml-2 font-mono text-[11px] text-muted-foreground">
+                    {state.runId.slice(-8)}
+                  </span>
+                </p>
+                <p className="mt-0.5 text-[11px] text-muted-foreground">
+                  阶段进度 {successCount}/{stageCount} · lastSeq {state.lastSeq}
+                </p>
+              </div>
+              <span
+                className={cn(
+                  "rounded-full border px-2 py-0.5 text-[10px] font-medium",
+                  state.status === "completed" &&
+                    "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
+                  state.status === "failed" &&
+                    "border-destructive/30 bg-destructive/10 text-destructive",
+                  state.status === "cancelled" &&
+                    "border-muted-foreground/30 bg-muted text-muted-foreground",
+                  (state.status === "running" ||
+                    state.status === "waiting_approval") &&
+                    "border-sky-500/30 bg-sky-500/10 text-sky-700 dark:text-sky-300",
+                )}
+              >
+                {state.status}
+              </span>
+            </section>
+          ) : null}
+
+          <div className="flex items-center gap-1 border-b">
+            {TAB_LABELS.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => setTab(item.id)}
+                className={cn(
+                  "border-b-2 px-3 py-2 text-xs font-medium text-muted-foreground transition-colors",
+                  tab === item.id
+                    ? "border-foreground text-foreground"
+                    : "border-transparent hover:text-foreground",
+                )}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+
+          {state && tab === "overview" ? (
+            <div className="space-y-3">
+              {pendingApproval ? (
+                <AgentCard
+                  icon={<ShieldAlert className="text-amber-600 dark:text-amber-400" />}
+                  title="等待人工审批"
+                  subtitle={`阶段 ${pendingApproval.stageId ?? "unknown"} · ${pendingApproval.risk}`}
+                  tone="warning"
+                >
+                  <ApprovalPanel
+                    approval={pendingApproval}
+                    canResolve={state.status === "waiting_approval"}
+                    resolving={resolving}
+                    onResolve={(approved) => void resolveApproval(approved)}
+                  />
+                </AgentCard>
+              ) : null}
+
+              <StageTimeline state={state} />
+            </div>
+          ) : null}
+
+          {tab === "diff" ? (
+            <DiffViewer body={diffBody} loading={diffLoading} />
+          ) : null}
+
+          {tab === "audit" ? (
+            <AuditTable body={auditBody} loading={auditLoading} />
+          ) : null}
+
+          {tab === "events" ? <ReleaseEventLog events={events} /> : null}
+        </div>
+      </main>
+    </div>
+  );
+}

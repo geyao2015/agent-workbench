@@ -1,23 +1,27 @@
-import { Activity, Gauge, RotateCcw, Sparkles } from "lucide-react";
+import type { ReactNode } from "react";
 
-import { Button } from "@/components/ui/button";
+import { Sparkles } from "lucide-react";
+
+import type { AppView } from "@/lib/hash-router";
+import { cn } from "@/lib/utils";
+
+const NAV_ITEMS: Array<{ id: AppView; label: string }> = [
+  { id: "chat", label: "Chat" },
+  { id: "releases", label: "Releases" },
+];
 
 interface AppHeaderProps {
-  eventCount: number;
-  hasConversation: boolean;
-  runtimeLabel: string;
-  onToggleInspector: () => void;
-  onTogglePerformance: () => void;
-  onReset: () => void;
+  subtitle: string;
+  activeView: AppView;
+  onNavigate: (view: AppView) => void;
+  children?: ReactNode;
 }
 
 export function AppHeader({
-  eventCount,
-  hasConversation,
-  runtimeLabel,
-  onToggleInspector,
-  onTogglePerformance,
-  onReset,
+  subtitle,
+  activeView,
+  onNavigate,
+  children,
 }: AppHeaderProps) {
   return (
     <header className="flex items-center justify-between gap-3 border-b bg-background/90 px-4 py-3 backdrop-blur md:px-6">
@@ -26,33 +30,28 @@ export function AppHeader({
           <Sparkles className="size-4" />
         </div>
         <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            <h1 className="truncate text-sm font-semibold">Agent Workbench</h1>
-          </div>
-          <p className="truncate text-xs text-muted-foreground">{runtimeLabel}</p>
+          <h1 className="truncate text-sm font-semibold">Agent Workbench</h1>
+          <p className="truncate text-xs text-muted-foreground">{subtitle}</p>
         </div>
       </div>
 
-      <div className="flex shrink-0 items-center gap-1.5">
-        <Button variant="outline" size="sm" onClick={onToggleInspector}>
-          <Activity />
-          <span className="hidden sm:inline">事件</span>
-          {eventCount}
-        </Button>
-        <Button variant="outline" size="sm" onClick={onTogglePerformance}>
-          <Gauge />
-          <span className="hidden sm:inline">性能</span>
-        </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={onReset}
-          disabled={!hasConversation}
-        >
-          <RotateCcw />
-          <span className="hidden sm:inline">新对话</span>
-        </Button>
-      </div>
+      <nav className="flex shrink-0 items-center gap-0.5 rounded-lg border bg-muted/40 p-0.5">
+        {NAV_ITEMS.map((item) => (
+          <button
+            key={item.id}
+            type="button"
+            onClick={() => onNavigate(item.id)}
+            className={cn(
+              "rounded-md px-2.5 py-1 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground",
+              activeView === item.id && "bg-background text-foreground shadow-xs",
+            )}
+          >
+            {item.label}
+          </button>
+        ))}
+      </nav>
+
+      <div className="flex shrink-0 items-center gap-1.5">{children}</div>
     </header>
   );
 }
