@@ -85,9 +85,9 @@ SSE → Zod 校验 → 纯函数 reducer → 行级投影 → 虚拟列表。
 
 | 总块数 / 增量 | reducer | 首 token | 实际挂载块 | FPS | JS Heap |
 | --- | --- | --- | --- | --- | --- |
-| 200 / 50 | 2ms | 60ms | 200 | 60 | 10.0MB |
-| 2000 / 100 | 22ms | 54ms | 873 | 60 | 17.3MB |
-| 10000 / 500 | 522ms | 33ms | 2194 | 60 | 51.6MB |
+| 200 / 50 | 2ms | 58ms | 200 | 60 | 11.0MB |
+| 2000 / 100 | 23ms | 56ms | 889 | 60 | 22.8MB |
+| 10000 / 500 | 511ms | 35ms | 2207 | 60 | 54.9MB |
 
 上表为 2026-10-29 生产构建、1280×900 mock 运行时，`data/bench/streaming.jsonl` 定义规模；`pnpm bench:streaming` 生成 fixture 并写 `data/bench/results.json`。10k 场景仅挂载约 22% 的块。复现：`pnpm build && PORT=8788 pnpm start`，另开终端 `BENCH_BASE_URL=http://localhost:8788 pnpm bench:streaming`；开发模式 StrictMode 会重复计数，不作为基准。
 
