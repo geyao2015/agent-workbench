@@ -130,7 +130,7 @@ export const ToolCallCard = memo(function ToolCallCard({
   const showBody = expanded ?? activeStatus;
 
   return (
-    <div className="pl-11">
+    <div>
       <AgentCard
         icon={<StatusIcon status={toolCall.status} />}
         title={toolLabel(toolCall.name)}

@@ -70,7 +70,7 @@ export function ChatComposer({
     <div className="border-t bg-background/90 py-4 backdrop-blur">
       <form
         onSubmit={onSubmit}
-        className="mx-auto w-full max-w-3xl px-4 md:px-8"
+        className="mx-auto w-full max-w-4xl px-4 md:px-8"
       >
         <div className="rounded-xl border bg-background transition-colors duration-150 focus-within:border-foreground/30">
           <div className="min-w-0 px-3 pt-2">

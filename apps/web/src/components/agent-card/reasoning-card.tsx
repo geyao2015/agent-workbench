@@ -19,7 +19,7 @@ export const ReasoningCard = memo(function ReasoningCard({
   const hasText = text.trim().length > 0;
 
   return (
-    <div className="pl-11">
+    <div>
       <AgentCard
         icon={streaming ? <Loader2 className="animate-spin" /> : <Brain />}
         title="思考过程"

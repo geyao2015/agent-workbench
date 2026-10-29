@@ -75,7 +75,7 @@ export function ChatRowView({
 
     case "assistant-block":
       return (
-        <div className="pl-11">
+        <div>
           <MarkdownBlock
             blockId={row.blockId}
             raw={row.raw}
@@ -104,11 +104,11 @@ export function ChatRowView({
       return <ReasoningCard text={row.text} streaming={row.streaming} />;
 
     case "assistant-thinking":
-      return <div className="pl-11 text-sm text-muted-foreground">思考中…</div>;
+      return <div className="text-sm text-muted-foreground">思考中…</div>;
 
     case "cursor":
       return (
-        <div className="pl-11">
+        <div>
           <span className="inline-block h-4 w-1 animate-pulse rounded-full bg-foreground align-middle" />
         </div>
       );
@@ -218,7 +218,7 @@ const GuardBlockedCard = memo(function GuardBlockedCard({
   category: "secret" | "prompt" | "jailbreak";
 }) {
   return (
-    <div className="pl-11">
+    <div>
       <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3">
         <div className="flex items-center gap-2 text-sm font-medium text-amber-800 dark:text-amber-200">
           <ShieldAlert className="size-4" />
@@ -246,7 +246,7 @@ const HandoffCard = memo(function HandoffCard({
   onStart: () => void;
 }) {
   return (
-    <div className="pl-11">
+    <div>
       <div className="rounded-xl border bg-card p-4 shadow-xs">
         <div className="flex items-start gap-3">
           <div className="flex size-9 shrink-0 items-center justify-center rounded-lg border bg-muted/40">
@@ -290,7 +290,7 @@ const CitationList = memo(function CitationList({
   citations: CitationState[];
 }) {
   return (
-    <details className="group pl-11 text-xs text-muted-foreground">
+    <details className="group text-xs text-muted-foreground">
       <summary className="flex w-fit cursor-pointer list-none items-center gap-1.5 rounded-md py-0.5 pr-1 hover:text-foreground [&::-webkit-details-marker]:hidden">
         <BookOpen className="size-3" />
         引用 {citations.length} 条

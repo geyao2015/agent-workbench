@@ -130,7 +130,7 @@ export const ChatFeed = memo(function ChatFeed({
       onTouchMove={() => {
         stickToBottomRef.current = false;
       }}
-      className="min-h-0 flex-1 overflow-y-auto overscroll-contain [scrollbar-gutter:stable]"
+      className="min-h-0 flex-1 overflow-y-auto overscroll-contain [scrollbar-gutter:stable_both-edges]"
     >
       <Profiler id="chat-feed" onRender={handleProfilerRender}>
         <div
@@ -162,7 +162,7 @@ export const ChatFeed = memo(function ChatFeed({
               >
                 <div
                   className={cn(
-                    "mx-auto w-full max-w-3xl px-4 md:px-8",
+                    "mx-auto w-full max-w-4xl px-4 md:px-8",
                     row.kind === "assistant-block" ? "py-1" : "py-2",
                     virtualItem.index === 0 && "pt-8",
                     virtualItem.index === rows.length - 1 && "pb-8",
