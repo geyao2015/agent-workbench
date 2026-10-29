@@ -1,4 +1,8 @@
-export type QuickPromptGroup = "功能测试" | "性能测试" | "知识库问答";
+export type QuickPromptGroup =
+  | "功能测试"
+  | "性能测试"
+  | "知识库问答"
+  | "发版交接";
 
 export type QuickPrompt =
   | {
@@ -24,6 +28,14 @@ export const QUICK_PROMPTS: QuickPrompt[] = [
     label: "一般对话",
     prompt: "你在 Agent Workbench 里能做什么？",
     description: "多轮聊天、历史保留、事件记录",
+  },
+  {
+    kind: "run",
+    group: "功能测试",
+    fixture: "chat-handoff",
+    label: "发版 handoff",
+    prompt: "帮我准备 1.2.0 发版。",
+    description: "调用 prepare_release，进入 Release 工作台",
   },
   {
     kind: "run",
@@ -98,6 +110,13 @@ export const QUICK_PROMPTS: QuickPrompt[] = [
 ];
 
 export const AGENT_QUICK_PROMPTS: QuickPrompt[] = [
+  {
+    kind: "run",
+    group: "发版交接",
+    label: "准备发版",
+    prompt: "帮我准备 1.2.0 发版。",
+    description: "Agent 调用 prepare_release 进入 Release 工作台",
+  },
   {
     kind: "run",
     group: "知识库问答",

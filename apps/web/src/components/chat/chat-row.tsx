@@ -2,10 +2,12 @@ import { memo } from "react";
 
 import {
   AlertTriangle,
+  ArrowRight,
   BookOpen,
   ChevronRight,
   Loader2,
   Pause,
+  Rocket,
   Sparkles,
 } from "lucide-react";
 
@@ -14,6 +16,7 @@ import type { CitationState, RunState } from "@agent-workbench/protocol";
 import { ReasoningCard } from "@/components/agent-card/reasoning-card";
 import { ToolCallCard } from "@/components/agent-card/tool-card";
 import { MarkdownBlock } from "@/components/markdown";
+import { Button } from "@/components/ui/button";
 import type { ChatRow } from "@/lib/chat/chat-rows";
 import { cn } from "@/lib/utils";
 
@@ -24,9 +27,14 @@ interface ChatRowViewProps {
     approvalId: string,
     approved: boolean,
   ) => void;
+  onStartRelease: (runId: string, scenarioId: string) => void;
 }
 
-export function ChatRowView({ row, onResolveApproval }: ChatRowViewProps) {
+export function ChatRowView({
+  row,
+  onResolveApproval,
+  onStartRelease,
+}: ChatRowViewProps) {
   switch (row.kind) {
     case "reconnect":
       return (
@@ -44,6 +52,17 @@ export function ChatRowView({ row, onResolveApproval }: ChatRowViewProps) {
 
     case "user":
       return <UserMessage text={row.text} />;
+
+    case "handoff":
+      return (
+        <HandoffCard
+          title={row.title}
+          service={row.service}
+          version={row.version}
+          reason={row.reason}
+          onStart={() => onStartRelease(row.runId, row.scenarioId)}
+        />
+      );
 
     case "assistant-header":
       return (
@@ -182,6 +201,48 @@ function AssistantHeader({
     </div>
   );
 }
+
+const HandoffCard = memo(function HandoffCard({
+  title,
+  service,
+  version,
+  reason,
+  onStart,
+}: {
+  title: string;
+  service: string;
+  version: string;
+  reason?: string;
+  onStart: () => void;
+}) {
+  return (
+    <div className="pl-11">
+      <div className="rounded-xl border bg-card p-4 shadow-xs">
+        <div className="flex items-start gap-3">
+          <div className="flex size-9 shrink-0 items-center justify-center rounded-lg border bg-muted/40">
+            <Rocket className="size-4" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-sm font-semibold">{title}</p>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              {service} · v{version}
+            </p>
+            {reason ? (
+              <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                {reason}
+              </p>
+            ) : null}
+          </div>
+        </div>
+
+        <Button className="mt-3 w-full" size="sm" onClick={onStart}>
+          进入 Release 工作台
+          <ArrowRight />
+        </Button>
+      </div>
+    </div>
+  );
+});
 
 const UserMessage = memo(function UserMessage({ text }: { text: string }) {
   return (

@@ -15,6 +15,16 @@ export type ChatRow =
   | { kind: "error"; key: string; message: string }
   | { kind: "user"; key: string; text: string }
   | {
+      kind: "handoff";
+      key: string;
+      runId: string;
+      scenarioId: string;
+      title: string;
+      service: string;
+      version: string;
+      reason?: string;
+    }
+  | {
       kind: "assistant-header";
       key: string;
       runStatus: RunState["status"] | null;
@@ -57,6 +67,43 @@ export type ChatRow =
     }
   | { kind: "pending"; key: string }
   | { kind: "loading"; key: string };
+
+function parseHandoff(result: string | undefined) {
+  if (!result) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(result) as {
+      type?: unknown;
+      scenarioId?: unknown;
+      title?: unknown;
+      service?: unknown;
+      version?: unknown;
+      reason?: unknown;
+    };
+
+    if (
+      parsed.type !== "release_handoff" ||
+      typeof parsed.scenarioId !== "string" ||
+      typeof parsed.title !== "string" ||
+      typeof parsed.service !== "string" ||
+      typeof parsed.version !== "string"
+    ) {
+      return null;
+    }
+
+    return {
+      scenarioId: parsed.scenarioId,
+      title: parsed.title,
+      service: parsed.service,
+      version: parsed.version,
+      ...(typeof parsed.reason === "string" ? { reason: parsed.reason } : {}),
+    };
+  } catch {
+    return null;
+  }
+}
 
 export function buildChatRows(input: {
   runs: ChatRun[];
@@ -122,6 +169,22 @@ export function buildChatRows(input: {
         const toolCall = run.state.toolCalls[item.toolCallId];
 
         if (!toolCall) {
+          continue;
+        }
+
+        const handoff =
+          toolCall.name === "prepare_release" &&
+          toolCall.status === "success"
+            ? parseHandoff(toolCall.result)
+            : null;
+
+        if (handoff) {
+          rows.push({
+            kind: "handoff",
+            key: `${run.runId}:handoff:${toolCall.id}`,
+            runId: run.runId,
+            ...handoff,
+          });
           continue;
         }
 

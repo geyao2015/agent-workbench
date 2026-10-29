@@ -31,6 +31,7 @@ import {
   recordTextUpdate,
   resetRenderStats,
 } from "@/lib/render-stats";
+import { createReleaseRun } from "@/transport/release";
 import {
   cancelRun,
   fetchLongConversation,
@@ -458,6 +459,16 @@ export function ChatView() {
     }
   }
 
+  async function startReleaseFromHandoff(runId: string, scenarioId: string) {
+    try {
+      const run = await createReleaseRun(scenarioId, undefined, runId);
+
+      navigate(`#/releases/${run.threadId}?run=${run.runId}`);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "创建发版失败");
+    }
+  }
+
   function handleQuickPick(item: QuickPrompt) {
     if (item.kind === "history") {
       void loadLongConversation();
@@ -755,6 +766,7 @@ export function ChatView() {
               followVersion={followVersion}
               streaming={isStreaming}
               onResolveApproval={resolveToolApproval}
+              onStartRelease={startReleaseFromHandoff}
             />
           ) : (
             <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain [scrollbar-gutter:stable]">

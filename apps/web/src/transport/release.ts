@@ -92,11 +92,15 @@ export async function fetchReleaseRuns(
 export async function createReleaseRun(
   scenarioId?: string,
   signal?: AbortSignal,
+  sourceRunId?: string,
 ): Promise<CreatedReleaseRun> {
   const response = await fetch("/api/releases", {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify(scenarioId ? { scenarioId } : {}),
+    body: JSON.stringify({
+      ...(scenarioId ? { scenarioId } : {}),
+      ...(sourceRunId ? { sourceRunId } : {}),
+    }),
     signal,
   });
 

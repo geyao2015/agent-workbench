@@ -21,6 +21,7 @@ export const ChatFeed = memo(function ChatFeed({
   followVersion,
   streaming,
   onResolveApproval,
+  onStartRelease,
 }: {
   rows: ChatRow[];
   version: number;
@@ -31,6 +32,7 @@ export const ChatFeed = memo(function ChatFeed({
     approvalId: string,
     approved: boolean,
   ) => void;
+  onStartRelease: (runId: string, scenarioId: string) => void;
 }) {
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const stickToBottomRef = useRef(true);
@@ -169,6 +171,7 @@ export const ChatFeed = memo(function ChatFeed({
                   <ChatRowView
                     row={row}
                     onResolveApproval={onResolveApproval}
+                    onStartRelease={onStartRelease}
                   />
                 </div>
               </div>

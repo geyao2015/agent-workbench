@@ -66,6 +66,10 @@ function isActive(state: RunState | null): boolean {
   );
 }
 
+function formatDuration(ms: number): string {
+  return ms < 1000 ? `${ms}ms` : `${(ms / 1000).toFixed(1)}s`;
+}
+
 function latestArtifact(
   state: RunState,
   predicate: (artifact: RunState["artifacts"][string]) => boolean,
@@ -343,6 +347,18 @@ export function ReleaseDetailView({
         (stageId) => state.stages[stageId]?.status === "error",
       ).length
     : 0;
+  const startedAt = events.find((event) => event.type === "run.started")?.ts;
+  const endedAt =
+    events.find(
+      (event) =>
+        event.type === "run.completed" || event.type === "run.failed",
+    )?.ts ?? events.at(-1)?.ts;
+  const durationMs =
+    startedAt !== undefined && endedAt !== undefined
+      ? Math.max(0, endedAt - startedAt)
+      : 0;
+  const approvalCount = state ? Object.keys(state.approvals).length : 0;
+  const artifactCount = state ? Object.keys(state.artifacts).length : 0;
 
   async function resolveApproval(approved: boolean) {
     if (!pendingApproval || resolving) {
@@ -453,7 +469,11 @@ export function ReleaseDetailView({
                 </p>
                 <p className="mt-0.5 text-[11px] text-muted-foreground">
                   阶段 {doneCount}/{stageCount}
-                  {failedCount > 0 ? ` · 失败 ${failedCount}` : ""} · lastSeq{" "}
+                  {failedCount > 0 ? ` · 失败 ${failedCount}` : ""}
+                  {startedAt !== undefined
+                    ? ` · 耗时 ${formatDuration(durationMs)}`
+                    : ""}
+                  {" · "}审批 {approvalCount} · artifacts {artifactCount} · lastSeq{" "}
                   {state.lastSeq}
                 </p>
               </div>
