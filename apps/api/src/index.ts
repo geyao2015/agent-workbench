@@ -20,6 +20,7 @@ import { KnowledgeBase } from "./kb/index.js";
 import { createReleaseApi } from "./release-api.js";
 import { ApprovalRegistry } from "./release/approvals.js";
 import { ArtifactStore } from "./release/artifacts.js";
+import { createConflictResolver } from "./release/conflict.js";
 import { ReleaseService } from "./release/runtime.js";
 import { loadReleaseScenarios } from "./release/scenario.js";
 import { RunManager } from "./runs/run-manager.js";
@@ -61,11 +62,13 @@ const registry = new RunRegistry(threads);
 const artifacts = new ArtifactStore(resolve(config.storeDir, "artifacts"));
 const approvals = new ApprovalRegistry();
 const releaseScenarios = loadReleaseScenarios(config.releasesDir);
+const conflictResolver = createConflictResolver(config);
 const release = new ReleaseService({
   registry,
   scenarios: releaseScenarios,
   artifacts,
   approvals,
+  conflictResolver,
 });
 const agentRuntime = (() => {
   if (config.mode !== "agent") {

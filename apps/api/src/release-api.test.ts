@@ -9,6 +9,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { createReleaseApi } from "./release-api.js";
 import { ApprovalRegistry } from "./release/approvals.js";
 import { ArtifactStore } from "./release/artifacts.js";
+import { DeterministicConflictResolver } from "./release/conflict.js";
 import { ReleaseService } from "./release/runtime.js";
 import { loadReleaseScenarios } from "./release/scenario.js";
 import { RunRegistry } from "./runs/run-registry.js";
@@ -28,7 +29,13 @@ function makeApp() {
   const registry = new RunRegistry(threads);
   const artifacts = new ArtifactStore(join(dir, "artifacts"));
   const approvals = new ApprovalRegistry();
-  const release = new ReleaseService({ registry, scenarios, artifacts, approvals });
+  const release = new ReleaseService({
+    registry,
+    scenarios,
+    artifacts,
+    approvals,
+    conflictResolver: new DeterministicConflictResolver(),
+  });
   const app = createReleaseApi({
     release,
     registry,

@@ -1,4 +1,5 @@
 import type {
+  ConflictResolution,
   DiffArtifactBody,
   ReleaseFile,
   ResolvedFile,
@@ -18,7 +19,7 @@ export function resolveFiles(files: ReleaseFile[]): ResolvedFile[] {
   }));
 }
 
-export function buildUnifiedDiff(files: ReleaseFile[]): string {
+export function buildUnifiedDiffFromResolved(files: ResolvedFile[]): string {
   const lines: string[] = [];
 
   for (const file of files) {
@@ -29,7 +30,7 @@ export function buildUnifiedDiff(files: ReleaseFile[]): string {
 
     for (const hunk of file.hunks) {
       const baseLines = linesOf(hunk.base);
-      const resolvedLines = linesOf(hunk.recommended);
+      const resolvedLines = linesOf(hunk.resolved);
 
       lines.push(
         `@@ -${lineNumber},${baseLines.length} +${lineNumber},${resolvedLines.length} @@ ${hunk.id}`,
@@ -50,9 +51,31 @@ export function buildUnifiedDiff(files: ReleaseFile[]): string {
   return lines.join("\n");
 }
 
-export function buildDiffArtifact(files: ReleaseFile[]): DiffArtifactBody {
+export function buildUnifiedDiff(files: ReleaseFile[]): string {
+  return buildUnifiedDiffFromResolved(resolveFiles(files));
+}
+
+export function buildDiffArtifact(
+  files: ReleaseFile[],
+  resolution?: ConflictResolution,
+): DiffArtifactBody {
+  const resolved = resolution?.files ?? resolveFiles(files);
+
   return {
-    unified: buildUnifiedDiff(files),
-    files: resolveFiles(files),
+    unified: buildUnifiedDiffFromResolved(resolved),
+    files: resolved,
+    ...(resolution
+      ? {
+          resolution: {
+            mode: resolution.mode,
+            ...(resolution.fallbackReason
+              ? { fallbackReason: resolution.fallbackReason }
+              : {}),
+            ...(resolution.latencyMs !== undefined
+              ? { latencyMs: resolution.latencyMs }
+              : {}),
+          },
+        }
+      : {}),
   };
 }

@@ -5,6 +5,7 @@
   "version": "1.2.0",
   "branch": "release/1.2.0",
   "tag": "v1.2.0-rc.1",
+  "conflictContext": "1.2.0 发版要求支付请求超时保持 5000ms；INC-042 之后支付网关回调客户端最多重试 3 次并带 200ms 退避；缺少幂等键属于调用方错误，应显式抛错而不是静默返回。",
   "stages": [
     {
       "id": "preflight",

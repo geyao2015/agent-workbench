@@ -10,6 +10,9 @@ import { RunLog } from "../runs/run-log.js";
 import type { ActiveRun } from "../runs/run-registry.js";
 import { ApprovalRegistry } from "./approvals.js";
 import { ArtifactStore } from "./artifacts.js";
+import type { ConflictResolver } from "./conflict.js";
+import { DeterministicConflictResolver } from "./conflict.js";
+import { resolveFiles } from "./diff.js";
 import { ReleaseRuntime } from "./runtime.js";
 import { loadReleaseScenarios } from "./scenario.js";
 
@@ -30,7 +33,9 @@ afterEach(() => {
   }
 });
 
-function makeHarness() {
+function makeHarness(
+  conflictResolver: ConflictResolver = new DeterministicConflictResolver(),
+) {
   const dir = mkdtempSync(join(tmpdir(), "aw-release-"));
   tempDirs.push(dir);
 
@@ -57,6 +62,7 @@ function makeHarness() {
     scenario,
     artifacts,
     approvals,
+    conflictResolver,
     signal: controller.signal,
     checkpoint: () => {},
   });
@@ -184,6 +190,60 @@ describe("ReleaseRuntime", () => {
       "skipped",
     );
     expect(auditArtifact).toBeDefined();
+  });
+
+  it("LLM 回退时在 diff artifact 与阶段摘要中记录原因", async () => {
+    const resolver: ConflictResolver = {
+      resolve: async ({ scenario: input }) => ({
+        files: resolveFiles(input.files),
+        mode: "fallback",
+        fallbackReason: "LLM timeout",
+        latencyMs: 12,
+      }),
+    };
+    const { runtime, log, artifacts, approvals } = makeHarness(resolver);
+    const execution = runtime.execute();
+
+    await waitFor(() =>
+      log.snapshotEvents().some((event) => event.type === "approval.required"),
+    );
+
+    const approval = findEvent(log.snapshotEvents(), "approval.required");
+
+    if (!approval) {
+      throw new Error("缺少 approval.required");
+    }
+
+    approvals.resolve(approval.payload.approvalId, { approved: true });
+    await execution;
+    log.finish();
+
+    const events = log.snapshotEvents();
+    const diff = events.find(
+      (event) =>
+        event.type === "artifact.created" && event.payload.kind === "diff",
+    );
+    const conflictStage = events.find(
+      (event) =>
+        event.type === "stage.completed" &&
+        event.payload.stageId === "conflict",
+    );
+
+    if (!diff || diff.type !== "artifact.created") {
+      throw new Error("缺少 diff artifact");
+    }
+
+    const content = artifacts.read("run_release", diff.payload.artifactId);
+    const body = JSON.parse(content?.body ?? "{}") as {
+      resolution?: { mode: string; fallbackReason?: string };
+    };
+
+    expect(body.resolution?.mode).toBe("fallback");
+    expect(body.resolution?.fallbackReason).toContain("timeout");
+    expect(
+      conflictStage?.type === "stage.completed" &&
+        conflictStage.payload.summary,
+    ).toContain("确定性回退");
   });
 
   it("等待审批时取消，run 以 cancelled 结束", async () => {

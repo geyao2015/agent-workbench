@@ -3,6 +3,7 @@ import { fileURLToPath } from "node:url";
 
 export type RuntimeMode = "agent" | "mock";
 export type ModelProvider = "anthropic" | "openai";
+export type ConflictMode = "auto" | "llm" | "fixture";
 
 export interface RuntimeConfig {
   mode: RuntimeMode;
@@ -10,6 +11,7 @@ export interface RuntimeConfig {
   model?: string;
   apiKey?: string;
   baseURL?: string;
+  conflictMode: ConflictMode;
   port: number;
   docsDir: string;
   releasesDir: string;
@@ -38,6 +40,20 @@ function readMode(env: NodeJS.ProcessEnv): RuntimeMode | undefined {
   return undefined;
 }
 
+function readConflictMode(env: NodeJS.ProcessEnv): ConflictMode {
+  const value = env.RELEASE_CONFLICT_MODE?.trim();
+
+  if (value === "auto" || value === "llm" || value === "fixture") {
+    return value;
+  }
+
+  if (value) {
+    throw new Error("RELEASE_CONFLICT_MODE 只能是 auto、llm 或 fixture。");
+  }
+
+  return "auto";
+}
+
 function readProvider(env: NodeJS.ProcessEnv): ModelProvider | undefined {
   const value = env.MODEL_PROVIDER?.trim();
 
@@ -61,6 +77,7 @@ export function loadRuntimeConfig(env: NodeJS.ProcessEnv = process.env): Runtime
     requestedProvider ??
     (anthropicKey ? "anthropic" : openaiKey ? "openai" : undefined);
   const base = {
+    conflictMode: readConflictMode(env),
     port: Number(env.PORT ?? 8787),
     docsDir: resolve(repoRoot, env.KB_DIR ?? "data/docs"),
     releasesDir: resolve(repoRoot, env.RELEASES_DIR ?? "data/releases"),

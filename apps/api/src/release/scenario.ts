@@ -31,6 +31,7 @@ const scenarioFileSchema = z.object({
   version: z.string().min(1),
   branch: z.string().min(1),
   tag: z.string().min(1),
+  conflictContext: z.string().min(1),
   stages: z.array(stageSchema).min(1),
 });
 

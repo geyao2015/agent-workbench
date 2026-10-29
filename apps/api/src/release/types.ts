@@ -45,6 +45,7 @@ export interface ReleaseScenario {
   version: string;
   branch: string;
   tag: string;
+  conflictContext: string;
   stages: ReleaseStage[];
   files: ReleaseFile[];
   ciAttempts: Record<string, CiAttempt>;
@@ -60,9 +61,23 @@ export interface ResolvedFile {
   hunks: ResolvedHunk[];
 }
 
+export type ConflictResolutionMode = "deterministic" | "llm" | "fallback";
+
+export interface ConflictResolution {
+  files: ResolvedFile[];
+  mode: ConflictResolutionMode;
+  fallbackReason?: string;
+  latencyMs?: number;
+}
+
 export interface DiffArtifactBody {
   unified: string;
   files: ResolvedFile[];
+  resolution?: {
+    mode: ConflictResolutionMode;
+    fallbackReason?: string;
+    latencyMs?: number;
+  };
 }
 
 export interface AuditArtifactBody {

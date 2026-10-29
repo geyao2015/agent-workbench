@@ -5,6 +5,7 @@ import type { Risk } from "@agent-workbench/protocol";
 import type { ActiveRun, RunRegistry } from "../runs/run-registry.js";
 import type { ApprovalRegistry } from "./approvals.js";
 import type { ArtifactStore } from "./artifacts.js";
+import type { ConflictResolver } from "./conflict.js";
 import { buildDiffArtifact } from "./diff.js";
 import type {
   AuditArtifactBody,
@@ -40,6 +41,7 @@ export class ReleaseRuntime {
       scenario: ReleaseScenario;
       artifacts: ArtifactStore;
       approvals: ApprovalRegistry;
+      conflictResolver: ConflictResolver;
       signal: AbortSignal;
       checkpoint: () => void;
     },
@@ -147,7 +149,11 @@ export class ReleaseRuntime {
   }
 
   private async resolveConflicts(stage: ReleaseStage): Promise<void> {
-    const diff = buildDiffArtifact(this.deps.scenario.files);
+    const resolution = await this.deps.conflictResolver.resolve({
+      scenario: this.deps.scenario,
+      signal: this.deps.signal,
+    });
+    const diff = buildDiffArtifact(this.deps.scenario.files, resolution);
     const artifactId = `art_diff_${randomUUID()}`;
     const info = this.deps.artifacts.write(this.deps.run.runId, artifactId, {
       mime: "application/json",
@@ -173,11 +179,24 @@ export class ReleaseRuntime {
       (count, file) => count + file.hunks.length,
       0,
     );
+    const modeLabel =
+      resolution.mode === "llm"
+        ? "LLM"
+        : resolution.mode === "fallback"
+          ? "确定性回退"
+          : "确定性";
+    const fallbackSuffix = resolution.fallbackReason
+      ? `（回退原因：${resolution.fallbackReason.slice(0, 120)}）`
+      : "";
+
+    console.info(
+      `[release] conflict resolution mode=${resolution.mode} latency=${resolution.latencyMs ?? 0}ms${resolution.fallbackReason ? ` fallback=${resolution.fallbackReason}` : ""}`,
+    );
 
     this.completeStage(
       stage,
       "success",
-      `解决 ${this.deps.scenario.files.length} 个文件 / ${hunkCount} 个冲突`,
+      `${modeLabel}解决 ${this.deps.scenario.files.length} 个文件 / ${hunkCount} 个冲突${fallbackSuffix}`,
     );
   }
 
@@ -368,6 +387,7 @@ export class ReleaseService {
       scenarios: ReleaseScenario[];
       artifacts: ArtifactStore;
       approvals: ApprovalRegistry;
+      conflictResolver: ConflictResolver;
     },
   ) {
     this.scenarios = deps.scenarios;
@@ -422,6 +442,7 @@ export class ReleaseService {
         scenario,
         artifacts: this.deps.artifacts,
         approvals: this.deps.approvals,
+        conflictResolver: this.deps.conflictResolver,
         signal,
         checkpoint: () => this.deps.registry.persist(run),
       });
