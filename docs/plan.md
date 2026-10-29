@@ -23,7 +23,7 @@
 | --- | --- | --- | --- | --- | --- |
 | M2 Chat Agent 全栈 | 已完成 | 能开发完整的 Chat Agent（前后端） | Hono + LangGraph、工具循环、记忆、知识库 RAG、引用、历史会话列表（[加载方式](protocol.md#10-待定问题随阶段决定)）、真实模型接入 | Agentic RAG、工具循环、checkpointer、SSE 全链路 | 约 3 周 |
 | M3 Release Agent | 已完成 | 能开发完整垂直 Agent 项目 | 可审计发版工作台：阶段、冲突解决、diff 审批、审计、回滚、日志排查、Chat handoff | 确定性工作流 + 有边界 LLM + HITL + 审计 | 3–4 周 |
-| M4 可观测性与评测 | 未开始 | 能调试、评测和运营 Agent | 日志根因分析、Trace 瀑布、事件回放、检索元数据过滤、检索/RCA 评测、性能与成本报告 | Trace/调试、评测体系、量化指标、架构文档 | 2–3 周 |
+| M4 可观测性与评测 | 已完成 | 能调试、评测和运营 Agent | Trace 瀑布、事件回放、检索元数据过滤、检索/RCA 评测、离线评测报告；真实模型端到端待 Key | Trace/调试、评测体系、量化指标、架构文档 | 2–3 周 |
 
 ## 2. 阶段约束与验收
 
@@ -63,18 +63,19 @@ M0 之前不做 M1 及以后的内容。
 | M3 S3 | test.1 失败 → log_bundle → 日志工具/RCA → 修复审批 → test.2 重跑；Logs 页 |
 | M3 S4 | 完成 run → 回滚 child run（parentRunId）→ 回滚审批 → 审计记录 mode/target/parent |
 | M3 S5 | `prepare_release` handoff 卡片 → Release run（`sourceRunId`）；耗时 / 审批 / artifact 指标 |
+| M4 | Trace 从事件派生；16 篇语料 + 50 题检索基线；10 个 RCA 案例；元数据过滤；离线评测报告 |
 
-- 合计测试：protocol 61、API 54；`typecheck` / `build` / `check-docs` 全绿。
+- 合计测试：protocol 61、API 60；`typecheck` / `build` / `check-docs` 全绿。
 - 已知限制：运行中的 Chat / Release run 依赖内存 runtime，服务重启后不可恢复，pending approval 失效；已完成 run 与 artifact 仍可读。
 - 安全：guard 拦截索要密钥/系统提示词/越狱输入，检索结果标记为不可信数据，输出做密钥脱敏。
-- M2 未纳入：检索元数据过滤、recall@k 与 Trace，按 M4 处理。
-- M4 待做：Trace 瀑布、日志 RCA 评测、性能与成本报告、检索元数据过滤。
+- M4 已落地离线基线；真实模型端到端答案质量、引用准确率与成本估算待 Key/单价。
 
 ## 5. 跨阶段待办
 
 - [x] 安全防护（已完成）：确定性 input guard、检索数据分隔、流式输出脱敏与三类测试；历史种子会过滤被拦截的用户输入。
 - [ ] 展示层：按 [showcase.md](showcase.md) 设计首屏工程亮点与 Demo 入口；guard 作为示例，方案待定。
-- [ ] 评测集构造（M3 期间准备）：语料扩到 30–50 篇；检索题存 `data/eval/retrieval.jsonl`，字段 `query / goldSourceIds / answerable / tags`；50 题覆盖单文档、跨文档、版本、无答案与改写；金标人工编写或模型生成候选后人工校验，冻结 test set，不用于调参。
-- [ ] RAG 检索评测（M3 期间准备）：离线脚本报告 Recall@1/@4、MRR 与无答案拒答率，按 tag 分组。
-- [ ] RAG 端到端评测（M4）：题目补 `goldAnswerPoints` / `goldEvidenceIds`；衡量忠实度、引用准确率、答案正确性；确定性检查 + LLM judge + 20–30% 人工抽检。
-- [ ] RCA/Release 评测集（M3 期间准备）：10–20 个合成事故，含日志、金标根因、关键证据行与修复建议；Release 冲突/审批以确定性状态机测试为主。
+- [x] 评测集构造：16 篇语料；`data/eval/retrieval.jsonl` 50 题（含无答案）；金标冻结，不用于调参。
+- [x] RAG 检索评测：`pnpm eval:retrieval`，Recall@1/@4、MRR、Abstain。
+- [ ] RAG 端到端评测：补 `goldAnswerPoints` / `goldEvidenceIds`；忠实度、引用准确率、答案正确性；需真实模型 + judge + 人工抽检。
+- [x] RCA 评测集：10 个合成事故，证据定位与 runbook 检索；`pnpm eval:rca`。
+- [ ] 成本与真实 provider 延迟：待配置 Key 与单价。

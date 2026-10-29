@@ -2,7 +2,7 @@
 
 > 从知识库对话到可审计发版。一个用于求职展示的研发 Agent 工作台：Chat 基于工程知识库对话，Release 执行可审计的发版流程。
 
-**状态：M3 已完成，准备进入 M4。** 技术选型与待确认项见 [docs/decision.md](docs/decision.md)；执行计划见 [docs/plan.md](docs/plan.md)；事件协议见 [docs/protocol.md](docs/protocol.md)。
+**状态：M4 已完成（离线评测基线；真实模型端到端待配置 Key）。** 技术选型与待确认项见 [docs/decision.md](docs/decision.md)；执行计划见 [docs/plan.md](docs/plan.md)；事件协议见 [docs/protocol.md](docs/protocol.md)。
 
 本文件是产品事实的唯一来源：项目定位、场景、演示流程、功能范围、非目标、当前状态、仓库结构与文档索引。
 
@@ -103,7 +103,7 @@ agent-workbench/
 
 ## 8. 当前阶段
 
-**M3 已完成**：S1 确定性主链路、S2 LLM 冲突、S3 失败 RCA、S4 回滚、S5 Chat handoff 与运行指标均已落地。下一步 M4：Trace 瀑布、日志 RCA 评测、性能与成本报告。
+**M4 已完成**：Trace 瀑布、检索与 RCA 评测基线、文档元数据过滤、事件回放与评测报告均已落地。真实模型端到端评测与成本估算待配置 Key 和单价。
 
 ```bash
 pnpm install
@@ -124,6 +124,7 @@ pnpm build && pnpm start    # 单 URL http://localhost:8787
 - [docs/dependencies.md](docs/dependencies.md) — 三方依赖、版本与用途
 - [docs/glossary.md](docs/glossary.md) — 个人术语笔记（Thread / Run 等概念）
 - [docs/showcase.md](docs/showcase.md) — 页面展示亮点与演示编排（待设计）
+- [docs/evaluation.md](docs/evaluation.md) — 评测集、指标与基线
 - [AGENTS.md](AGENTS.md) — AI 工作规则与文档来源约定
 - [CLAUDE.md](CLAUDE.md) — Claude Code 加载入口
 

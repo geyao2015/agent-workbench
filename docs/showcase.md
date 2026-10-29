@@ -21,11 +21,12 @@
 | 事件协议 | append-only AgentEvent v1、纯函数 reducer、SSE 重放/取消 | protocol 61 测试；事件检查器 | 事件面板 |
 | 流式渲染 | 块级增量分段、闭合块冻结、长会话虚拟列表 | 10k 块/500 增量 513ms；200 增量 1.81ms；60fps | 长会话 / 性能面板 |
 | 交互状态 | 工具状态机、半截 JSON、审批、reasoning、引用 | M1 演示；fixture 回放 | 功能测试快捷项 |
-| Agent runtime | Hono + LangGraph 工具循环、checkpointer、BM25 RAG | 8 篇文档；API 54 测试；离线假模型 E2E | 知识库问答 |
+| Agent runtime | Hono + LangGraph 工具循环、checkpointer、BM25 RAG | 16 篇文档；API 60 测试；离线假模型 E2E | 知识库问答 |
 | 历史会话 | 物化快照 + cursor 分页、JSONL 持久化、重启种子恢复 | 22 轮分页验证；同 thread 单 run 409 | 会话侧栏 |
 | 安全边界 | 输入 guard、输出脱敏、检索数据分隔 | 拦截请求不调用模型；三类测试 | 安全拒答 |
 | 双运行时 | 无 Key 自动 mock；配置 Key 进入实时 Agent | 生产构建两种模式冒烟 | Header 运行时标识 |
 | 发版工作台 | 确定性阶段、阶段审批、LLM 冲突、失败 RCA、回滚 child run、Chat handoff | 10 阶段端到端；LLM/fallback；失败 RCA；回滚与 parent 审计；handoff 携带 sourceRunId | Releases |
+| 评测与 Trace | 50 题检索金标、10 个 RCA 案例、事件派生 Span 瀑布 | Recall@1 85.4%、Recall@4 100%、MRR 0.920；RCA 证据 100%、runbook@4 100% | 文档 + Trace tab |
 
 ## 3. 展示方案待办
 
@@ -39,8 +40,8 @@
 ## 4. 不要宣称
 
 - 真实模型生产验证、高并发、多租户、权限、真实 CI/CD。
-- 引用准确率、recall@k、成本数据（尚未评测）。
-- Trace 瀑布与评测体系（M4）。
+- 引用准确率、端到端忠实度与成本数据（尚未评测；检索 recall 基线已有）。
+- 真实模型 provider 延迟与成本估算。
 - guard 是规则式防护，不是完整语义安全网关。
 
 ## 5. 维护规则

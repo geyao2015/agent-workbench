@@ -111,3 +111,5 @@
 | 2026-10-29 | 回滚使用 child run + `parentRunId`，回滚审批后写审计 | 保持 run 终态不可变，同时保留回滚与原始发版的审计链 |
 | 2026-10-29 | Chat handoff 使用 `prepare_release` 工具 + 独立 Release thread，`sourceRunId` 记录来源 | Chat 与 Release 界面分离，同时保留来源链；不在同一 thread 混合两种 run |
 | 2026-10-29 | Release 详情摘要展示耗时、审批数、artifact 数与失败阶段 | 让 M3 的确定性流程和人工 gate 有可量化证据 |
+| 2026-10-29 | Trace 从事件日志派生 run/stage/tool/approval spans，暂不做独立模型 Span 埋点 | 与“事件日志是唯一状态源”一致，先提供可利用的 waterfall |
+| 2026-10-29 | 检索评测使用 16 篇合成语料 + 50 题冻结金标；Abstain 阈值 4 仅对当前数据集校准 | 先建立可重复基线，阈值随数据集变化需重新评估 |

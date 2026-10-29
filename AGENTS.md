@@ -43,6 +43,7 @@
 | AgentEvent / Span、reducer、fixture、transport、历史会话快照 | `docs/protocol.md` |
 | 渲染实现、增量分段、性能数据 | `docs/rendering.md` |
 | 页面展示亮点、演示编排、避免过度宣称 | `docs/showcase.md` |
+| 评测集、指标与基线 | `docs/evaluation.md` |
 | 三方依赖、版本与用途 | `docs/dependencies.md` |
 | AI 工作规则、阶段门禁、文档维护约定 | `AGENTS.md` |
 | 加载入口 | `CLAUDE.md`（只引用，不写事实） |
