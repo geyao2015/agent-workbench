@@ -42,6 +42,7 @@ const eventSchemas = [
       kind: runKindSchema,
       title: z.string().optional(),
       parentRunId: z.string().optional(),
+      sourceRunId: z.string().optional(),
     }),
   ),
   event(
