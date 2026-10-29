@@ -85,6 +85,9 @@
 ## 8. 待确认
 
 - 部署形态与平台（M0 不阻塞，当前本地运行）。
+- 语音输入选型：Web Speech（快、跨浏览器受限）vs 服务端 Whisper / 流式 ASR；第一版倾向 Web Speech adapter，见 [multimodal.md §4](multimodal.md#4-服务端与模型)。
+- 图片存储与发送策略：保留时长、是否默认发模型 provider、EXIF 清理规则，见 [multimodal.md §5](multimodal.md#5-安全与隐私)。
+- 视觉模型支持与成本：当前 provider 是否支持图片、超限如何降级，需真实 Key 验证。
 
 ## 9. 变更记录
 

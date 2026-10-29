@@ -14,6 +14,7 @@ const docs = [
   "docs/dependencies.md",
   "docs/glossary.md",
   "docs/showcase.md",
+  "docs/multimodal.md",
   "docs/evaluation.md",
 ];
 const budgets = {
@@ -27,6 +28,7 @@ const budgets = {
   "docs/dependencies.md": 100,
   "docs/glossary.md": 80,
   "docs/showcase.md": 80,
+  "docs/multimodal.md": 80,
   "docs/evaluation.md": 100,
 };
 

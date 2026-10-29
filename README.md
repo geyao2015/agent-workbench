@@ -123,6 +123,7 @@ pnpm bench:streaming        # 流式渲染基准，结果写入 data/bench/resul
 - [docs/plan.md](docs/plan.md) — 阶段划分、阶段状态、M0 执行清单、时间盒与验收标准
 - [docs/protocol.md](docs/protocol.md) — AgentEvent / Span 协议草案与 fixture 格式
 - [docs/rendering.md](docs/rendering.md) — 渲染实现、增量分段与性能数据
+- [docs/multimodal.md](docs/multimodal.md) — 语音输入、图片上传与识别的规划与安全边界
 - [docs/dependencies.md](docs/dependencies.md) — 三方依赖、版本与用途
 - [docs/glossary.md](docs/glossary.md) — 个人术语笔记（Thread / Run 等概念）
 - [docs/showcase.md](docs/showcase.md) — 页面展示亮点与演示编排（待设计）
