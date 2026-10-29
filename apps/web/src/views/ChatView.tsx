@@ -789,7 +789,7 @@ export function ChatView() {
               onStartRelease={startReleaseFromHandoff}
             />
           ) : (
-            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain [scrollbar-gutter:stable]">
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain [scrollbar-gutter:stable_both-edges]">
               <div className="mx-auto flex w-full max-w-4xl flex-col gap-6 px-4 py-8 md:px-8">
                 <EmptyState
                   prompts={prompts}

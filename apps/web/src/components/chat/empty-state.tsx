@@ -17,7 +17,7 @@ export function EmptyState({
   const groups = [...new Set(prompts.map((item) => item.group))];
 
   return (
-    <div className="mx-auto flex max-w-2xl flex-col items-center gap-6 py-14 text-center">
+    <div className="mx-auto flex w-full flex-col items-center gap-6 py-14 text-center">
       <div className="flex size-14 items-center justify-center rounded-2xl border bg-background shadow-sm">
         <Sparkles className="size-6 text-muted-foreground" />
       </div>
