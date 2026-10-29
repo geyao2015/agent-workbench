@@ -84,7 +84,7 @@
 
 ## 8. 待确认
 
-- 部署形态与平台（M0 不阻塞，当前本地运行）。
+- 部署执行细节：后端 Render 或 Fly 二选一、实例规格、持久卷与跨域 SSE 实测（部署时确认）。
 - 语音输入选型：Web Speech（快、跨浏览器受限）vs 服务端 Whisper / 流式 ASR；第一版倾向 Web Speech adapter，见 [multimodal.md §4](multimodal.md#4-服务端与模型)。
 - 图片存储与发送策略：保留时长、是否默认发模型 provider、EXIF 清理规则，见 [multimodal.md §5](multimodal.md#5-安全与隐私)。
 - 视觉模型支持与成本：当前 provider 是否支持图片、超限如何降级，需真实 Key 验证。
@@ -117,3 +117,4 @@
 | 2026-10-29 | Trace 从事件日志派生 run/stage/tool/approval spans，暂不做独立模型 Span 埋点 | 与“事件日志是唯一状态源”一致，先提供可利用的 waterfall |
 | 2026-10-29 | 检索评测使用 16 篇合成语料 + 50 题冻结金标；Abstain 阈值 4 仅对当前数据集校准 | 先建立可重复基线，阈值随数据集变化需重新评估 |
 | 2026-10-29 | 对话追加首版使用客户端队列，run 结束后逐条发送；取消清空队列 | 先验证交互而不改服务端单活跃 run 约束；服务端队列与分支后续再做 |
+| 2026-10-29 | 部署形态：前端 Netlify 静态托管，后端 Render/Fly 单 Node 服务；当前无鉴权阶段用 CORS，不拆 API | 兼顾静态 CDN/预览部署与 SSE、文件存储；Render/Fly、持久卷和跨域 SSE 在部署时再确认 |
