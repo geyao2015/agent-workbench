@@ -11,10 +11,31 @@ import { streamSSE } from "hono/streaming";
 
 import type { AgentEvent, Timing } from "@agent-workbench/protocol";
 
+import { createAgentApi } from "./agent-api.js";
+import { createChatAgent } from "./agent/graph.js";
+import { loadRuntimeConfig, publicRuntimeInfo } from "./config.js";
 import { loadFixtures, watchFixtures } from "./fixtures.js";
 import type { FixtureDefinition } from "./fixtures.js";
+import { KnowledgeBase } from "./kb/index.js";
+import { RunManager } from "./runs/run-manager.js";
+import { ThreadStore } from "./runs/thread-store.js";
 
-const port = Number(process.env.PORT ?? 8787);
+try {
+  process.loadEnvFile();
+} catch {
+  // 没有 .env 时继续使用进程环境变量
+}
+
+const config = (() => {
+  try {
+    return loadRuntimeConfig();
+  } catch (cause) {
+    console.error(cause instanceof Error ? cause.message : cause);
+    process.exit(1);
+  }
+})();
+
+const port = config.port;
 const webDist = resolve(dirname(fileURLToPath(import.meta.url)), "../../web/dist");
 const hasWebBuild = existsSync(webDist);
 let fixtures = loadFixtures();
@@ -27,6 +48,19 @@ watchFixtures(() => {
     console.error("fixture 重载失败", cause);
   }
 });
+
+const kb = KnowledgeBase.load(config.docsDir);
+const agentRuntime = (() => {
+  if (config.mode !== "agent") {
+    return undefined;
+  }
+
+  const threads = new ThreadStore(config.storeDir);
+  const agent = createChatAgent(config, kb);
+  const runs = new RunManager({ agent, kb, store: threads });
+
+  return { threads, runs };
+})();
 
 interface MockRun {
   runId: string;
@@ -457,10 +491,32 @@ app.get("/api/health", (c) =>
   c.json({
     status: "ok",
     service: "agent-workbench-api",
-    message: "Hono mock runtime is running. hello world!",
+    runtime: config.mode,
+    message:
+      config.mode === "agent"
+        ? "Hono agent runtime is running."
+        : "Hono mock runtime is running. hello world!",
     timestamp: new Date().toISOString(),
   }),
 );
+
+app.get("/api/runtime", (c) =>
+  c.json({
+    ...publicRuntimeInfo(config),
+    docs: kb.list().length,
+  }),
+);
+
+if (agentRuntime) {
+  app.route(
+    "/",
+    createAgentApi({
+      runs: agentRuntime.runs,
+      threads: agentRuntime.threads,
+      kb,
+    }),
+  );
+}
 
 app.get("/api/scenarios", (c) =>
   c.json({
@@ -483,6 +539,8 @@ app.post("/api/demo/long-conversation", (c) => {
   }
 });
 
+// mock 运行时：fixture 回放，保留 M1 的暂停、审批与断线重放语义
+if (config.mode === "mock") {
 app.post("/api/runs", async (c) => {
   const body = await c.req
     .json<{ prompt?: unknown; fixture?: unknown; threadId?: unknown }>()
@@ -780,6 +838,8 @@ app.get("/api/runs/:runId/events", (c) => {
     }
   });
 });
+}
+// end mock 运行时路由
 
 if (hasWebBuild) {
   app.use("/*", serveStatic({ root: webDist }));
@@ -788,7 +848,11 @@ if (hasWebBuild) {
 
 serve({ fetch: app.fetch, port }, (info) => {
   console.log(`API listening on http://localhost:${info.port}`);
-  console.log(`Loaded ${fixtures.size} fixtures: ${[...fixtures.keys()].join(", ")}`);
+  console.log(
+    config.mode === "agent"
+      ? `Runtime: agent (${config.provider}/${config.model}) · KB ${kb.list().length} docs`
+      : `Runtime: mock · ${fixtures.size} fixtures`,
+  );
   console.log(
     hasWebBuild
       ? `Serving web from ${webDist}`

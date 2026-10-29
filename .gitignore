@@ -9,3 +9,6 @@ coverage/
 
 # 个人学习笔记，仅本地保留
 learn-notes/
+
+# 本地会话与被引用的运行时数据
+.data/

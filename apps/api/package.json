@@ -4,18 +4,27 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/index.ts",
+    "prebuild": "pnpm --filter @agent-workbench/protocol build",
     "build": "tsc -p tsconfig.json",
     "start": "node dist/index.js",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "pretypecheck": "pnpm --filter @agent-workbench/protocol build",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
   },
   "dependencies": {
     "@agent-workbench/protocol": "workspace:*",
     "@hono/node-server": "^2.1.5",
-    "hono": "^4.13.13"
+    "@langchain/anthropic": "^1.6.0",
+    "@langchain/core": "^1.3.1",
+    "@langchain/langgraph": "^1.5.3",
+    "@langchain/openai": "^1.8.0",
+    "hono": "^4.13.13",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@types/node": "^24.19.2",
     "tsx": "^4.23.15",
-    "typescript": "^7.0.2"
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.5"
   }
 }
