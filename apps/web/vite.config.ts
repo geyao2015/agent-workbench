@@ -16,4 +16,22 @@ export default defineConfig({
       "/api": "http://localhost:8787",
     },
   },
+  build: {
+    rolldownOptions: {
+      output: {
+        codeSplitting: {
+          groups: [
+            {
+              name: "markdown",
+              test: /node_modules[\\/](?:react-markdown|remark-[^\\/]+|micromark[^\\/]*|mdast-[^\\/]+|hast-[^\\/]+|unified|unist-[^\\/]+|vfile[^\\/]*|property-information|decode-named-character-reference|character-entities[^\\/]*|ccount|markdown-table|longest-streak|devlop|bail|trough|zwitch|html-url-attributes|space-separated-tokens|comma-separated-tokens|parse-entities|stringify-entities|trim-lines)[\\/]/,
+            },
+            {
+              name: "react",
+              test: /node_modules[\\/](?:react|react-dom|scheduler)[\\/]/,
+            },
+          ],
+        },
+      },
+    },
+  },
 });
