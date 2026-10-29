@@ -1,15 +1,21 @@
 import {
   createContext,
   useContext,
+  useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
 
 export type SidePanelName = "events" | "notes";
 
+const CLOSE_MS = 220;
+
 interface SidePanelState {
   activePanel: SidePanelName | null;
+  closing: boolean;
+  instantOpen: boolean;
   togglePanel: (panel: SidePanelName) => void;
   closePanel: () => void;
 }
@@ -18,14 +24,66 @@ const SidePanelContext = createContext<SidePanelState | null>(null);
 
 export function SidePanelProvider({ children }: { children: ReactNode }) {
   const [activePanel, setActivePanel] = useState<SidePanelName | null>(null);
+  const [closing, setClosing] = useState(false);
+  const [instantOpen, setInstantOpen] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+      }
+    };
+  }, []);
+
+  function closePanel() {
+    if (!activePanel || closing) {
+      return;
+    }
+
+    setClosing(true);
+
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+    }
+
+    timerRef.current = setTimeout(() => {
+      setActivePanel(null);
+      setClosing(false);
+      timerRef.current = null;
+    }, CLOSE_MS);
+  }
+
+  function togglePanel(panel: SidePanelName) {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+
+    if (activePanel === panel) {
+      if (closing) {
+        setClosing(false);
+      } else {
+        closePanel();
+      }
+
+      return;
+    }
+
+    setInstantOpen(activePanel !== null);
+    setClosing(false);
+    setActivePanel(panel);
+  }
+
   const value = useMemo<SidePanelState>(
     () => ({
       activePanel,
-      togglePanel: (panel) =>
-        setActivePanel((current) => (current === panel ? null : panel)),
-      closePanel: () => setActivePanel(null),
+      closing,
+      instantOpen,
+      togglePanel,
+      closePanel,
     }),
-    [activePanel],
+    [activePanel, closing, instantOpen],
   );
 
   return (
