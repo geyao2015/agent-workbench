@@ -1,0 +1,12 @@
+{"id":"a01","query":"1.2.0 发版有哪些注意事项？","goldSourceIds":["release-1-2-0-checklist"],"goldPoints":["数据库迁移","灰度","回滚","feature flag"],"answerable":true}
+{"id":"a02","query":"INC-042 支付回调为什么一直重试？","goldSourceIds":["incident-042-payment-callback"],"goldPoints":["payment_conflict","409","重试","幂等"],"answerable":true}
+{"id":"a03","query":"checkout-service 的架构和可靠投递机制？","goldSourceIds":["checkout-service-architecture"],"goldPoints":["outbox","callback consumer","order worker"],"answerable":true}
+{"id":"a04","query":"checkout-service 的限流和 429 错误怎么处理？","goldSourceIds":["checkout-api"],"goldPoints":["100 QPS","429","Retry-After"],"answerable":true}
+{"id":"a05","query":"数据库迁移的 expand/contract 流程和回滚？","goldSourceIds":["database-migration-playbook"],"goldPoints":["expand","contract","并发索引","回填"],"answerable":true}
+{"id":"a06","query":"发版的灰度比例和回滚条件是什么？","goldSourceIds":["release-runbook"],"goldPoints":["10%","50%","100%","回滚"],"answerable":true}
+{"id":"a07","query":"支付成功率和回调延迟的 SLO 是多少？","goldSourceIds":["observability-metrics"],"goldPoints":["99.5%","800ms","重试队列"],"answerable":true}
+{"id":"a08","query":"API Key、日志和敏感数据有哪些安全要求？","goldSourceIds":["security-review-checklist"],"goldPoints":["环境变量","日志","密钥"],"answerable":true}
+{"id":"a09","query":"生产 Redis 集群的密码是多少？","goldSourceIds":[],"goldPoints":[],"answerable":false}
+{"id":"a10","query":"公司 2027 年的营收目标是多少？","goldSourceIds":[],"goldPoints":[],"answerable":false}
+{"id":"a11","query":"INC-042 和 payment_conflict 的错误码处理有什么关系？","goldSourceIds":["incident-042-payment-callback","checkout-api"],"goldPoints":["payment_conflict","409","幂等","重试"],"answerable":true}
+{"id":"a12","query":"feature flag 的审批和发版流程怎么配合？","goldSourceIds":["feature-flag-guide","release-runbook"],"goldPoints":["审批","灰度","回滚","默认关闭"],"answerable":true}

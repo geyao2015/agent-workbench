@@ -11,7 +11,8 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
     "eval:retrieval": "tsx src/eval/retrieval.ts",
-    "eval:rca": "tsx src/eval/rca.ts"
+    "eval:rca": "tsx src/eval/rca.ts",
+    "eval:answer": "tsx src/eval/answer.ts"
   },
   "dependencies": {
     "@agent-workbench/protocol": "workspace:*",
