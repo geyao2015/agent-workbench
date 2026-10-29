@@ -18,22 +18,22 @@
 
 | 领域 | 亮点 | 证据 | 演示入口 |
 | --- | --- | --- | --- |
-| 事件协议 | append-only AgentEvent v1、纯函数 reducer、SSE 重放/取消 | protocol 61 测试；事件检查器 | 事件面板 |
+| 事件协议 | append-only AgentEvent v1、纯函数 reducer、SSE 重放/取消 | protocol 62 测试；事件检查器 | 事件面板 |
 | 流式渲染 | 块级增量分段、闭合块冻结、长会话虚拟列表 | 10k 块/500 增量 513ms；200 增量 1.81ms；60fps | 长会话 / 性能面板 |
 | 交互状态 | 工具状态机、半截 JSON、审批、reasoning、引用 | M1 演示；fixture 回放 | 功能测试快捷项 |
-| Agent runtime | Hono + LangGraph 工具循环、checkpointer、BM25 RAG | 16 篇文档；API 60 测试；离线假模型 E2E | 知识库问答 |
+| Agent runtime | Hono + LangGraph 工具循环、checkpointer、BM25 RAG | 16 篇文档；API 62 测试；离线假模型 E2E | 知识库问答 |
 | 历史会话 | 物化快照 + cursor 分页、JSONL 持久化、重启种子恢复 | 22 轮分页验证；同 thread 单 run 409 | 会话侧栏 |
-| 安全边界 | 输入 guard、输出脱敏、检索数据分隔 | 拦截请求不调用模型；三类测试 | 安全拒答 |
+| 安全边界 | 输入 guard、独立拦截卡片、输出脱敏、检索数据分隔 | 拦截请求不调用模型；三类测试 | 安全拒答 |
 | 双运行时 | 无 Key 自动 mock；配置 Key 进入实时 Agent | 生产构建两种模式冒烟 | Header 运行时标识 |
 | 发版工作台 | 确定性阶段、阶段审批、LLM 冲突、失败 RCA、回滚 child run、Chat handoff | 10 阶段端到端；LLM/fallback；失败 RCA；回滚与 parent 审计；handoff 携带 sourceRunId | Releases |
 | 评测与 Trace | 50 题检索金标、10 个 RCA 案例、事件派生 Span 瀑布 | Recall@1 85.4%、Recall@4 100%、MRR 0.920；RCA 证据 100%、runbook@4 100% | 文档 + Trace tab |
 
 ## 3. 展示方案待办
 
-- [ ] 空态工程亮点卡：4–5 条，带指标和「试一下」入口。
-- [ ] 头部「工程说明」抽屉：架构取舍、协议、性能、安全。
-- [ ] guard 拦截独立时间线卡片；需要确认新增 `guard.blocked` 事件或复用现有事件。
-- [ ] 亮点与 Demo 的映射：quick prompt / deep link / 面板打开。
+- [x] 空态工程亮点卡：6 条，带指标与说明。
+- [x] 头部「工程说明」抽屉：架构取舍、协议、性能、安全与限制。
+- [x] guard 拦截独立时间线卡片：新增 `guard.blocked` 事件。
+- [ ] 亮点与 Demo 的映射：目前依赖快捷项；deep link 待补。
 - [ ] 首屏 10 秒可读性盲测。
 - [ ] 是否做独立落地页（暂倾向不做）。
 

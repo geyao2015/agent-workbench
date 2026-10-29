@@ -147,8 +147,9 @@ Artifact：
 | type | payload | 说明 |
 | --- | --- | --- |
 | `error` | `{ code, message, retryable, scope? }` | 非致命错误，例如检索失败、单个工具失败 |
+| `guard.blocked` | `{ category: "secret" \| "prompt" \| "jailbreak" }` | 输入被安全 guard 拦截，未进入模型 |
 
-致命错误用 `run.failed`。`error` 事件只用于可恢复或可展示的局部错误。
+致命错误用 `run.failed`。`error` 事件只用于可恢复或可展示的局部错误。`guard.blocked` 在用户输入被拦截时先于拒答文本出现。
 
 ## 5. Reducer 契约
 
@@ -195,6 +196,11 @@ interface RunState {
     seq: number;
     retryable: boolean;
     fatal: boolean;
+  }>;
+
+  guards: Array<{
+    category: "secret" | "prompt" | "jailbreak";
+    seq: number;
   }>;
 }
 ```
@@ -460,3 +466,4 @@ export interface Span {
 | 2026-10-29 | v1 | 历史会话按 cursor 分页返回快照，不回放全部原始事件 |
 | 2026-10-29 | v1 | 新增 `approval.required` / `approval.resolved` 阶段级审批；artifact 增加可选 `stageId` |
 | 2026-10-29 | v1 | `run.started` 增加可选 `sourceRunId`，记录 Chat → Release handoff 来源 |
+| 2026-10-29 | v1 | 新增 `guard.blocked`，记录安全拦截类别；RunState 增加 `guards` |
