@@ -1,39 +1,49 @@
+export type ShowcaseAction =
+  | { type: "prompt"; promptText: string }
+  | { type: "route"; path: string };
+
 export interface ShowcaseHighlight {
   label: string;
   value: string;
   detail: string;
+  action?: ShowcaseAction;
 }
 
 export const SHOWCASE_HIGHLIGHTS: ShowcaseHighlight[] = [
   {
     label: "事件协议",
-    value: "61 tests",
+    value: "62 tests",
     detail: "append-only AgentEvent v1 + 纯函数 reducer；SSE 重放、取消与断线重连。",
   },
   {
     label: "流式渲染",
     value: "60fps",
     detail: "10k 块 / 500 增量 513ms；块级增量解析与长会话虚拟化。",
+    action: { type: "prompt", promptText: "长会话" },
   },
   {
     label: "Agent runtime",
     value: "Recall@1 85.4%",
     detail: "LangGraph 工具循环、BM25 知识库、引用与拒答；16 篇合成文档。",
+    action: { type: "prompt", promptText: "1.2.0 发版有哪些注意事项" },
   },
   {
     label: "发版工作台",
     value: "10 阶段",
     detail: "确定性阶段 + 阶段审批 + diff/audit；LLM 冲突回退、RCA、回滚与 handoff。",
+    action: { type: "route", path: "#/releases" },
   },
   {
     label: "安全边界",
     value: "guard",
     detail: "拦截密钥/系统提示词索取，检索数据分隔，流式输出密钥脱敏。",
+    action: { type: "prompt", promptText: "线上 Redis 集群的密码是多少" },
   },
   {
     label: "评测与 Trace",
     value: "Recall@4 100%",
     detail: "50 题检索金标 + 10 个 RCA 案例；Trace 瀑布从事件日志派生。",
+    action: { type: "route", path: "#/releases" },
   },
 ];
 

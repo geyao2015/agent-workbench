@@ -1,6 +1,8 @@
 import { Sparkles } from "lucide-react";
 
+import { Button } from "@/components/ui/button";
 import type { QuickPrompt } from "@/lib/chat/quick-prompts";
+import { navigate } from "@/lib/hash-router";
 import { SHOWCASE_HIGHLIGHTS } from "@/lib/showcase";
 
 export function EmptyState({
@@ -30,22 +32,53 @@ export function EmptyState({
           工程亮点
         </p>
         <div className="grid w-full gap-2 sm:grid-cols-2">
-          {SHOWCASE_HIGHLIGHTS.map((highlight) => (
-            <div
-              key={highlight.label}
-              className="rounded-xl border bg-card p-3 shadow-xs"
-            >
-              <div className="flex items-center justify-between gap-2">
-                <p className="text-xs font-medium">{highlight.label}</p>
-                <span className="rounded-full border bg-muted/40 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
-                  {highlight.value}
-                </span>
+          {SHOWCASE_HIGHLIGHTS.map((highlight) => {
+            const action = highlight.action;
+            const promptItem =
+              action?.type === "prompt"
+                ? prompts.find((item) =>
+                    item.kind === "history"
+                      ? item.label === action.promptText
+                      : item.prompt.includes(action.promptText),
+                  )
+                : undefined;
+
+            return (
+              <div
+                key={highlight.label}
+                className="flex flex-col rounded-xl border bg-card p-3 shadow-xs"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-xs font-medium">{highlight.label}</p>
+                  <span className="rounded-full border bg-muted/40 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
+                    {highlight.value}
+                  </span>
+                </div>
+                <p className="mt-1 flex-1 text-[11px] leading-5 text-muted-foreground">
+                  {highlight.detail}
+                </p>
+                {action?.type === "route" ? (
+                  <Button
+                    className="mt-2 w-full"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => navigate(action.path)}
+                  >
+                    打开 Releases
+                  </Button>
+                ) : promptItem ? (
+                  <Button
+                    className="mt-2 w-full"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onPick(promptItem)}
+                  >
+                    试一下
+                  </Button>
+                ) : null}
               </div>
-              <p className="mt-1 text-[11px] leading-5 text-muted-foreground">
-                {highlight.detail}
-              </p>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
