@@ -3,3 +3,4 @@ export * from "./events.js";
 export * from "./fixture.js";
 export * from "./partial-json.js";
 export * from "./reducer.js";
+export * from "./snapshot.js";

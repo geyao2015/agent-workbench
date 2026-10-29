@@ -6,7 +6,7 @@
     "node": ">=22"
   },
   "scripts": {
-    "dev": "pnpm -r --parallel dev",
+    "dev": "pnpm --filter @agent-workbench/protocol build && pnpm -r --parallel dev",
     "build": "pnpm --filter @agent-workbench/web build && pnpm --filter @agent-workbench/api build",
     "start": "pnpm --filter @agent-workbench/api start",
     "bench": "pnpm -r bench",

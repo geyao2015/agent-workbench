@@ -2,10 +2,20 @@
   "name": "@agent-workbench/protocol",
   "private": true,
   "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
-    ".": "./src/index.ts"
+    ".": {
+      "types": "./dist/index.d.ts",
+      "development": "./src/index.ts",
+      "default": "./dist/index.js"
+    }
   },
+  "files": [
+    "dist"
+  ],
   "scripts": {
+    "build": "tsc -p tsconfig.build.json",
     "bench": "vitest bench --run --reporter=verbose",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"

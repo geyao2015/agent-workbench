@@ -4,8 +4,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "prebuild": "pnpm --filter @agent-workbench/protocol build",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
+    "pretypecheck": "pnpm --filter @agent-workbench/protocol build",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
