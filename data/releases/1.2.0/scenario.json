@@ -18,6 +18,38 @@
     ],
     "runbookQuery": "INC-042 payment_conflict retry duplicate"
   },
+  "rollback": {
+    "targetTag": "v1.1.3",
+    "stages": [
+      {
+        "id": "rollback.preflight",
+        "kind": "rollback_preflight",
+        "name": "回滚前置检查"
+      },
+      {
+        "id": "rollback.approval",
+        "kind": "rollback_approval",
+        "name": "回滚审批",
+        "risk": "high",
+        "description": "切回 v1.1.3 前需要人工确认"
+      },
+      {
+        "id": "rollback.execute",
+        "kind": "rollback_execute",
+        "name": "执行回滚"
+      },
+      {
+        "id": "rollback.verify",
+        "kind": "rollback_verify",
+        "name": "回滚验证"
+      },
+      {
+        "id": "rollback.audit",
+        "kind": "audit",
+        "name": "审计"
+      }
+    ]
+  },
   "stages": [
     {
       "id": "preflight",

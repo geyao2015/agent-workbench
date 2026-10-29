@@ -15,6 +15,10 @@ const stageKindSchema = z.enum([
   "fix_approval",
   "release_notes",
   "dry_run_tag",
+  "rollback_preflight",
+  "rollback_approval",
+  "rollback_execute",
+  "rollback_verify",
   "audit",
 ]);
 
@@ -42,6 +46,10 @@ const scenarioFileSchema = z.object({
     confidence: z.enum(["low", "medium", "high"]),
     evidence: z.array(z.string().min(1)).min(1),
     runbookQuery: z.string().min(1),
+  }),
+  rollback: z.object({
+    targetTag: z.string().min(1),
+    stages: z.array(stageSchema).min(1),
   }),
   stages: z.array(stageSchema).min(1),
 });

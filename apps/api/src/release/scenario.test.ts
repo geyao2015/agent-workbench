@@ -20,6 +20,10 @@ describe("release scenario", () => {
       "diff_approval",
     );
     expect(scenarios[0]?.files).toHaveLength(2);
+    expect(scenarios[0]?.rollback.targetTag).toBe("v1.1.3");
+    expect(scenarios[0]?.rollback.stages.map((stage) => stage.kind)).toContain(
+      "rollback_approval",
+    );
   });
 
   it("确定性冲突解决选择 recommended", () => {

@@ -89,6 +89,58 @@ export function createReleaseApi(deps: ReleaseApiDeps): Hono {
     }
   });
 
+  app.post("/api/releases/runs/:runId/rollback", async (c) => {
+    const parentRunId = c.req.param("runId");
+    const active = deps.registry.get(parentRunId);
+    const stored = active
+      ? active.log.snapshotEvents()
+      : deps.threads.findRun(parentRunId)?.events;
+
+    if (!stored) {
+      return c.json({ error: "Release run 不存在" }, 404);
+    }
+
+    const started = stored.find((event) => event.type === "run.started");
+
+    if (
+      started?.type === "run.started" &&
+      started.payload.title?.startsWith("回滚 ")
+    ) {
+      return c.json({ error: "回滚 run 不支持再次回滚" }, 409);
+    }
+
+    const last = stored.at(-1);
+
+    if (last?.type !== "run.completed" || last.payload.status !== "done") {
+      return c.json({ error: "只有成功完成的 run 可以回滚" }, 409);
+    }
+
+    const body = await c.req
+      .json<{ scenarioId?: unknown }>()
+      .catch(() => null);
+    const scenarioId =
+      typeof body?.scenarioId === "string" && body.scenarioId.length > 0
+        ? body.scenarioId
+        : undefined;
+
+    try {
+      const run = deps.release.startRollback({ parentRunId, scenarioId });
+
+      return c.json({
+        runId: run.runId,
+        threadId: run.threadId,
+        kind: run.kind,
+        parentRunId,
+      });
+    } catch (cause) {
+      if (cause instanceof ScenarioNotFoundError) {
+        return c.json({ error: cause.message }, 404);
+      }
+
+      throw cause;
+    }
+  });
+
   app.post("/api/releases/runs/:runId/cancel", (c) => {
     const run = deps.registry.get(c.req.param("runId"));
 

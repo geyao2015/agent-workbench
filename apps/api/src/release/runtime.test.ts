@@ -40,6 +40,12 @@ afterEach(() => {
 
 function makeHarness(
   conflictResolver: ConflictResolver = new DeterministicConflictResolver(),
+  options: {
+    mode?: "release" | "rollback";
+    stages?: typeof scenario.stages;
+    targetTag?: string;
+    parentRunId?: string;
+  } = {},
 ) {
   const dir = mkdtempSync(join(tmpdir(), "aw-release-"));
   tempDirs.push(dir);
@@ -49,7 +55,11 @@ function makeHarness(
     threadId: "thread_release",
     kind: "release",
   });
-  log.append("run.started", { kind: "release", title: "1.2.0 发版" });
+  log.append("run.started", {
+    kind: "release",
+    title: "1.2.0 发版",
+    ...(options.parentRunId ? { parentRunId: options.parentRunId } : {}),
+  });
 
   const run: ActiveRun = {
     runId: "run_release",
@@ -57,6 +67,7 @@ function makeHarness(
     kind: "release",
     title: "1.2.0 发版",
     createdAt: 1,
+    ...(options.parentRunId ? { parentRunId: options.parentRunId } : {}),
     log,
   };
   const artifacts = new ArtifactStore(dir);
@@ -69,6 +80,9 @@ function makeHarness(
     approvals,
     conflictResolver,
     kb,
+    stages: options.stages ?? scenario.stages,
+    mode: options.mode ?? "release",
+    ...(options.targetTag ? { targetTag: options.targetTag } : {}),
     signal: controller.signal,
     checkpoint: () => {},
   });
@@ -335,6 +349,72 @@ describe("ReleaseRuntime", () => {
       conflictStage?.type === "stage.completed" &&
         conflictStage.payload.summary,
     ).toContain("确定性回退");
+  });
+
+  it("回滚子 run 审批后完成并记录 parentRunId", async () => {
+    const { runtime, log, artifacts, approvals } = makeHarness(undefined, {
+      mode: "rollback",
+      stages: scenario.rollback.stages,
+      targetTag: scenario.rollback.targetTag,
+      parentRunId: "run_parent",
+    });
+    const execution = runtime.execute();
+
+    await waitFor(() =>
+      log.snapshotEvents().some((event) => event.type === "approval.required"),
+    );
+
+    const approval = findEvent(log.snapshotEvents(), "approval.required");
+
+    if (!approval) {
+      throw new Error("缺少回滚审批");
+    }
+
+    expect(approval.payload.stageId).toBe("rollback.approval");
+    approvals.resolve(approval.payload.approvalId, { approved: true });
+    await execution;
+    log.finish();
+
+    const events = log.snapshotEvents();
+    const started = findEvent(events, "run.started");
+    const stages = events.flatMap((event) =>
+      event.type === "stage.completed" ? [event.payload] : [],
+    );
+    const artifactsCreated = events.flatMap((event) =>
+      event.type === "artifact.created" ? [event.payload] : [],
+    );
+
+    expect(started?.payload.parentRunId).toBe("run_parent");
+    expect(stages.map((stage) => stage.stageId)).toEqual([
+      "rollback.preflight",
+      "rollback.approval",
+      "rollback.execute",
+      "rollback.verify",
+      "rollback.audit",
+    ]);
+    expect(artifactsCreated.map((artifact) => artifact.kind)).toEqual([
+      "plan",
+      "document",
+    ]);
+
+    const audit = artifactsCreated.find(
+      (artifact) => artifact.kind === "document",
+    );
+
+    if (!audit) {
+      throw new Error("缺少回滚 audit");
+    }
+
+    const content = artifacts.read("run_release", audit.artifactId);
+    const body = JSON.parse(content?.body ?? "{}") as {
+      mode: string;
+      parentRunId: string;
+      targetTag: string;
+    };
+
+    expect(body.mode).toBe("rollback");
+    expect(body.parentRunId).toBe("run_parent");
+    expect(body.targetTag).toBe("v1.1.3");
   });
 
   it("等待审批时取消，run 以 cancelled 结束", async () => {

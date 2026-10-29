@@ -9,6 +9,10 @@ export type ReleaseStageKind =
   | "fix_approval"
   | "release_notes"
   | "dry_run_tag"
+  | "rollback_preflight"
+  | "rollback_approval"
+  | "rollback_execute"
+  | "rollback_verify"
   | "audit";
 
 export interface ReleaseStage {
@@ -84,6 +88,10 @@ export interface ReleaseScenario {
   ciAttempts: Record<string, CiAttempt>;
   logs: Record<string, string>;
   rca: ReleaseRcaConfig;
+  rollback: {
+    targetTag: string;
+    stages: ReleaseStage[];
+  };
   notesTemplate: string;
 }
 
@@ -118,6 +126,9 @@ export interface DiffArtifactBody {
 export interface AuditArtifactBody {
   version: string;
   runId: string;
+  mode?: "release" | "rollback";
+  parentRunId?: string;
+  targetTag?: string;
   stages: Array<{
     id: string;
     name: string;

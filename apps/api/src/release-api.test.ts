@@ -205,5 +205,69 @@ describe("release API", () => {
     };
 
     expect(threads.threads[0]?.kind).toBe("release");
+
+    const rollbackResponse = await app.request(
+      `/api/releases/runs/${created.runId}/rollback`,
+      { method: "POST" },
+    );
+    const rollback = (await rollbackResponse.json()) as {
+      runId: string;
+      parentRunId: string;
+    };
+
+    expect(rollbackResponse.status).toBe(200);
+    expect(rollback.parentRunId).toBe(created.runId);
+
+    await waitFor(async () =>
+      (await getEvents(app, rollback.runId)).some(
+        (event) => event.type === "approval.required",
+      ),
+    );
+
+    const rollbackApproval = (await getEvents(app, rollback.runId)).find(
+      (event) => event.type === "approval.required",
+    );
+
+    if (
+      !rollbackApproval ||
+      rollbackApproval.type !== "approval.required"
+    ) {
+      throw new Error("缺少回滚审批");
+    }
+
+    const rollbackApproveResponse = await app.request(
+      `/api/releases/approvals/${rollbackApproval.payload.approvalId}`,
+      {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ approved: true }),
+      },
+    );
+
+    expect(rollbackApproveResponse.status).toBe(200);
+
+    await waitFor(async () =>
+      (await getEvents(app, rollback.runId)).some(
+        (event) => event.type === "run.completed",
+      ),
+    );
+
+    const rollbackEvents = await getEvents(app, rollback.runId);
+    const rollbackStarted = rollbackEvents.find(
+      (event) => event.type === "run.started",
+    );
+
+    expect(
+      rollbackStarted?.type === "run.started" &&
+        rollbackStarted.payload.parentRunId,
+    ).toBe(created.runId);
+    expect(
+      rollbackEvents.some(
+        (event) =>
+          event.type === "stage.completed" &&
+          event.payload.stageId === "rollback.verify" &&
+          event.payload.status === "success",
+      ),
+    ).toBe(true);
   });
 });

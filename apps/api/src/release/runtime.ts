@@ -53,6 +53,9 @@ export class ReleaseRuntime {
       approvals: ApprovalRegistry;
       conflictResolver: ConflictResolver;
       kb: KnowledgeBase;
+      stages: ReleaseStage[];
+      mode: "release" | "rollback";
+      targetTag?: string;
       signal: AbortSignal;
       checkpoint: () => void;
     },
@@ -63,7 +66,7 @@ export class ReleaseRuntime {
     const log = run.log;
 
     try {
-      for (const stage of this.deps.scenario.stages) {
+      for (const stage of this.deps.stages) {
         if (this.rejected) {
           break;
         }
@@ -74,9 +77,7 @@ export class ReleaseRuntime {
       }
 
       if (this.rejected) {
-        const audit = this.deps.scenario.stages.find(
-          (stage) => stage.kind === "audit",
-        );
+        const audit = this.deps.stages.find((stage) => stage.kind === "audit");
 
         if (audit) {
           await this.runStage(audit);
@@ -146,6 +147,34 @@ export class ReleaseRuntime {
         }
 
         await this.requestApproval(stage);
+        return;
+      }
+
+      case "rollback_preflight": {
+        this.completeStage(
+          stage,
+          "success",
+          `目标 tag ${this.deps.targetTag ?? "unknown"}，当前版本 ${this.deps.scenario.version}`,
+        );
+        return;
+      }
+
+      case "rollback_approval": {
+        await this.requestApproval(stage);
+        return;
+      }
+
+      case "rollback_execute": {
+        this.executeRollback(stage);
+        return;
+      }
+
+      case "rollback_verify": {
+        this.completeStage(
+          stage,
+          "success",
+          "健康检查通过，支付成功率恢复到基线",
+        );
         return;
       }
 
@@ -462,10 +491,52 @@ export class ReleaseRuntime {
     this.completeStage(stage, "success", "Release Notes 已生成");
   }
 
+  private executeRollback(stage: ReleaseStage): void {
+    const targetTag = this.deps.targetTag ?? "unknown";
+    const body = JSON.stringify(
+      {
+        version: this.deps.scenario.version,
+        targetTag,
+        steps: [
+          `停止 ${this.deps.scenario.version} 的新流量`,
+          `切回 ${targetTag} 镜像`,
+          "保留向后兼容的数据库迁移",
+          "验证健康检查与支付成功率",
+        ],
+        simulated: true,
+      },
+      null,
+      2,
+    );
+    const artifactId = `art_rollback_${randomUUID()}`;
+    const title = `${this.deps.scenario.version} 回滚计划`;
+    const info = this.deps.artifacts.write(this.deps.run.runId, artifactId, {
+      mime: "application/json",
+      body,
+    });
+
+    this.deps.run.log.append("artifact.created", {
+      artifactId,
+      kind: "plan",
+      title,
+      mime: info.mime,
+      size: info.size,
+      uri: info.uri,
+      stageId: stage.id,
+    });
+    this.artifactsUsed.push({ artifactId, kind: "plan", title });
+    this.completeStage(stage, "success", `已切回 ${targetTag}（模拟）`);
+  }
+
   private writeAudit(stage: ReleaseStage): void {
     const body: AuditArtifactBody = {
       version: this.deps.scenario.version,
       runId: this.deps.run.runId,
+      mode: this.deps.mode,
+      ...(this.deps.run.parentRunId
+        ? { parentRunId: this.deps.run.parentRunId }
+        : {}),
+      ...(this.deps.targetTag ? { targetTag: this.deps.targetTag } : {}),
       stages: [
         ...this.stagesUsed,
         {
@@ -480,7 +551,10 @@ export class ReleaseRuntime {
       completedAt: new Date().toISOString(),
     };
     const artifactId = `art_audit_${randomUUID()}`;
-    const title = `${this.deps.scenario.version} 发版审计记录`;
+    const title =
+      this.deps.mode === "rollback"
+        ? `${this.deps.scenario.version} 回滚审计记录`
+        : `${this.deps.scenario.version} 发版审计记录`;
     const info = this.deps.artifacts.write(this.deps.run.runId, artifactId, {
       mime: "application/json",
       body: JSON.stringify(body, null, 2),
@@ -601,10 +675,54 @@ export class ReleaseService {
     return run;
   }
 
+  startRollback(input: { parentRunId: string; scenarioId?: string }): ActiveRun {
+    const scenario = input.scenarioId
+      ? this.scenarios.find((candidate) => candidate.id === input.scenarioId)
+      : this.scenarios[0];
+
+    if (!scenario) {
+      throw new ScenarioNotFoundError(input.scenarioId ?? "default");
+    }
+
+    const { run, signal } = this.deps.registry.begin({
+      kind: "release",
+      title: `回滚 ${scenario.version} → ${scenario.rollback.targetTag}`,
+      parentRunId: input.parentRunId,
+    });
+
+    void this.executeRuntime(
+      run,
+      scenario,
+      signal,
+      scenario.rollback.stages,
+      "rollback",
+      scenario.rollback.targetTag,
+    );
+
+    return run;
+  }
+
   private async execute(
     run: ActiveRun,
     scenario: ReleaseScenario,
     signal: AbortSignal,
+  ): Promise<void> {
+    await this.executeRuntime(
+      run,
+      scenario,
+      signal,
+      scenario.stages,
+      "release",
+    );
+  }
+
+  private async executeRuntime(
+    run: ActiveRun,
+    scenario: ReleaseScenario,
+    signal: AbortSignal,
+    stages: ReleaseScenario["stages"],
+    mode: "release" | "rollback",
+    targetTag?: string,
   ): Promise<void> {
     try {
       const runtime = new ReleaseRuntime({
@@ -614,6 +732,9 @@ export class ReleaseService {
         approvals: this.deps.approvals,
         conflictResolver: this.deps.conflictResolver,
         kb: this.deps.kb,
+        stages,
+        mode,
+        ...(targetTag ? { targetTag } : {}),
         signal,
         checkpoint: () => this.deps.registry.persist(run),
       });

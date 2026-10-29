@@ -11,6 +11,7 @@ export interface ActiveRun {
   kind: RunKind;
   title: string;
   createdAt: number;
+  parentRunId?: string;
   log: RunLog;
 }
 
@@ -32,6 +33,7 @@ export class RunRegistry {
     kind: RunKind;
     title: string;
     threadId?: string;
+    parentRunId?: string;
   }): { run: ActiveRun; signal: AbortSignal } {
     const threadId = input.threadId ?? `thread_${randomUUID()}`;
 
@@ -46,7 +48,11 @@ export class RunRegistry {
     this.store.ensure(threadId, title, input.kind);
 
     const log = new RunLog({ runId, threadId, kind: input.kind });
-    log.append("run.started", { kind: input.kind, title });
+    log.append("run.started", {
+      kind: input.kind,
+      title,
+      ...(input.parentRunId ? { parentRunId: input.parentRunId } : {}),
+    });
 
     const controller = new AbortController();
     const run: ActiveRun = {
@@ -55,6 +61,7 @@ export class RunRegistry {
       kind: input.kind,
       title,
       createdAt,
+      ...(input.parentRunId ? { parentRunId: input.parentRunId } : {}),
       log,
     };
 
