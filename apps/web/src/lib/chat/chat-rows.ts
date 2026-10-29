@@ -25,6 +25,11 @@ export type ChatRow =
       reason?: string;
     }
   | {
+      kind: "guard";
+      key: string;
+      category: "secret" | "prompt" | "jailbreak";
+    }
+  | {
       kind: "assistant-header";
       key: string;
       runStatus: RunState["status"] | null;
@@ -140,6 +145,7 @@ export function buildChatRows(input: {
       | { seq: number; kind: "message"; messageId: string }
       | { seq: number; kind: "tool"; toolCallId: string }
       | { seq: number; kind: "error"; index: number }
+      | { seq: number; kind: "guard"; index: number }
     > = [];
 
     for (const messageId of run.state.messageOrder) {
@@ -160,6 +166,10 @@ export function buildChatRows(input: {
 
     for (const [index, error] of run.state.errors.entries()) {
       timeline.push({ seq: error.seq, kind: "error", index });
+    }
+
+    for (const [index, guard] of run.state.guards.entries()) {
+      timeline.push({ seq: guard.seq, kind: "guard", index });
     }
 
     timeline.sort((left, right) => left.seq - right.seq);
@@ -203,6 +213,20 @@ export function buildChatRows(input: {
             run.state.status === "waiting_approval",
           resolving: approval ? input.resolvingApprovalId === approval.id : false,
         });
+        continue;
+      }
+
+      if (item.kind === "guard") {
+        const guard = run.state.guards[item.index];
+
+        if (guard) {
+          rows.push({
+            kind: "guard",
+            key: `${run.runId}:guard:${guard.seq}`,
+            category: guard.category,
+          });
+        }
+
         continue;
       }
 

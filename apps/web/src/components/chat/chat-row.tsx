@@ -8,6 +8,7 @@ import {
   Loader2,
   Pause,
   Rocket,
+  ShieldAlert,
   Sparkles,
 } from "lucide-react";
 
@@ -63,6 +64,9 @@ export function ChatRowView({
           onStart={() => onStartRelease(row.runId, row.scenarioId)}
         />
       );
+
+    case "guard":
+      return <GuardBlockedCard category={row.category} />;
 
     case "assistant-header":
       return (
@@ -201,6 +205,32 @@ function AssistantHeader({
     </div>
   );
 }
+
+const GUARD_LABEL: Record<"secret" | "prompt" | "jailbreak", string> = {
+  secret: "密钥 / 凭证索取",
+  prompt: "系统提示词提取",
+  jailbreak: "越狱指令",
+};
+
+const GuardBlockedCard = memo(function GuardBlockedCard({
+  category,
+}: {
+  category: "secret" | "prompt" | "jailbreak";
+}) {
+  return (
+    <div className="pl-11">
+      <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3">
+        <div className="flex items-center gap-2 text-sm font-medium text-amber-800 dark:text-amber-200">
+          <ShieldAlert className="size-4" />
+          Guard 拦截 · {GUARD_LABEL[category]}
+        </div>
+        <p className="mt-1 text-xs leading-5 text-muted-foreground">
+          请求在进入模型前被拦截，未消耗模型调用，也未进入后续上下文种子。
+        </p>
+      </div>
+    </div>
+  );
+});
 
 const HandoffCard = memo(function HandoffCard({
   title,

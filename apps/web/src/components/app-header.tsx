@@ -1,7 +1,9 @@
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 
-import { Sparkles } from "lucide-react";
+import { BookOpen, Sparkles } from "lucide-react";
 
+import { EngineeringNotes } from "@/components/devtools/engineering-notes";
+import { Button } from "@/components/ui/button";
 import type { AppView } from "@/lib/hash-router";
 import { cn } from "@/lib/utils";
 
@@ -23,35 +25,52 @@ export function AppHeader({
   onNavigate,
   children,
 }: AppHeaderProps) {
+  const [showNotes, setShowNotes] = useState(false);
+
   return (
-    <header className="flex items-center justify-between gap-3 border-b bg-background/90 px-4 py-3 backdrop-blur md:px-6">
-      <div className="flex min-w-0 items-center gap-3">
-        <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-          <Sparkles className="size-4" />
+    <>
+      <header className="flex items-center justify-between gap-3 border-b bg-background/90 px-4 py-3 backdrop-blur md:px-6">
+        <div className="flex min-w-0 items-center gap-3">
+          <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+            <Sparkles className="size-4" />
+          </div>
+          <div className="min-w-0">
+            <h1 className="truncate text-sm font-semibold">Agent Workbench</h1>
+            <p className="truncate text-xs text-muted-foreground">{subtitle}</p>
+          </div>
         </div>
-        <div className="min-w-0">
-          <h1 className="truncate text-sm font-semibold">Agent Workbench</h1>
-          <p className="truncate text-xs text-muted-foreground">{subtitle}</p>
-        </div>
-      </div>
 
-      <nav className="flex shrink-0 items-center gap-0.5 rounded-lg border bg-muted/40 p-0.5">
-        {NAV_ITEMS.map((item) => (
-          <button
-            key={item.id}
-            type="button"
-            onClick={() => onNavigate(item.id)}
-            className={cn(
-              "rounded-md px-2.5 py-1 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground",
-              activeView === item.id && "bg-background text-foreground shadow-xs",
-            )}
+        <nav className="flex shrink-0 items-center gap-0.5 rounded-lg border bg-muted/40 p-0.5">
+          {NAV_ITEMS.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => onNavigate(item.id)}
+              className={cn(
+                "rounded-md px-2.5 py-1 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground",
+                activeView === item.id && "bg-background text-foreground shadow-xs",
+              )}
+            >
+              {item.label}
+            </button>
+          ))}
+        </nav>
+
+        <div className="flex shrink-0 items-center gap-1.5">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowNotes(true)}
+            aria-label="工程说明"
           >
-            {item.label}
-          </button>
-        ))}
-      </nav>
+            <BookOpen />
+            <span className="hidden sm:inline">工程说明</span>
+          </Button>
+          {children}
+        </div>
+      </header>
 
-      <div className="flex shrink-0 items-center gap-1.5">{children}</div>
-    </header>
+      {showNotes ? <EngineeringNotes onClose={() => setShowNotes(false)} /> : null}
+    </>
   );
 }
