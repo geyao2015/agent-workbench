@@ -49,9 +49,12 @@ export function AppHeader({
               key={item.id}
               type="button"
               onClick={() => onNavigate(item.id)}
+              aria-current={activeView === item.id ? "page" : undefined}
               className={cn(
-                "rounded-md px-2.5 py-1 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground",
-                activeView === item.id && "bg-background text-foreground shadow-xs",
+                "rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
+                activeView === item.id
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "text-muted-foreground hover:bg-background/70 hover:text-foreground",
               )}
             >
               {item.label}

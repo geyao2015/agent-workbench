@@ -103,11 +103,7 @@ export function ReleaseListView() {
         onNavigate={(view) =>
           navigate(view === "chat" ? "#/chat" : "#/releases")
         }
-      >
-        <Button variant="ghost" size="sm" onClick={() => navigate("#/chat")}>
-          返回 Chat
-        </Button>
-      </AppHeader>
+      />
 
       <main className="min-h-0 flex-1 overflow-y-auto">
         <div className="mx-auto w-full max-w-5xl space-y-6 px-4 py-8 md:px-8">
