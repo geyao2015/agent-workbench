@@ -4,6 +4,7 @@ import type { KnowledgeBase } from "./kb/index.js";
 import type { RunManager } from "./runs/run-manager.js";
 import { streamRunEvents } from "./runs/sse.js";
 import type { ThreadStore } from "./runs/thread-store.js";
+import { deriveSpans } from "./spans/derive.js";
 
 const MAX_PROMPT_LENGTH = 4000;
 const MAX_THREAD_ID_LENGTH = 120;
@@ -91,6 +92,16 @@ export function createAgentApi(deps: AgentApiDeps): Hono {
     }
 
     return streamRunEvents(c, run);
+  });
+
+  app.get("/api/runs/:runId/spans", (c) => {
+    const run = deps.runs.get(c.req.param("runId"));
+
+    if (!run) {
+      return c.json({ error: "run 不存在" }, 404);
+    }
+
+    return c.json({ spans: deriveSpans(run.log.snapshotEvents()) });
   });
 
   return app;

@@ -9,6 +9,7 @@ import {
 import { RunRegistry, ThreadBusyError } from "./runs/run-registry.js";
 import { streamRunEvents } from "./runs/sse.js";
 import type { ThreadStore } from "./runs/thread-store.js";
+import { deriveSpans } from "./spans/derive.js";
 
 const MAX_THREAD_ID_LENGTH = 120;
 
@@ -163,6 +164,20 @@ export function createReleaseApi(deps: ReleaseApiDeps): Hono {
     }
 
     return streamRunEvents(c, run);
+  });
+
+  app.get("/api/releases/runs/:runId/spans", (c) => {
+    const runId = c.req.param("runId");
+    const active = deps.registry.get(runId);
+    const events = active
+      ? active.log.snapshotEvents()
+      : deps.threads.findRun(runId)?.events;
+
+    if (!events) {
+      return c.json({ error: "Release run 不存在" }, 404);
+    }
+
+    return c.json({ runId, spans: deriveSpans(events) });
   });
 
   app.get("/api/releases/runs/:runId/events.json", (c) => {
