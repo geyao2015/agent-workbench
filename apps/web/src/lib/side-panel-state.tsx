@@ -8,7 +8,7 @@ import {
   type ReactNode,
 } from "react";
 
-export type SidePanelName = "events" | "notes";
+export type SidePanelName = "events" | "notes" | "performance";
 
 const CLOSE_MS = 320;
 

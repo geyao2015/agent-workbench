@@ -1,7 +1,6 @@
 import { useEffect, useState, useSyncExternalStore } from "react";
 
-import { X } from "lucide-react";
-
+import { SidePanel } from "@/components/devtools/side-panel";
 import { Button } from "@/components/ui/button";
 import {
   getRenderStats,
@@ -10,6 +9,7 @@ import {
   subscribeRenderStats,
 } from "@/lib/render-stats";
 import { useRuntimeMetrics } from "@/lib/runtime-metrics";
+import { useSidePanel } from "@/lib/side-panel-state";
 
 function useFps(active: boolean): void {
   useEffect(() => {
@@ -83,35 +83,23 @@ function RuntimeMetrics() {
 export function PerformancePanel({
   active,
   totalBlocks,
-  onClose,
 }: {
   active: boolean;
   totalBlocks: number;
-  onClose: () => void;
 }) {
   const stats = useSyncExternalStore(subscribeRenderStats, getRenderStats);
   const [runtimeEpoch, setRuntimeEpoch] = useState(0);
+  const { closePanel } = useSidePanel();
 
   useFps(active);
 
   return (
-    <aside className="fixed right-4 bottom-4 z-40 max-h-[calc(100vh-2rem)] w-[calc(100%-2rem)] max-w-sm overflow-y-auto rounded-xl border bg-background/95 p-4 shadow-lg backdrop-blur">
-      <div className="flex items-start justify-between gap-2">
-        <div>
-          <p className="text-sm font-medium">渲染性能</p>
-          <p className="text-xs text-muted-foreground">当前对话累计</p>
-        </div>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={onClose}
-          aria-label="关闭性能面板"
-        >
-          <X />
-        </Button>
-      </div>
-
-      <dl className="mt-3 grid grid-cols-2 gap-2">
+    <SidePanel
+      title="渲染性能"
+      subtitle="当前对话累计"
+      onClose={closePanel}
+    >
+      <dl className="grid grid-cols-2 gap-2">
         <Metric label="块渲染" value={String(stats.blockRenders)} />
         <Metric
           label="闭合块渲染"
@@ -151,6 +139,6 @@ export function PerformancePanel({
           重置
         </Button>
       </div>
-    </aside>
+    </SidePanel>
   );
 }

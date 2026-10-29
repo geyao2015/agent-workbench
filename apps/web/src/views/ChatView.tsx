@@ -77,7 +77,6 @@ export function ChatView() {
   const [isStreaming, setIsStreaming] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { activePanel, togglePanel, closePanel } = useSidePanel();
-  const [showPerformance, setShowPerformance] = useState(false);
   const [isStopping, setIsStopping] = useState(false);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const [reconnectAttempt, setReconnectAttempt] = useState(0);
@@ -153,7 +152,7 @@ export function ChatView() {
     resetRenderStats();
 
     if (params.get("bench") === "1") {
-      setShowPerformance(true);
+      togglePanel("performance");
     }
 
     void startRun(fixture, "流式渲染基准");
@@ -784,7 +783,8 @@ export function ChatView() {
           variant="outline"
           size="sm"
           className="hidden sm:inline-flex"
-          onClick={() => setShowPerformance((value) => !value)}
+          onClick={() => togglePanel("performance")}
+          aria-pressed={activePanel === "performance"}
         >
           <Gauge />
           <span className="hidden lg:inline">性能</span>
@@ -872,16 +872,15 @@ export function ChatView() {
           />
         ) : null}
 
+        {activePanel === "performance" ? (
+          <PerformancePanel
+            active={isStreaming || runs.length > 0}
+            totalBlocks={totalBlocks}
+          />
+        ) : null}
+
         <div id="notes-root" className="contents" />
       </div>
-
-      {showPerformance ? (
-        <PerformancePanel
-          active={isStreaming || runs.length > 0}
-          totalBlocks={totalBlocks}
-          onClose={() => setShowPerformance(false)}
-        />
-      ) : null}
     </div>
   );
 }
