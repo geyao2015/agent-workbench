@@ -17,7 +17,13 @@ import { loadRuntimeConfig, publicRuntimeInfo } from "./config.js";
 import { loadFixtures, watchFixtures } from "./fixtures.js";
 import type { FixtureDefinition } from "./fixtures.js";
 import { KnowledgeBase } from "./kb/index.js";
+import { createReleaseApi } from "./release-api.js";
+import { ApprovalRegistry } from "./release/approvals.js";
+import { ArtifactStore } from "./release/artifacts.js";
+import { ReleaseService } from "./release/runtime.js";
+import { loadReleaseScenarios } from "./release/scenario.js";
 import { RunManager } from "./runs/run-manager.js";
+import { RunRegistry } from "./runs/run-registry.js";
 import { ThreadStore } from "./runs/thread-store.js";
 
 try {
@@ -50,16 +56,26 @@ watchFixtures(() => {
 });
 
 const kb = KnowledgeBase.load(config.docsDir);
+const threads = new ThreadStore(config.storeDir);
+const registry = new RunRegistry(threads);
+const artifacts = new ArtifactStore(resolve(config.storeDir, "artifacts"));
+const approvals = new ApprovalRegistry();
+const releaseScenarios = loadReleaseScenarios(config.releasesDir);
+const release = new ReleaseService({
+  registry,
+  scenarios: releaseScenarios,
+  artifacts,
+  approvals,
+});
 const agentRuntime = (() => {
   if (config.mode !== "agent") {
     return undefined;
   }
 
-  const threads = new ThreadStore(config.storeDir);
   const agent = createChatAgent(config, kb);
-  const runs = new RunManager({ agent, kb, store: threads });
+  const runs = new RunManager({ agent, kb, store: threads, registry });
 
-  return { threads, runs };
+  return { runs };
 })();
 
 interface MockRun {
@@ -504,7 +520,13 @@ app.get("/api/runtime", (c) =>
   c.json({
     ...publicRuntimeInfo(config),
     docs: kb.list().length,
+    releases: releaseScenarios.length,
   }),
+);
+
+app.route(
+  "/",
+  createReleaseApi({ release, registry, approvals, artifacts, threads }),
 );
 
 if (agentRuntime) {
@@ -512,7 +534,7 @@ if (agentRuntime) {
     "/",
     createAgentApi({
       runs: agentRuntime.runs,
-      threads: agentRuntime.threads,
+      threads,
       kb,
     }),
   );
@@ -850,8 +872,8 @@ serve({ fetch: app.fetch, port }, (info) => {
   console.log(`API listening on http://localhost:${info.port}`);
   console.log(
     config.mode === "agent"
-      ? `Runtime: agent (${config.provider}/${config.model}) · KB ${kb.list().length} docs`
-      : `Runtime: mock · ${fixtures.size} fixtures`,
+      ? `Runtime: agent (${config.provider}/${config.model}) · KB ${kb.list().length} docs · Releases ${releaseScenarios.length}`
+      : `Runtime: mock · ${fixtures.size} fixtures · Releases ${releaseScenarios.length}`,
   );
   console.log(
     hasWebBuild

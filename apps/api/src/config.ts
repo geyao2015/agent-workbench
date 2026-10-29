@@ -12,6 +12,7 @@ export interface RuntimeConfig {
   baseURL?: string;
   port: number;
   docsDir: string;
+  releasesDir: string;
   storeDir: string;
 }
 
@@ -62,6 +63,7 @@ export function loadRuntimeConfig(env: NodeJS.ProcessEnv = process.env): Runtime
   const base = {
     port: Number(env.PORT ?? 8787),
     docsDir: resolve(repoRoot, env.KB_DIR ?? "data/docs"),
+    releasesDir: resolve(repoRoot, env.RELEASES_DIR ?? "data/releases"),
     storeDir: resolve(repoRoot, env.STORE_DIR ?? ".data"),
   };
 

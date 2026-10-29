@@ -1,0 +1,38 @@
+{
+  "files": [
+    {
+      "path": "src/checkout/client.ts",
+      "hunks": [
+        {
+          "id": "request-timeout",
+          "base": "const requestTimeoutMs = 3000;",
+          "ours": "const requestTimeoutMs = 5000;",
+          "theirs": "const requestTimeoutMs = 4500;",
+          "recommended": "const requestTimeoutMs = 5000;",
+          "rationale": "1.2.0 的发版清单要求支付请求超时保持 5s，避免回调高峰误判超时。"
+        },
+        {
+          "id": "retry-backoff",
+          "base": "retry: { attempts: 2 },",
+          "ours": "retry: { attempts: 2, backoffMs: 200 },",
+          "theirs": "retry: { attempts: 3, backoffMs: 200 },",
+          "recommended": "retry: { attempts: 3, backoffMs: 200 },",
+          "rationale": "采纳支付网关侧的三次重试，避免 INC-042 的重复回调继续放大。"
+        }
+      ]
+    },
+    {
+      "path": "src/checkout/order.ts",
+      "hunks": [
+        {
+          "id": "idempotency-guard",
+          "base": "if (!order.idempotencyKey) {\n  return null;\n}",
+          "ours": "if (!order.idempotencyKey) {\n  throw new Error(\"missing idempotency key\");\n}",
+          "theirs": "if (!order.idempotencyKey) {\n  logger.warn(\"missing idempotency key\");\n}",
+          "recommended": "if (!order.idempotencyKey) {\n  throw new Error(\"missing idempotency key\");\n}",
+          "rationale": "缺少幂等键属于调用方错误，应显式失败，避免静默写入重复支付记录。"
+        }
+      ]
+    }
+  ]
+}

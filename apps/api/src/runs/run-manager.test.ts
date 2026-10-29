@@ -7,6 +7,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import type { ChatAgent } from "../agent/graph.js";
 import type { KnowledgeBase } from "../kb/index.js";
 import { RunManager } from "./run-manager.js";
+import { RunRegistry } from "./run-registry.js";
 import { ThreadStore } from "./thread-store.js";
 
 const tempDirs: string[] = [];
@@ -41,9 +42,10 @@ function makeManager() {
   } as unknown as ChatAgent;
   const kb = { get: () => undefined } as unknown as KnowledgeBase;
   const store = new ThreadStore(dir);
+  const registry = new RunRegistry(store);
 
   return {
-    manager: new RunManager({ agent, kb, store }),
+    manager: new RunManager({ agent, kb, store, registry }),
     store,
     dir,
   };

@@ -1,8 +1,8 @@
 import { Hono } from "hono";
-import { streamSSE } from "hono/streaming";
 
 import type { KnowledgeBase } from "./kb/index.js";
 import type { RunManager } from "./runs/run-manager.js";
+import { streamRunEvents } from "./runs/sse.js";
 import type { ThreadStore } from "./runs/thread-store.js";
 
 const MAX_PROMPT_LENGTH = 4000;
@@ -90,21 +90,7 @@ export function createAgentApi(deps: AgentApiDeps): Hono {
       return c.json({ error: "run 不存在" }, 404);
     }
 
-    const lastEventId =
-      c.req.header("last-event-id") ?? c.req.query("lastEventId");
-    const afterSeq = run.log.sequenceAfter(lastEventId);
-
-    return streamSSE(c, async (stream) => {
-      const abort = new AbortController();
-      stream.onAbort(() => abort.abort());
-
-      for await (const event of run.log.iterate(afterSeq, abort.signal)) {
-        await stream.writeSSE({
-          id: event.eventId,
-          data: JSON.stringify(event),
-        });
-      }
-    });
+    return streamRunEvents(c, run);
   });
 
   return app;

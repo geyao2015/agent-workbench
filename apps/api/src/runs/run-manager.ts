@@ -1,22 +1,11 @@
 import { randomUUID } from "node:crypto";
 
-import type { RunKind } from "@agent-workbench/protocol";
-
 import { inspectUserPrompt } from "../agent/guard.js";
 import { AgentRunner, type HistoryMessage } from "../agent/runner.js";
 import type { ChatAgent } from "../agent/graph.js";
 import type { KnowledgeBase } from "../kb/index.js";
-import { RunLog } from "./run-log.js";
+import type { ActiveRun, RunRegistry } from "./run-registry.js";
 import type { ThreadStore } from "./thread-store.js";
-
-export interface ActiveRun {
-  runId: string;
-  threadId: string;
-  kind: RunKind;
-  title: string;
-  createdAt: number;
-  log: RunLog;
-}
 
 export interface CreateChatRunInput {
   prompt: string;
@@ -27,92 +16,68 @@ export interface RunManagerDeps {
   agent: ChatAgent;
   kb: KnowledgeBase;
   store: ThreadStore;
+  registry: RunRegistry;
 }
 
 export class RunManager {
-  private readonly runs = new Map<string, ActiveRun>();
-  private readonly controllers = new Map<string, AbortController>();
   private readonly messageIds = new Map<string, string>();
-  private readonly activeThreads = new Map<string, string>();
 
   constructor(private readonly deps: RunManagerDeps) {}
 
   hasActiveRun(threadId: string): boolean {
-    return this.activeThreads.has(threadId);
+    return this.deps.registry.hasActiveRun(threadId);
   }
 
   createChatRun(input: CreateChatRunInput): ActiveRun {
-    const threadId = input.threadId ?? `thread_${randomUUID()}`;
-    const runId = `run_${randomUUID()}`;
     const title = input.prompt.replace(/\s+/g, " ").slice(0, 40);
-    const createdAt = Date.now();
-
-    this.deps.store.ensure(threadId, title);
-
-    const log = new RunLog({ runId, threadId, kind: "chat" });
+    const { run, signal } = this.deps.registry.begin({
+      kind: "chat",
+      title,
+      threadId: input.threadId,
+    });
     const userMessageId = `msg_user_${randomUUID()}`;
     const assistantMessageId = `msg_assistant_${randomUUID()}`;
 
-    log.append("run.started", { kind: "chat", title });
-    log.append("message.started", { messageId: userMessageId, role: "user" });
-    log.append("text.delta", { messageId: userMessageId, delta: input.prompt });
-    log.append("message.completed", {
+    run.log.append("message.started", {
+      messageId: userMessageId,
+      role: "user",
+    });
+    run.log.append("text.delta", {
+      messageId: userMessageId,
+      delta: input.prompt,
+    });
+    run.log.append("message.completed", {
       messageId: userMessageId,
       stopReason: "stop",
     });
-    log.append("message.started", {
+    run.log.append("message.started", {
       messageId: assistantMessageId,
       role: "assistant",
     });
 
-    const active: ActiveRun = {
-      runId,
-      threadId,
-      kind: "chat",
-      title,
-      createdAt,
-      log,
-    };
+    this.messageIds.set(run.runId, assistantMessageId);
 
-    this.runs.set(runId, active);
-    this.messageIds.set(runId, assistantMessageId);
-    this.controllers.set(runId, new AbortController());
-    this.activeThreads.set(threadId, runId);
+    const history = this.deps.store.historyMessages(run.threadId);
 
-    const history = this.deps.store.historyMessages(threadId);
+    void this.execute(run, input.prompt, history, signal);
 
-    void this.execute(active, input.prompt, history);
-
-    return active;
+    return run;
   }
 
   get(runId: string): ActiveRun | undefined {
-    return this.runs.get(runId);
+    return this.deps.registry.get(runId);
   }
 
   cancel(runId: string): boolean {
-    const controller = this.controllers.get(runId);
-
-    if (!controller || controller.signal.aborted) {
-      return false;
-    }
-
-    controller.abort();
-
-    return true;
+    return this.deps.registry.cancel(runId);
   }
 
   private async execute(
     run: ActiveRun,
     prompt: string,
     history: HistoryMessage[],
+    signal: AbortSignal,
   ): Promise<void> {
-    const controller = this.controllers.get(run.runId);
-
-    if (!controller) {
-      return;
-    }
-
     const messageId = this.messageIds.get(run.runId);
 
     if (!messageId) {
@@ -148,7 +113,7 @@ export class RunManager {
         threadId: run.threadId,
         prompt,
         history,
-        signal: controller.signal,
+        signal,
       });
     } catch (cause) {
       const last = run.log.lastEvent;
@@ -169,16 +134,9 @@ export class RunManager {
         });
       }
     } finally {
-      run.log.finish();
-      this.controllers.delete(run.runId);
-      this.activeThreads.delete(run.threadId);
-      this.deps.store.saveRun(run.threadId, {
-        runId: run.runId,
-        kind: run.kind,
-        title: run.title,
-        createdAt: run.createdAt,
-        events: [...run.log.snapshotEvents()],
-      });
+      this.messageIds.delete(run.runId);
+      this.deps.registry.finish(run);
+      this.deps.registry.persist(run);
     }
   }
 }

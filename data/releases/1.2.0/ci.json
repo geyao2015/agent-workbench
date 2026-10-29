@@ -1,0 +1,9 @@
+{
+  "attempts": {
+    "test.1": {
+      "status": "success",
+      "summary": "单元测试 128 passed，契约测试 12 passed",
+      "durationMs": 4200
+    }
+  }
+}

@@ -31,6 +31,7 @@ export interface StoredRun {
 
 interface ThreadRecord {
   threadId: string;
+  kind: RunKind;
   title: string;
   createdAt: number;
   updatedAt: number;
@@ -59,7 +60,11 @@ export class ThreadStore {
     }
   }
 
-  ensure(threadId: string, title: string): ThreadRecord {
+  ensure(
+    threadId: string,
+    title: string,
+    kind: RunKind = "chat",
+  ): ThreadRecord {
     const existing = this.threads.get(threadId);
 
     if (existing) {
@@ -69,6 +74,7 @@ export class ThreadStore {
     const now = Date.now();
     const record: ThreadRecord = {
       threadId,
+      kind,
       title: title.slice(0, 40) || "新对话",
       createdAt: now,
       updatedAt: now,
@@ -82,7 +88,12 @@ export class ThreadStore {
 
   saveRun(threadId: string, run: StoredRun): void {
     const thread =
-      this.threads.get(threadId) ?? this.ensure(threadId, run.title);
+      this.threads.get(threadId) ?? this.ensure(threadId, run.title, run.kind);
+
+    if (thread.runs.length === 0) {
+      thread.kind = run.kind;
+    }
+
     const index = thread.runs.findIndex((candidate) => candidate.runId === run.runId);
 
     if (index >= 0) {
@@ -95,8 +106,9 @@ export class ThreadStore {
     this.persist(thread);
   }
 
-  list(): ThreadSummary[] {
+  list(filter: { kind?: RunKind } = {}): ThreadSummary[] {
     return [...this.threads.values()]
+      .filter((thread) => !filter.kind || thread.kind === filter.kind)
       .map((thread) => {
         const snapshots = thread.runs.map((run) => this.snapshotOf(thread, run));
         const messageCount = snapshots.reduce(
@@ -110,6 +122,7 @@ export class ThreadStore {
 
         return {
           threadId: thread.threadId,
+          kind: thread.kind,
           title: thread.title,
           createdAt: thread.createdAt,
           updatedAt: thread.updatedAt,
@@ -121,6 +134,20 @@ export class ThreadStore {
         };
       })
       .sort((left, right) => right.updatedAt - left.updatedAt);
+  }
+
+  findRun(runId: string):
+    | { threadId: string; kind: RunKind; events: AgentEvent[] }
+    | undefined {
+    for (const thread of this.threads.values()) {
+      const run = thread.runs.find((candidate) => candidate.runId === runId);
+
+      if (run) {
+        return { threadId: thread.threadId, kind: run.kind, events: run.events };
+      }
+    }
+
+    return undefined;
   }
 
   page(
@@ -232,7 +259,12 @@ export class ThreadStore {
           typeof parsed.title === "string" &&
           Array.isArray(parsed.runs)
         ) {
-          this.threads.set(parsed.threadId, parsed);
+          const kind =
+            parsed.kind === "release" || parsed.runs[0]?.kind === "release"
+              ? "release"
+              : "chat";
+
+          this.threads.set(parsed.threadId, { ...parsed, kind });
         }
       } catch (cause) {
         console.warn(`跳过损坏的会话文件 ${entry.name}`, cause);

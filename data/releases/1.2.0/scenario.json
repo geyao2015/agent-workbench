@@ -1,0 +1,48 @@
+{
+  "id": "release-1.2.0",
+  "title": "1.2.0 发版",
+  "service": "checkout-service",
+  "version": "1.2.0",
+  "branch": "release/1.2.0",
+  "tag": "v1.2.0-rc.1",
+  "stages": [
+    {
+      "id": "preflight",
+      "kind": "preflight",
+      "name": "前置检查",
+      "summary": "工作区干净，迁移与依赖检查通过"
+    },
+    {
+      "id": "conflict",
+      "kind": "conflict_resolve",
+      "name": "冲突解决"
+    },
+    {
+      "id": "diff",
+      "kind": "diff_approval",
+      "name": "Diff 审批",
+      "risk": "high",
+      "description": "应用合并冲突解决方案前需要人工确认"
+    },
+    {
+      "id": "test.1",
+      "kind": "test",
+      "name": "测试"
+    },
+    {
+      "id": "notes",
+      "kind": "release_notes",
+      "name": "Release Notes"
+    },
+    {
+      "id": "tag",
+      "kind": "dry_run_tag",
+      "name": "Dry-run Tag"
+    },
+    {
+      "id": "audit",
+      "kind": "audit",
+      "name": "审计"
+    }
+  ]
+}
