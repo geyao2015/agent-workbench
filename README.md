@@ -2,7 +2,7 @@
 
 > 从知识库对话到可审计发版。一个用于求职展示的研发 Agent 工作台：Chat 基于工程知识库对话，Release 执行可审计的发版流程。
 
-**状态：M1 已完成，准备进入 M2。** 技术选型与待确认项见 [docs/decision.md](docs/decision.md)；执行计划见 [docs/plan.md](docs/plan.md)；协议草案见 [docs/protocol.md](docs/protocol.md)。
+**状态：M2 已完成，准备进入 M3。** 技术选型与待确认项见 [docs/decision.md](docs/decision.md)；执行计划见 [docs/plan.md](docs/plan.md)；事件协议见 [docs/protocol.md](docs/protocol.md)。
 
 本文件是产品事实的唯一来源：项目定位、场景、演示流程、功能范围、非目标、当前状态、仓库结构与文档索引。
 
@@ -70,6 +70,8 @@ agent-workbench/
 │   └── glossary.md       术语笔记
 ├── scripts/
 │   └── check-docs.mjs    文档一致性检查
+├── .env.example          模型与运行时环境变量示例
+├── .data/                本地会话与运行时数据（gitignore）
 ├── AGENTS.md             AI Agent 工作规则
 ├── CLAUDE.md             Claude Code 加载入口
 └── README.md
@@ -106,13 +108,15 @@ agent-workbench/
 
 ## 8. 当前阶段
 
-**M1 已完成**：流式 Chat、增量 Markdown、工具/审批、reasoning、引用、长会话虚拟化与性能基准均已落地。下一步进入 M2：Hono + LangGraph、真实模型与知识库 RAG。
+**M2 已完成**：Hono + LangGraph 工具循环、checkpointer 会话记忆、本地知识库 RAG、引用、历史会话列表与真实模型接入均已落地。下一步进入 M3：Release 工作台。
 
 ```bash
 pnpm install
 pnpm dev                    # Vite http://localhost:5173 + Hono http://localhost:8787
 pnpm build && pnpm start    # 单 URL http://localhost:8787
 ```
+
+默认不配置模型 Key 时自动使用 fixture mock 运行时；配置 `ANTHROPIC_API_KEY` 或 `OPENAI_API_KEY`（可配 `OPENAI_BASE_URL` / `OPENAI_MODEL`）后启用实时 Agent。环境变量示例见 [.env.example](.env.example)，知识库位于 `data/docs/`，会话数据写入本地 `.data/`。
 
 各阶段状态、交付物、时间盒与退出条件见 [docs/plan.md](docs/plan.md)。
 

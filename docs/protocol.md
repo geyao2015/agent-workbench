@@ -1,6 +1,6 @@
-# Agent 事件协议（草案 v0）
+# Agent 事件协议（v1）
 
-**状态：草案。M0 起草、M1 用 fixture 验证、M2 接入真实后端后冻结为 v1；冻结后只做加法。**
+**状态：v1 已冻结（M2 完成后）。冻结后只做加法：新增事件类型、可选字段与物化快照字段。**
 
 本文档定义 Chat 与 Release 共用的 `AgentEvent` 协议、reducer 契约、fixture 格式、transport 接口，以及与之分离的 telemetry `Span` 模型。
 
@@ -413,7 +413,7 @@ export interface Span {
 
 ## 9. 版本与兼容
 
-- v1 在 M2 接入真实后端后冻结。
+- v1 已在 M2 接入真实后端后冻结。
 - 允许的变更：新增事件类型、新增可选字段、新增 payload 字段。
 - 不允许的变更：改变已有事件语义、删除字段、改变字段类型。
 - 破坏性变更必须升 `v: 2`，并在本文件底部记录迁移说明。
@@ -430,7 +430,7 @@ export interface Span {
 6. **Reasoning 可见性**：时间线默认展开，内容区限高滚动；调试抽屉仍可查看原文，避免长推理挤压正文。
 7. **同一 thread 的并发 run**：默认单活跃 run；后续再设计队列。
 8. **Token 统计粒度**：默认在 `run.completed.usage` + span attributes；是否增加 `usage.updated` 待定。
-9. **历史会话加载**：M2 接入真实后端时改进。打开已有 thread 不做流式回放，也不一次性返回全部历史事件；默认按 cursor 分页返回服务端物化的消息/块，原始事件只用于调试与回放。若分页直接返回原始事件，分页边界必须附带 checkpoint 快照，否则 reducer 无法从中间 `seq` 重建状态。`/api/demo/long-conversation` 这类批量生成接口只作为性能压测工具，不作为产品历史接口。
+9. **历史会话加载**：M2 已实现。打开已有 thread 不做流式回放，也不一次性返回全部历史事件；默认按 cursor 分页返回服务端物化的消息/块，原始事件只用于调试与回放。若分页直接返回原始事件，分页边界必须附带 checkpoint 快照，否则 reducer 无法从中间 `seq` 重建状态。`/api/demo/long-conversation` 这类批量生成接口只作为性能压测工具，不作为产品历史接口。实现为 `GET /api/threads/:threadId/runs?cursor=&limit=`，返回 `RunSnapshot`（`appliedEventIds` 序列化为数组）与 `nextCursor`。
 
 ## 11. Changelog
 
@@ -441,3 +441,5 @@ export interface Span {
 | 2026-10-20 | v0 | reducer 状态保留引用元数据（`CitationState`）与工具耗时（`ToolCallState.durationMs`） |
 | 2026-10-20 | v0 | reducer 记录 reasoning 块（`ReasoningState`）；UI 默认展开并限高 |
 | 2026-10-20 | v0 | `RunState.errors` 记录 `retryable / fatal`，区分局部错误与致命错误 |
+| 2026-10-29 | v1 | 冻结 v1；新增 `RunSnapshot` / `ThreadSummary` / `RunHistoryPage` 物化快照契约 |
+| 2026-10-29 | v1 | 历史会话按 cursor 分页返回快照，不回放全部原始事件 |

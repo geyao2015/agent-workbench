@@ -1,6 +1,6 @@
 # 执行计划
 
-最后更新：2026-10-21
+最后更新：2026-10-29
 
 本文件是阶段划分、阶段状态、执行清单与验收标准的唯一来源。当前项目阶段摘要见 [README.md §8](../README.md#8-当前阶段)；技术选型与运行方式见 [decision.md §2](decision.md#2-技术选型与运行方式)；协议契约见 [protocol.md](protocol.md)。
 
@@ -21,7 +21,7 @@
 
 | 阶段 | 状态 | 完成后具备的能力 | 可演示交付 | 简历 / 面试可讲 | 时间盒 |
 | --- | --- | --- | --- | --- | --- |
-| M2 Chat Agent 全栈 | 未开始 | 能开发完整的 Chat Agent（前后端） | Hono + LangGraph、工具循环、记忆、知识库 RAG、引用、历史会话列表（[加载方式](protocol.md#10-待定问题随阶段决定)）、真实模型接入 | Agentic RAG、工具循环、checkpointer、SSE 全链路 | 约 3 周 |
+| M2 Chat Agent 全栈 | 已完成 | 能开发完整的 Chat Agent（前后端） | Hono + LangGraph、工具循环、记忆、知识库 RAG、引用、历史会话列表（[加载方式](protocol.md#10-待定问题随阶段决定)）、真实模型接入 | Agentic RAG、工具循环、checkpointer、SSE 全链路 | 约 3 周 |
 | M3 Release Agent | 未开始 | 能开发完整垂直 Agent 项目 | 可审计发版工作台：阶段、冲突解决、diff 审批、审计、回滚、日志排查 | 确定性工作流 + 有边界 LLM + HITL + 审计 | 3–4 周 |
 | M4 可观测性与评测 | 未开始 | 能调试、评测和运营 Agent | 日志根因分析、Trace 瀑布、事件回放、检索/RCA 评测、性能与成本报告 | Trace/调试、评测体系、量化指标、架构文档 | 2–3 周 |
 
@@ -52,3 +52,10 @@ M0 验收：
 - typecheck 通过。
 
 M0 之前不做 M1 及以后的内容。
+
+## 4. M2 验收记录
+
+- 运行：`pnpm typecheck`、`pnpm test`、`pnpm build` 全绿；无模型 Key 时自动回退 fixture mock，配置 Key 后进入实时 Agent。
+- 端到端：知识库检索 → 工具卡片 → 引用 → 用量事件；用本地 OpenAI 兼容假服务验证 LangGraph 工具循环与 SSE 全链路；历史会话按物化快照恢复，cursor 分页验证 22 轮会话。
+- 离线检索：3 个代表性查询 top-1 命中；8 篇合成工程文档。
+- 测试：protocol 60 个、API 17 个离线测试；真实模型调用需配置 Key 后验证。
