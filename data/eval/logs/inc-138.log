@@ -1,0 +1,4 @@
+2026-10-23T09:00:00Z WARN payment sdk request timeout=3000ms
+2026-10-23T09:02:00Z ERROR callback p95 latency=4.2s
+2026-10-23T09:03:00Z INFO payment sdk 3.8.1 configured timeout below gateway p95
+2026-10-23T09:09:00Z INFO timeout raised to 5000ms; p95 recovered

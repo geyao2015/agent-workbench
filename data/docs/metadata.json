@@ -1,0 +1,84 @@
+{
+  "docs": {
+    "release-1-2-0-checklist": {
+      "service": "checkout-service",
+      "type": "checklist",
+      "tags": ["release", "1.2.0"]
+    },
+    "incident-042-payment-callback": {
+      "service": "checkout-service",
+      "type": "incident",
+      "tags": ["inc-042", "payment", "callback"]
+    },
+    "release-runbook": {
+      "service": "checkout-service",
+      "type": "runbook",
+      "tags": ["release", "process"]
+    },
+    "checkout-service-architecture": {
+      "service": "checkout-service",
+      "type": "architecture",
+      "tags": ["architecture", "dependencies"]
+    },
+    "checkout-api": {
+      "service": "checkout-service",
+      "type": "api",
+      "tags": ["api", "error", "rate-limit"]
+    },
+    "engineering-conventions": {
+      "service": "checkout-service",
+      "type": "guide",
+      "tags": ["conventions", "review", "migration"]
+    },
+    "troubleshooting-runbook": {
+      "service": "checkout-service",
+      "type": "runbook",
+      "tags": ["troubleshooting", "oncall"]
+    },
+    "testing-guide": {
+      "service": "checkout-service",
+      "type": "guide",
+      "tags": ["testing", "release"]
+    },
+    "observability-metrics": {
+      "service": "checkout-service",
+      "type": "guide",
+      "tags": ["observability", "slo", "alert"]
+    },
+    "database-migration-playbook": {
+      "service": "checkout-service",
+      "type": "guide",
+      "tags": ["migration", "database", "rollback"]
+    },
+    "oncall-escalation": {
+      "service": "platform",
+      "type": "runbook",
+      "tags": ["oncall", "incident", "escalation"]
+    },
+    "dependency-upgrade-policy": {
+      "service": "checkout-service",
+      "type": "guide",
+      "tags": ["dependency", "sdk", "upgrade"]
+    },
+    "feature-flag-guide": {
+      "service": "checkout-service",
+      "type": "guide",
+      "tags": ["feature-flag", "release", "rollback"]
+    },
+    "incident-051-inventory-lock": {
+      "service": "inventory-service",
+      "type": "incident",
+      "tags": ["inc-051", "inventory", "lock"]
+    },
+    "checkout-v1-api-changelog": {
+      "service": "checkout-service",
+      "type": "api",
+      "tags": ["api", "versioning", "changelog"]
+    },
+    "security-review-checklist": {
+      "service": "platform",
+      "type": "checklist",
+      "tags": ["security", "secrets", "review"]
+    }
+  }
+}

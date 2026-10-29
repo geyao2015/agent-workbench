@@ -1,0 +1,4 @@
+2026-10-20T10:00:00Z INFO tenant rate limit set to 10 QPS
+2026-10-20T10:01:00Z ERROR checkout create session 429 responses=40 percent
+2026-10-20T10:02:00Z INFO expected limit is 100 QPS per tenant
+2026-10-20T10:05:00Z INFO rate limit corrected to 100 QPS

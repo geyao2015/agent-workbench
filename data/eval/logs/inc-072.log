@@ -1,0 +1,4 @@
+2026-10-17T14:02:00Z INFO feature flag checkout.confirm_v2=true
+2026-10-17T14:03:20Z WARN confirm endpoint traffic jumped from 0 to 100 percent
+2026-10-17T14:04:10Z ERROR confirm error rate=8 percent
+2026-10-17T14:05:00Z INFO feature flag checkout.confirm_v2=false; error rate recovering

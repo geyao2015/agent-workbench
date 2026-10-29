@@ -1,0 +1,4 @@
+2026-10-18T08:00:00Z WARN 回调签名失败 callback signature validation failures=120
+2026-10-18T08:01:00Z ERROR 时间戳偏差 timestamp skew exceeds 5 minutes
+2026-10-18T08:02:00Z ERROR 租户密钥轮换 tenant key rotated but gateway cache still has old key
+2026-10-18T08:10:00Z INFO gateway key cache refreshed; failures stopped

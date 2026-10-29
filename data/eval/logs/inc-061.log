@@ -1,0 +1,4 @@
+2026-10-16T11:01:00Z WARN notification queue depth=120000
+2026-10-16T11:04:00Z ERROR notification worker lag exceeds 15 minutes
+2026-10-16T11:20:00Z INFO worker concurrency raised from 4 to 12
+2026-10-16T11:42:00Z INFO queue depth back to baseline

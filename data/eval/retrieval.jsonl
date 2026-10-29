@@ -1,0 +1,50 @@
+{"id":"q01","query":"1.2.0 发版有哪些注意事项？","goldSourceIds":["release-1-2-0-checklist"],"answerable":true,"tags":["version","single-doc"]}
+{"id":"q02","query":"1.2.0 发布前要检查哪些迁移和 feature flag？","goldSourceIds":["release-1-2-0-checklist"],"answerable":true,"tags":["release","single-doc"]}
+{"id":"q03","query":"1.2.0 的风险与回滚策略是什么？","goldSourceIds":["release-1-2-0-checklist"],"answerable":true,"tags":["release","single-doc"]}
+{"id":"q04","query":"INC-042 支付回调为什么一直重试？","goldSourceIds":["incident-042-payment-callback"],"answerable":true,"tags":["incident","single-doc"]}
+{"id":"q05","query":"INC-042 的根因是不是把 409 当成可重试错误？","goldSourceIds":["incident-042-payment-callback"],"answerable":true,"tags":["incident","single-doc"]}
+{"id":"q06","query":"支付回调的幂等键冲突应该返回什么？","goldSourceIds":["incident-042-payment-callback","checkout-api"],"answerable":true,"tags":["multi-doc","payment"]}
+{"id":"q07","query":"发版灰度比例和回滚流程是什么？","goldSourceIds":["release-runbook"],"answerable":true,"tags":["release","single-doc"]}
+{"id":"q08","query":"发布完成后需要更新哪些记录？","goldSourceIds":["release-runbook"],"answerable":true,"tags":["release","single-doc"]}
+{"id":"q09","query":"生产发布冒烟检查有哪些？","goldSourceIds":["release-runbook"],"answerable":true,"tags":["release","single-doc"]}
+{"id":"q10","query":"checkout-service 的架构和依赖是什么？","goldSourceIds":["checkout-service-architecture"],"answerable":true,"tags":["architecture","single-doc"]}
+{"id":"q11","query":"订单状态变更如何保证可靠投递？","goldSourceIds":["checkout-service-architecture"],"answerable":true,"tags":["architecture","single-doc"]}
+{"id":"q12","query":"回调消费者和 order worker 的职责分别是什么？","goldSourceIds":["checkout-service-architecture"],"answerable":true,"tags":["architecture","single-doc"]}
+{"id":"q13","query":"checkout-service 的限流和错误码有哪些？","goldSourceIds":["checkout-api"],"answerable":true,"tags":["api","single-doc"]}
+{"id":"q14","query":"payment_conflict 和 state_conflict 有什么区别？","goldSourceIds":["checkout-api","incident-042-payment-callback"],"answerable":true,"tags":["multi-doc","api"]}
+{"id":"q15","query":"回调接口的兼容策略是什么？","goldSourceIds":["checkout-api","checkout-v1-api-changelog"],"answerable":true,"tags":["multi-doc","api"]}
+{"id":"q16","query":"数据库迁移的兼容性规范是什么？","goldSourceIds":["engineering-conventions","database-migration-playbook"],"answerable":true,"tags":["multi-doc","migration"]}
+{"id":"q17","query":"代码审查和提交规范有哪些？","goldSourceIds":["engineering-conventions"],"answerable":true,"tags":["conventions","single-doc"]}
+{"id":"q18","query":"生产迁移为什么要避免锁表？","goldSourceIds":["engineering-conventions","database-migration-playbook"],"answerable":true,"tags":["multi-doc","migration"]}
+{"id":"q19","query":"支付延迟升高时应该先看什么？","goldSourceIds":["troubleshooting-runbook","observability-metrics"],"answerable":true,"tags":["multi-doc","troubleshooting"]}
+{"id":"q20","query":"如何用 request id 排查故障？","goldSourceIds":["troubleshooting-runbook"],"answerable":true,"tags":["troubleshooting","single-doc"]}
+{"id":"q21","query":"P1 故障的升级路径是什么？","goldSourceIds":["troubleshooting-runbook","oncall-escalation"],"answerable":true,"tags":["multi-doc","oncall"]}
+{"id":"q22","query":"发布门禁需要哪些测试？","goldSourceIds":["testing-guide"],"answerable":true,"tags":["testing","single-doc"]}
+{"id":"q23","query":"INC-042 的回归测试是什么？","goldSourceIds":["testing-guide","incident-042-payment-callback"],"answerable":true,"tags":["multi-doc","testing"]}
+{"id":"q24","query":"回调性能测试目标是多少？","goldSourceIds":["testing-guide","observability-metrics"],"answerable":true,"tags":["multi-doc","testing"]}
+{"id":"q25","query":"支付成功率的 SLO 和告警阈值是什么？","goldSourceIds":["observability-metrics"],"answerable":true,"tags":["observability","single-doc"]}
+{"id":"q26","query":"回调 P95 延迟超过多少要告警？","goldSourceIds":["observability-metrics"],"answerable":true,"tags":["observability","single-doc"]}
+{"id":"q27","query":"outbox lag 指标用来做什么？","goldSourceIds":["observability-metrics","checkout-service-architecture"],"answerable":true,"tags":["multi-doc","observability"]}
+{"id":"q28","query":"大表索引怎么创建才不锁表？","goldSourceIds":["database-migration-playbook"],"answerable":true,"tags":["migration","single-doc"]}
+{"id":"q29","query":"数据库迁移的 expand contract 流程？","goldSourceIds":["database-migration-playbook"],"answerable":true,"tags":["migration","single-doc"]}
+{"id":"q30","query":"回填任务失败怎么处理？","goldSourceIds":["database-migration-playbook"],"answerable":true,"tags":["migration","single-doc"]}
+{"id":"q31","query":"P2 故障多久响应？","goldSourceIds":["oncall-escalation"],"answerable":true,"tags":["oncall","single-doc"]}
+{"id":"q32","query":"事故沟通模板包含什么？","goldSourceIds":["oncall-escalation"],"answerable":true,"tags":["oncall","single-doc"]}
+{"id":"q33","query":"P1 多长时间更新一次进展？","goldSourceIds":["oncall-escalation"],"answerable":true,"tags":["oncall","single-doc"]}
+{"id":"q34","query":"支付 SDK 升级流程和回滚？","goldSourceIds":["dependency-upgrade-policy"],"answerable":true,"tags":["dependency","single-doc"]}
+{"id":"q35","query":"SDK 自带重试要注意什么？","goldSourceIds":["dependency-upgrade-policy"],"answerable":true,"tags":["dependency","single-doc"]}
+{"id":"q36","query":"高危依赖漏洞怎么处理？","goldSourceIds":["dependency-upgrade-policy","security-review-checklist"],"answerable":true,"tags":["multi-doc","dependency"]}
+{"id":"q37","query":"feature flag 怎么命名和清理？","goldSourceIds":["feature-flag-guide"],"answerable":true,"tags":["feature-flag","single-doc"]}
+{"id":"q38","query":"打开 feature flag 需要审批吗？","goldSourceIds":["feature-flag-guide","release-runbook"],"answerable":true,"tags":["multi-doc","feature-flag"]}
+{"id":"q39","query":"feature flag 回滚和数据回滚有什么区别？","goldSourceIds":["feature-flag-guide","database-migration-playbook"],"answerable":true,"tags":["multi-doc","feature-flag"]}
+{"id":"q40","query":"INC-051 库存锁超时的根因？","goldSourceIds":["incident-051-inventory-lock"],"answerable":true,"tags":["incident","single-doc"]}
+{"id":"q41","query":"补货任务为什么导致订单创建失败？","goldSourceIds":["incident-051-inventory-lock"],"answerable":true,"tags":["incident","single-doc"]}
+{"id":"q42","query":"INC-051 的修复措施有哪些？","goldSourceIds":["incident-051-inventory-lock"],"answerable":true,"tags":["incident","single-doc"]}
+{"id":"q43","query":"checkout v1 API 1.2.0 有哪些变更？","goldSourceIds":["checkout-v1-api-changelog","release-1-2-0-checklist"],"answerable":true,"tags":["multi-doc","api"]}
+{"id":"q44","query":"v1 API 的兼容窗口和弃用策略？","goldSourceIds":["checkout-v1-api-changelog","checkout-api"],"answerable":true,"tags":["multi-doc","api"]}
+{"id":"q45","query":"回调签名校验规则是什么？","goldSourceIds":["checkout-v1-api-changelog","security-review-checklist"],"answerable":true,"tags":["multi-doc","security"]}
+{"id":"q46","query":"API Key 和 secrets 的处理要求？","goldSourceIds":["security-review-checklist"],"answerable":true,"tags":["security","single-doc"]}
+{"id":"q47","query":"安全检查清单包含哪些输入校验？","goldSourceIds":["security-review-checklist"],"answerable":true,"tags":["security","single-doc"]}
+{"id":"q48","query":"日志里的敏感数据怎么处理？","goldSourceIds":["security-review-checklist","observability-metrics"],"answerable":true,"tags":["multi-doc","security"]}
+{"id":"q49","query":"生产 Redis 集群的密码是多少？","goldSourceIds":[],"answerable":false,"tags":["unanswerable","security"]}
+{"id":"q50","query":"公司 2027 年的营收目标是多少？","goldSourceIds":[],"answerable":false,"tags":["unanswerable"]}

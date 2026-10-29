@@ -45,4 +45,27 @@ describe("KnowledgeBase", () => {
       "checkout-service",
     ]);
   });
+
+  it("按 metadata 过滤服务与文档类型", () => {
+    expect(kb.get("incident-051-inventory-lock")?.metadata?.service).toBe(
+      "inventory-service",
+    );
+
+    const inventory = kb.search("库存锁超时 根因", 4, {
+      service: "inventory-service",
+    });
+    expect(inventory[0]?.sourceId).toBe("incident-051-inventory-lock");
+
+    const checkoutOnly = kb.search("支付回调", 4, {
+      service: "inventory-service",
+    });
+    expect(
+      checkoutOnly.every((hit) => hit.sourceId === "incident-051-inventory-lock"),
+    ).toBe(true);
+
+    const incidents = kb.search("回调 幂等", 4, { type: "incident" });
+    expect(incidents.every((hit) => hit.sourceId.includes("incident"))).toBe(
+      true,
+    );
+  });
 });

@@ -1,0 +1,4 @@
+2026-10-15T09:10:02Z WARN inventory row lock wait=2800ms
+2026-10-15T09:16:20Z ERROR order create failed: inventory lock timeout
+2026-10-15T09:22:10Z ERROR restock batch holds thousands of row locks
+2026-10-15T09:31:00Z INFO restock job paused; failure rate dropping

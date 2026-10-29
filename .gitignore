@@ -7,6 +7,7 @@ coverage/
 .DS_Store
 *.log
 !data/releases/**/logs/*.log
+!data/eval/logs/*.log
 
 # 个人学习笔记，仅本地保留
 learn-notes/

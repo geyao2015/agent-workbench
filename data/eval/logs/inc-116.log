@@ -1,0 +1,4 @@
+2026-10-21T16:00:00Z WARN payment sdk timeout retries=8 per request
+2026-10-21T16:01:00Z ERROR gateway retry storm detected; 500 responses rising
+2026-10-21T16:02:00Z INFO sdk automatic retries combined with service retries
+2026-10-21T16:08:00Z INFO sdk retry budget capped; error rate recovered

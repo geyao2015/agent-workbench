@@ -1,0 +1,4 @@
+2026-10-14T10:02:11Z INFO callback order=ORD-1842 attempt=1
+2026-10-14T10:14:01Z ERROR consumer treats payment_conflict as retryable attempt=3
+2026-10-14T10:14:02Z WARN duplicate callback returns 409 payment_conflict
+2026-10-14T10:28:13Z INFO retry queue depth=60000

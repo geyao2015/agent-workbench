@@ -1,10 +1,23 @@
-import { readFileSync, readdirSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { basename, resolve } from "node:path";
+
+export interface DocMetadata {
+  service: string;
+  type: string;
+  tags: string[];
+}
+
+export interface SearchFilter {
+  service?: string;
+  type?: string;
+  tags?: string[];
+}
 
 export interface KnowledgeDoc {
   id: string;
   title: string;
   content: string;
+  metadata?: DocMetadata;
 }
 
 export interface KnowledgeChunk {
@@ -13,6 +26,7 @@ export interface KnowledgeChunk {
   title: string;
   locator: string;
   content: string;
+  metadata?: DocMetadata;
   tokens: string[];
   titleTokens: string[];
 }
@@ -134,6 +148,7 @@ function chunkDoc(doc: KnowledgeDoc): KnowledgeChunk[] {
         title: doc.title,
         locator,
         content: piece,
+        ...(doc.metadata ? { metadata: doc.metadata } : {}),
         tokens: tokenize(`${doc.title}\n${section.heading}\n${piece}`),
         titleTokens,
       });
@@ -195,6 +210,12 @@ export class KnowledgeBase {
 
   static load(docsDir: string): KnowledgeBase {
     const docs = new Map<string, KnowledgeDoc>();
+    const metadataPath = resolve(docsDir, "metadata.json");
+    const metadataById = existsSync(metadataPath)
+      ? (JSON.parse(readFileSync(metadataPath, "utf8")) as {
+          docs?: Record<string, DocMetadata>;
+        }).docs ?? {}
+      : {};
 
     for (const entry of readdirSync(docsDir, { withFileTypes: true })) {
       if (!entry.isFile() || !entry.name.endsWith(".md")) {
@@ -203,11 +224,13 @@ export class KnowledgeBase {
 
       const id = basename(entry.name, ".md");
       const content = readFileSync(resolve(docsDir, entry.name), "utf8").trim();
+      const metadata = metadataById[id];
 
       docs.set(id, {
         id,
         title: docTitle(content, id),
         content,
+        ...(metadata ? { metadata } : {}),
       });
     }
 
@@ -224,15 +247,39 @@ export class KnowledgeBase {
     return this.docs.get(sourceId);
   }
 
-  search(query: string, limit = 4): SearchHit[] {
+  search(query: string, limit = 4, filter: SearchFilter = {}): SearchHit[] {
     const queryTokens = [...new Set(tokenize(query))];
 
     if (queryTokens.length === 0 || this.chunks.length === 0) {
       return [];
     }
 
+    const chunks = this.chunks.filter((chunk) => {
+      const metadata = chunk.metadata;
+
+      if (filter.service && metadata?.service !== filter.service) {
+        return false;
+      }
+
+      if (filter.type && metadata?.type !== filter.type) {
+        return false;
+      }
+
+      if (filter.tags && filter.tags.length > 0) {
+        if (!metadata || !filter.tags.every((tag) => metadata.tags.includes(tag))) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+
+    if (chunks.length === 0) {
+      return [];
+    }
+
     const totalChunks = this.chunks.length;
-    const scored = this.chunks.map((chunk) => {
+    const scored = chunks.map((chunk) => {
       const frequencies = new Map<string, number>();
 
       for (const token of chunk.tokens) {

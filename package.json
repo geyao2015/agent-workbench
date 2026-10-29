@@ -12,6 +12,8 @@
     "bench": "pnpm -r bench",
     "fixtures:large": "node scripts/generate-large-fixture.mjs",
     "test": "pnpm -r test",
-    "typecheck": "pnpm -r typecheck"
+    "typecheck": "pnpm -r typecheck",
+    "eval:retrieval": "pnpm --filter @agent-workbench/api eval:retrieval",
+    "eval:rca": "pnpm --filter @agent-workbench/api eval:rca"
   }
 }

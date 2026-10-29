@@ -1,0 +1,4 @@
+2026-10-22T20:00:00Z WARN 数据库迁移 锁表 migration add payment_attempts waiting for table lock
+2026-10-22T20:02:00Z ERROR 迁移超时 lock wait timeout after 10 minutes
+2026-10-22T20:03:00Z INFO 未使用并发索引 migration did not use concurrent index creation
+2026-10-22T20:15:00Z INFO migration retried with expand/contract strategy
