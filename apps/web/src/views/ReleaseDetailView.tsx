@@ -15,6 +15,7 @@ import {
   type AgentEvent,
   type ApprovalState,
   type RunState,
+  type Span,
 } from "@agent-workbench/protocol";
 
 import { AppHeader } from "@/components/app-header";
@@ -25,6 +26,7 @@ import { DiffViewer } from "@/components/release/diff-viewer";
 import { ReleaseEventLog } from "@/components/release/event-log";
 import { LogsView } from "@/components/release/logs-view";
 import { StageTimeline } from "@/components/release/stage-timeline";
+import { TraceView } from "@/components/release/trace-view";
 import { Button } from "@/components/ui/button";
 import { navigate } from "@/lib/hash-router";
 import { cn } from "@/lib/utils";
@@ -33,6 +35,7 @@ import {
   fetchReleaseArtifact,
   fetchReleaseEvents,
   fetchReleaseRuns,
+  fetchReleaseSpans,
   resolveReleaseApproval,
   rollbackReleaseRun,
   streamReleaseRunEvents,
@@ -98,12 +101,15 @@ export function ReleaseDetailView({
   const [logLoading, setLogLoading] = useState(false);
   const [rcaBody, setRcaBody] = useState<string | null>(null);
   const [rcaLoading, setRcaLoading] = useState(false);
+  const [spans, setSpans] = useState<Span[]>([]);
+  const [spansLoading, setSpansLoading] = useState(false);
   const [resolving, setResolving] = useState(false);
   const [rollingBack, setRollingBack] = useState(false);
   const diffArtifactRef = useRef<string | null>(null);
   const auditArtifactRef = useRef<string | null>(null);
   const logArtifactRef = useRef<string | null>(null);
   const rcaArtifactRef = useRef<string | null>(null);
+  const spansKeyRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!threadId) {
@@ -122,14 +128,17 @@ export function ReleaseDetailView({
     setAuditBody(null);
     setLogBody(null);
     setRcaBody(null);
+    setSpans([]);
     setDiffLoading(false);
     setAuditLoading(false);
     setLogLoading(false);
     setRcaLoading(false);
+    setSpansLoading(false);
     diffArtifactRef.current = null;
     auditArtifactRef.current = null;
     logArtifactRef.current = null;
     rcaArtifactRef.current = null;
+    spansKeyRef.current = null;
 
     void (async () => {
       try {
@@ -322,6 +331,29 @@ export function ReleaseDetailView({
       .then((content) => setRcaBody(content.body))
       .catch(() => setRcaBody(null))
       .finally(() => setRcaLoading(false));
+
+    return () => controller.abort();
+  }, [state]);
+
+  useEffect(() => {
+    if (!state) {
+      return;
+    }
+
+    const key = `${state.runId}:${state.status}`;
+
+    if (spansKeyRef.current === key) {
+      return;
+    }
+
+    spansKeyRef.current = key;
+    const controller = new AbortController();
+    setSpansLoading(true);
+
+    void fetchReleaseSpans(state.runId, controller.signal)
+      .then((nextSpans) => setSpans(nextSpans))
+      .catch(() => setSpans([]))
+      .finally(() => setSpansLoading(false));
 
     return () => controller.abort();
   }, [state]);
@@ -551,13 +583,7 @@ export function ReleaseDetailView({
           ) : null}
 
           {tab === "trace" ? (
-            <div className="rounded-xl border bg-card px-4 py-6 text-sm text-muted-foreground">
-              <p className="font-medium text-foreground">Trace 瀑布 · M4</p>
-              <p className="mt-1 leading-6">
-                Span 采集与 waterfall 将在 M4 接入。当前可在 Events 查看原始事件，
-                或在 Overview 查看各阶段耗时与审批 gate。
-              </p>
-            </div>
+            <TraceView spans={spans} loading={spansLoading} />
           ) : null}
 
           {tab === "events" ? <ReleaseEventLog events={events} /> : null}

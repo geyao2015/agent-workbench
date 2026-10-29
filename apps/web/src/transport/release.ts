@@ -2,6 +2,7 @@ import type {
   AgentEvent,
   RunHistoryPage,
   RunKind,
+  Span,
   ThreadSummary,
 } from "@agent-workbench/protocol";
 
@@ -153,6 +154,19 @@ export async function fetchReleaseArtifact(
   const response = await fetch(uri, { signal });
 
   return readJson<ArtifactContent>(response, "读取 artifact 失败");
+}
+
+export async function fetchReleaseSpans(
+  runId: string,
+  signal?: AbortSignal,
+): Promise<Span[]> {
+  const response = await fetch(
+    `/api/releases/runs/${encodeURIComponent(runId)}/spans`,
+    { signal },
+  );
+  const data = await readJson<{ spans?: Span[] }>(response, "读取 Trace 失败");
+
+  return data.spans ?? [];
 }
 
 export async function fetchReleaseEvents(
