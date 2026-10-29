@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import {
   ArrowLeft,
   Loader2,
+  RotateCcw,
   ShieldAlert,
   XCircle,
 } from "lucide-react";
@@ -33,6 +34,7 @@ import {
   fetchReleaseEvents,
   fetchReleaseRuns,
   resolveReleaseApproval,
+  rollbackReleaseRun,
   streamReleaseRunEvents,
 } from "@/transport/release";
 
@@ -92,6 +94,7 @@ export function ReleaseDetailView({
   const [rcaBody, setRcaBody] = useState<string | null>(null);
   const [rcaLoading, setRcaLoading] = useState(false);
   const [resolving, setResolving] = useState(false);
+  const [rollingBack, setRollingBack] = useState(false);
   const diffArtifactRef = useRef<string | null>(null);
   const auditArtifactRef = useRef<string | null>(null);
   const logArtifactRef = useRef<string | null>(null);
@@ -324,6 +327,9 @@ export function ReleaseDetailView({
       )
     : undefined;
   const active = isActive(state);
+  const isRollbackRun =
+    state?.stageOrder.some((stageId) => stageId.startsWith("rollback.")) ?? false;
+  const canRollback = state?.status === "completed" && !isRollbackRun;
   const stageCount = state?.stageOrder.length ?? 0;
   const doneCount = state
     ? state.stageOrder.filter((stageId) => {
@@ -367,10 +373,32 @@ export function ReleaseDetailView({
     }
   }
 
+  async function startRollback() {
+    if (!state || rollingBack) {
+      return;
+    }
+
+    setRollingBack(true);
+    setError(null);
+
+    try {
+      const run = await rollbackReleaseRun(state.runId);
+
+      navigate(`#/releases/${run.threadId}?run=${run.runId}`);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "创建回滚失败");
+      setRollingBack(false);
+    }
+  }
+
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-muted/20">
       <AppHeader
-        subtitle="模拟发版环境 · 确定性阶段 + 人工审批"
+        subtitle={
+          isRollbackRun
+            ? "模拟发版环境 · 回滚执行"
+            : "模拟发版环境 · 确定性阶段 + 人工审批"
+        }
         activeView="releases"
         onNavigate={(view) =>
           navigate(view === "chat" ? "#/chat" : "#/releases")
@@ -380,6 +408,17 @@ export function ReleaseDetailView({
           <ArrowLeft />
           列表
         </Button>
+        {canRollback ? (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => void startRollback()}
+            disabled={rollingBack}
+          >
+            {rollingBack ? <Loader2 className="animate-spin" /> : <RotateCcw />}
+            回滚
+          </Button>
+        ) : null}
         {active ? (
           <Button variant="outline" size="sm" onClick={() => void cancelCurrentRun()}>
             <XCircle />

@@ -5,6 +5,9 @@ import { Loader2 } from "lucide-react";
 interface AuditBody {
   version: string;
   runId: string;
+  mode?: "release" | "rollback";
+  parentRunId?: string;
+  targetTag?: string;
   stages: Array<{ id: string; name: string; status: string; summary?: string }>;
   approvals: Array<{
     approvalId: string;
@@ -81,6 +84,16 @@ export function AuditTable({
 
   return (
     <div className="space-y-3">
+      {audit.mode === "rollback" ? (
+        <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-xs">
+          回滚审计
+          {audit.targetTag ? ` · 目标 ${audit.targetTag}` : ""}
+          {audit.parentRunId
+            ? ` · parent ${audit.parentRunId.slice(-8)}`
+            : ""}
+        </div>
+      ) : null}
+
       <div className="grid gap-2 text-xs text-muted-foreground sm:grid-cols-3">
         <div className="rounded-lg border bg-card px-3 py-2">
           版本 <span className="ml-1 font-medium text-foreground">{audit.version}</span>

@@ -103,6 +103,20 @@ export async function createReleaseRun(
   return readJson<CreatedReleaseRun>(response, "创建发版 run 失败");
 }
 
+export async function rollbackReleaseRun(
+  runId: string,
+): Promise<CreatedReleaseRun & { parentRunId: string }> {
+  const response = await fetch(
+    `/api/releases/runs/${encodeURIComponent(runId)}/rollback`,
+    { method: "POST" },
+  );
+
+  return readJson<CreatedReleaseRun & { parentRunId: string }>(
+    response,
+    "创建回滚 run 失败",
+  );
+}
+
 export async function cancelReleaseRun(runId: string): Promise<void> {
   const response = await fetch(
     `/api/releases/runs/${encodeURIComponent(runId)}/cancel`,
