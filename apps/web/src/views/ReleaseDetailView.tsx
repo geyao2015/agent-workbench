@@ -476,7 +476,7 @@ export function ReleaseDetailView({
         ) : null}
       </AppHeader>
 
-      <div className="flex min-h-0 flex-1">
+      <div className="relative flex min-h-0 flex-1">
         <main className="min-h-0 flex-1 overflow-y-auto">
           <div className="mx-auto w-full max-w-4xl space-y-4 px-4 py-6 md:px-8">
           {loading ? (

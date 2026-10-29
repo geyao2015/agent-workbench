@@ -755,7 +755,7 @@ export function ChatView() {
         </Button>
       </AppHeader>
 
-      <div className="flex min-h-0 flex-1">
+      <div className="relative flex min-h-0 flex-1">
         {runtime?.mode === "agent" ? (
           <ThreadSidebar
             threads={threads}

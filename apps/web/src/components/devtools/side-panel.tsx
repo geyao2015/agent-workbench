@@ -40,7 +40,7 @@ export function SidePanel({
   return (
     <aside
       className={cn(
-        "fixed inset-0 z-30 w-full overflow-hidden lg:static lg:z-auto lg:h-full lg:transition-[width] lg:duration-300 lg:ease-in-out",
+        "absolute inset-0 z-30 w-full overflow-hidden lg:static lg:z-auto lg:h-full lg:transition-[width] lg:duration-300 lg:ease-in-out",
         open ? "lg:w-96" : "lg:w-0",
         !open && "pointer-events-none",
       )}
