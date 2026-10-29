@@ -50,10 +50,6 @@ export class RunManager {
       messageId: userMessageId,
       stopReason: "stop",
     });
-    run.log.append("message.started", {
-      messageId: assistantMessageId,
-      role: "assistant",
-    });
 
     this.messageIds.set(run.runId, assistantMessageId);
 
@@ -90,6 +86,16 @@ export class RunManager {
       if (decision.blocked && decision.reply) {
         console.warn(`[guard] blocked ${decision.category} request`);
 
+        if (decision.category) {
+          run.log.append("guard.blocked", {
+            category: decision.category,
+          });
+        }
+
+        run.log.append("message.started", {
+          messageId,
+          role: "assistant",
+        });
         run.log.append("text.delta", {
           messageId,
           delta: decision.reply,
@@ -101,6 +107,11 @@ export class RunManager {
         run.log.append("run.completed", { status: "done" });
         return;
       }
+
+      run.log.append("message.started", {
+        messageId,
+        role: "assistant",
+      });
 
       const runner = new AgentRunner(
         this.deps.agent,
