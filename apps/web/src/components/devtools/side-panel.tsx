@@ -40,14 +40,14 @@ export function SidePanel({
   return (
     <aside
       className={cn(
-        "fixed inset-0 z-30 w-full overflow-hidden lg:static lg:z-auto lg:h-full lg:transition-[width] lg:duration-[360ms] lg:ease-in-out",
+        "fixed inset-0 z-30 w-full overflow-hidden lg:static lg:z-auto lg:h-full lg:transition-[width] lg:duration-300 lg:ease-in-out",
         open ? "lg:w-96" : "lg:w-0",
         !open && "pointer-events-none",
       )}
     >
       <div
         className={cn(
-          "flex h-full w-full flex-col border-l bg-background transition-transform duration-[360ms] ease-in-out lg:w-96 lg:translate-x-0 lg:shrink-0",
+          "flex h-full w-full flex-col border-l bg-background transition-transform duration-300 ease-in-out lg:w-96 lg:translate-x-0 lg:shrink-0",
           open ? "translate-x-0" : "translate-x-full",
         )}
       >

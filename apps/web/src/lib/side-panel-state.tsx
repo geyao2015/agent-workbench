@@ -10,7 +10,7 @@ import {
 
 export type SidePanelName = "events" | "notes";
 
-const CLOSE_MS = 380;
+const CLOSE_MS = 320;
 
 interface SidePanelState {
   activePanel: SidePanelName | null;
