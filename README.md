@@ -109,6 +109,7 @@ agent-workbench/
 pnpm install
 pnpm dev                    # Vite http://localhost:5173 + Hono http://localhost:8787
 pnpm build && pnpm start    # 单 URL http://localhost:8787
+pnpm test:e2e               # Playwright UI 回归（使用本地 Chrome）
 ```
 
 默认不配置模型 Key 时自动使用 fixture mock 运行时；配置 `ANTHROPIC_API_KEY` 或 `OPENAI_API_KEY`（可配 `OPENAI_BASE_URL` / `OPENAI_MODEL`）后启用实时 Agent。环境变量示例见 [.env.example](.env.example)，知识库位于 `data/docs/`，会话数据写入本地 `.data/`。

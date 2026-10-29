@@ -52,6 +52,7 @@ shadcn/ui 不是 npm 依赖，而是复制组件源码的模式；当前只落�
 | `@types/node` | 24.19.2 | Node 类型 |
 | `@types/react` | 19.3.0 | React 类型 |
 | `@types/react-dom` | 19.3.0 | React DOM 类型 |
+| `@playwright/test` | 1.64.1 | UI 自动化与关键路径回归 |
 | `pnpm` | 11.24.0 | workspace 包管理 |
 | Node.js | >= 22 | 运行时 |
 

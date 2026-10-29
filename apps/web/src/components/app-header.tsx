@@ -77,7 +77,10 @@ export function AppHeader({
           ))}
         </nav>
 
-        <div className="flex min-w-0 items-center justify-self-end gap-1 md:gap-1.5">
+        <div
+          data-testid="header-actions"
+          className="flex min-w-0 items-center justify-self-end gap-1 md:gap-1.5"
+        >
           <Button
             variant="outline"
             size="sm"

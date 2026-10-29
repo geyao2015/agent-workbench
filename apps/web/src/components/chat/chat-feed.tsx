@@ -123,6 +123,8 @@ export const ChatFeed = memo(function ChatFeed({
   return (
     <div
       ref={scrollRef}
+      data-testid="chat-feed"
+      data-streaming={streaming ? "true" : "false"}
       onScroll={handleScroll}
       onWheel={() => {
         stickToBottomRef.current = false;

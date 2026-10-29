@@ -1,6 +1,8 @@
 node_modules/
 dist/
 coverage/
+playwright-report/
+test-results/
 .env
 .env.*
 !.env.example
@@ -14,3 +16,6 @@ learn-notes/
 
 # 本地会话与被引用的运行时数据
 .data/
+
+# 基准脚本生成的临时 fixture
+fixtures/bench-*/
