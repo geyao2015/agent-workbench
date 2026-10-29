@@ -8,6 +8,7 @@ const MAX_INPUT_HEIGHT = 160;
 
 interface ChatComposerProps {
   input: string;
+  queued: string[];
   pausedSeq: number;
   isStreaming: boolean;
   isPaused: boolean;
@@ -16,6 +17,7 @@ interface ChatComposerProps {
   isStopping: boolean;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
   onInputChange: (value: string) => void;
+  onRemoveQueued: (index: number) => void;
   onPause: () => void;
   onResume: () => void;
   onCancel: () => void;
@@ -23,6 +25,7 @@ interface ChatComposerProps {
 
 export function ChatComposer({
   input,
+  queued,
   pausedSeq,
   isStreaming,
   isPaused,
@@ -31,6 +34,7 @@ export function ChatComposer({
   isStopping,
   onSubmit,
   onInputChange,
+  onRemoveQueued,
   onPause,
   onResume,
   onCancel,
@@ -74,6 +78,26 @@ export function ChatComposer({
       >
         <div className="rounded-xl border bg-background transition-colors duration-150 focus-within:border-foreground/30">
           <div className="min-w-0 px-3 pt-2">
+            {queued.length > 0 ? (
+              <div className="mb-1.5 flex flex-wrap gap-1">
+                {queued.map((text, index) => (
+                  <span
+                    key={`${index}:${text}`}
+                    className="inline-flex max-w-full items-center gap-1 rounded-md border bg-muted/40 py-0.5 pr-1 pl-1.5 text-[11px] text-muted-foreground"
+                  >
+                    <span className="max-w-56 truncate">待发送 · {text}</span>
+                    <button
+                      type="button"
+                      aria-label={`移除待发送消息 ${index + 1}`}
+                      className="rounded p-0.5 hover:bg-background hover:text-foreground"
+                      onClick={() => onRemoveQueued(index)}
+                    >
+                      <X className="size-3" />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            ) : null}
             <textarea
               ref={inputRef}
               rows={1}
@@ -91,9 +115,7 @@ export function ChatComposer({
                 event.preventDefault();
                 event.currentTarget.form?.requestSubmit();
               }}
-              disabled={
-                isStreaming || isPaused || isWaitingApproval || isLoadingHistory
-              }
+              disabled={isPaused || isWaitingApproval || isLoadingHistory}
               placeholder={
                 isLoadingHistory
                   ? "正在加载长会话…"
@@ -101,18 +123,25 @@ export function ChatComposer({
                     ? "等待审批：请在工具卡片中批准或拒绝"
                     : isPaused
                       ? "已暂停，点击继续生成或开始新对话"
-                      : "问一个工程问题，例如 1.2.0 发版有哪些注意事项？"
+                      : isStreaming
+                        ? "生成中可继续输入，消息会在结束后自动发送…"
+                        : "问一个工程问题，例如 1.2.0 发版有哪些注意事项？"
               }
               aria-label="消息输入"
               className="block w-full resize-none bg-transparent text-sm leading-6 outline-none placeholder:text-muted-foreground disabled:opacity-60"
             />
-            {isLoadingHistory || isWaitingApproval || isPaused ? (
+            {isLoadingHistory ||
+            isWaitingApproval ||
+            isPaused ||
+            (isStreaming && queued.length > 0) ? (
               <p className="mt-1 text-[11px] text-muted-foreground">
                 {isLoadingHistory
                   ? "正在加载长会话历史事件"
                   : isWaitingApproval
                     ? "run 已暂停，审批后从事件日志恢复"
-                    : `断点 seq ${pausedSeq} · 可继续或取消`}
+                    : isPaused
+                      ? `断点 seq ${pausedSeq} · 可继续或取消`
+                      : `当前 run 结束后自动发送 ${queued.length} 条排队消息`}
               </p>
             ) : null}
           </div>
@@ -147,6 +176,15 @@ export function ChatComposer({
                     aria-label="取消运行"
                   >
                     <X />
+                  </Button>
+                  <Button
+                    type="submit"
+                    size="icon"
+                    className="size-8"
+                    disabled={!input.trim()}
+                    aria-label="排队发送"
+                  >
+                    <ArrowUp />
                   </Button>
                 </>
               ) : isPaused ? (

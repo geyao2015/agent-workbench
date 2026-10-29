@@ -100,6 +100,25 @@ export function ChatView() {
   const userMessageIdsRef = useRef<Set<string>>(new Set());
   const handoffStartingRef = useRef(false);
   const autoRunRef = useRef(false);
+  const [queued, setQueued] = useState<string[]>([]);
+  const queuedRef = useRef<string[]>([]);
+
+  function replaceQueue(next: string[]) {
+    queuedRef.current = next;
+    setQueued(next);
+  }
+
+  function enqueueMessage(text: string) {
+    replaceQueue([...queuedRef.current, text]);
+  }
+
+  function removeQueued(index: number) {
+    replaceQueue(queuedRef.current.filter((_, itemIndex) => itemIndex !== index));
+  }
+
+  function clearQueue() {
+    replaceQueue([]);
+  }
 
   useEffect(() => {
     return () => {
@@ -341,6 +360,7 @@ export function ChatView() {
     setActiveThreadId(null);
     setHistoryCursor(null);
     setReconnectAttempt(0);
+    clearQueue();
 
     try {
       const demo = await fetchLongConversation(controller.signal);
@@ -429,6 +449,7 @@ export function ChatView() {
     setIsLoadingEarlier(false);
     setHistoryCursor(null);
     setReconnectAttempt(0);
+    clearQueue();
 
     try {
       const page = await fetchThreadRuns(threadId, undefined, controller.signal);
@@ -577,6 +598,7 @@ export function ChatView() {
 
   function cancelCurrentRun() {
     const runId = runIdRef.current;
+    clearQueue();
 
     if (!runId || isStopping) {
       return;
@@ -670,11 +692,28 @@ export function ChatView() {
     setActiveThreadId(null);
     setHistoryCursor(null);
     setReconnectAttempt(0);
+    clearQueue();
   }
 
   const activeRun = runs.at(-1)?.state ?? null;
   const isPaused = activeRun?.status === "paused";
   const isWaitingApproval = activeRun?.status === "waiting_approval";
+
+  useEffect(() => {
+    if (isStreaming || isPaused || isWaitingApproval || isLoadingHistory) {
+      return;
+    }
+
+    const [next, ...rest] = queuedRef.current;
+
+    if (!next) {
+      return;
+    }
+
+    replaceQueue(rest);
+    void startRun(undefined, next);
+  }, [isStreaming, isPaused, isWaitingApproval, isLoadingHistory]);
+
   const chatRows = useMemo(
     () =>
       buildChatRows({
@@ -726,11 +765,17 @@ export function ChatView() {
 
     const text = input.trim();
 
-    if (!text || isStreaming || isPaused || isWaitingApproval) {
+    if (!text || isPaused || isWaitingApproval || isLoadingHistory) {
       return;
     }
 
     setInput("");
+
+    if (isStreaming) {
+      enqueueMessage(text);
+      return;
+    }
+
     void startRun(undefined, text);
   }
 
@@ -826,6 +871,7 @@ export function ChatView() {
 
           <ChatComposer
             input={input}
+            queued={queued}
             pausedSeq={activeRun?.lastSeq ?? 0}
             isStreaming={isStreaming}
             isPaused={isPaused}
@@ -834,6 +880,7 @@ export function ChatView() {
             isStopping={isStopping}
             onSubmit={handleSubmit}
             onInputChange={setInput}
+            onRemoveQueued={removeQueued}
             onPause={pauseCurrentRun}
             onResume={resumeCurrentRun}
             onCancel={cancelCurrentRun}
