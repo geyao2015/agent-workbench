@@ -111,9 +111,13 @@ export interface StageState {
   startedAtSeq: number;
 }
 
+export type ApprovalScope = "tool" | "stage";
+
 export interface ApprovalState {
   id: string;
+  scope?: ApprovalScope;
   toolCallId?: string;
+  stageId?: string;
   title: string;
   description?: string;
   args: unknown;
@@ -129,6 +133,7 @@ export interface ArtifactState {
   mime?: string;
   size?: number;
   uri?: string;
+  stageId?: string;
   status: "created" | "ready" | "error";
 }
 
@@ -546,12 +551,56 @@ function applyKnownEvent(state: RunState, event: AgentEvent): RunState {
           ...state.approvals,
           [approvalId]: {
             id: approvalId,
+            scope: "tool",
             toolCallId,
             title,
             description,
             args,
             risk,
             status: "pending",
+          },
+        },
+      };
+    }
+
+    case "approval.required": {
+      const { approvalId, scope, stageId, title, description, risk, args } =
+        event.payload;
+
+      return {
+        ...state,
+        approvals: {
+          ...state.approvals,
+          [approvalId]: {
+            id: approvalId,
+            scope,
+            stageId,
+            title,
+            description,
+            args,
+            risk,
+            status: "pending",
+          },
+        },
+      };
+    }
+
+    case "approval.resolved": {
+      const { approvalId, approved, note } = event.payload;
+      const approval = state.approvals[approvalId];
+
+      if (!approval) {
+        return state;
+      }
+
+      return {
+        ...state,
+        approvals: {
+          ...state.approvals,
+          [approvalId]: {
+            ...approval,
+            status: approved ? "approved" : "rejected",
+            note,
           },
         },
       };
@@ -625,7 +674,8 @@ function applyKnownEvent(state: RunState, event: AgentEvent): RunState {
     }
 
     case "artifact.created": {
-      const { artifactId, kind, title, mime, size, uri } = event.payload;
+      const { artifactId, kind, title, mime, size, uri, stageId } =
+        event.payload;
 
       return {
         ...state,
@@ -638,6 +688,7 @@ function applyKnownEvent(state: RunState, event: AgentEvent): RunState {
             mime,
             size,
             uri,
+            stageId,
             status: "ready",
           },
         },

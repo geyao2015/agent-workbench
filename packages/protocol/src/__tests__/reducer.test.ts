@@ -359,6 +359,41 @@ describe("reducer", () => {
     expect(state.approvals[approvalId]?.note).toBe("方案不可接受");
   });
 
+  it("tracks stage approval pause and resolution", () => {
+    const approvalId = "approval_stage_1";
+    const state = [
+      makeEvent(1, "run.started", { kind: "release" }),
+      makeEvent(2, "stage.started", { stageId: "diff", name: "Diff 审批" }),
+      makeEvent(3, "approval.required", {
+        approvalId,
+        scope: "stage",
+        stageId: "diff",
+        title: "批准 diff",
+        risk: "high",
+        args: { files: ["src/checkout/client.ts"] },
+      }),
+      makeEvent(4, "run.paused", { reason: "approval", approvalId }),
+      makeEvent(5, "approval.resolved", {
+        approvalId,
+        approved: true,
+        note: "同意",
+      }),
+      makeEvent(6, "run.resumed", {}),
+      makeEvent(7, "stage.completed", { stageId: "diff", status: "success" }),
+      makeEvent(8, "run.completed", { status: "done" }),
+    ].reduce(
+      reduce,
+      createRunState({ runId: "run_test", threadId: "thread_test", kind: "release" }),
+    );
+
+    expect(state.approvals[approvalId]?.scope).toBe("stage");
+    expect(state.approvals[approvalId]?.stageId).toBe("diff");
+    expect(state.approvals[approvalId]?.status).toBe("approved");
+    expect(state.approvals[approvalId]?.note).toBe("同意");
+    expect(state.stages["diff"]?.status).toBe("success");
+    expect(state.status).toBe("completed");
+  });
+
   it("tracks stages, artifacts and recoverable errors", () => {
     const state = [
       makeEvent(1, "run.started", { kind: "release" }),
@@ -367,6 +402,7 @@ describe("reducer", () => {
         artifactId: "art_1",
         kind: "diff",
         title: "冲突 diff",
+        stageId: "preflight",
       }),
       makeEvent(4, "artifact.updated", {
         artifactId: "art_1",
@@ -391,6 +427,7 @@ describe("reducer", () => {
     expect(state.stageOrder).toEqual(["preflight"]);
     expect(state.stages["preflight"]?.status).toBe("success");
     expect(state.artifacts["art_1"]?.title).toBe("冲突 diff（已审阅）");
+    expect(state.artifacts["art_1"]?.stageId).toBe("preflight");
     expect(state.artifacts["art_1"]?.status).toBe("ready");
     expect(state.errors).toEqual([
       {

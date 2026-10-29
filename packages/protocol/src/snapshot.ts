@@ -1,3 +1,4 @@
+import type { RunKind } from "./events.js";
 import type { RunState } from "./reducer.js";
 
 export interface RunSnapshot extends Omit<RunState, "appliedEventIds"> {
@@ -6,6 +7,7 @@ export interface RunSnapshot extends Omit<RunState, "appliedEventIds"> {
 
 export interface ThreadSummary {
   threadId: string;
+  kind: RunKind;
   title: string;
   createdAt: number;
   updatedAt: number;

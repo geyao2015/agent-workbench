@@ -179,6 +179,26 @@ const eventSchemas = [
     }),
   ),
   event(
+    "approval.required",
+    z.object({
+      approvalId: z.string().min(1),
+      scope: z.literal("stage"),
+      stageId: z.string().min(1),
+      title: z.string().min(1),
+      description: z.string().optional(),
+      risk: riskSchema,
+      args: z.unknown(),
+    }),
+  ),
+  event(
+    "approval.resolved",
+    z.object({
+      approvalId: z.string().min(1),
+      approved: z.boolean(),
+      note: z.string().optional(),
+    }),
+  ),
+  event(
     "stage.started",
     z.object({
       stageId: z.string().min(1),
@@ -203,6 +223,7 @@ const eventSchemas = [
       mime: z.string().optional(),
       size: z.number().int().nonnegative().optional(),
       uri: z.string().optional(),
+      stageId: z.string().min(1).optional(),
     }),
   ),
   event(
@@ -215,6 +236,7 @@ const eventSchemas = [
           mime: z.string().optional(),
           size: z.number().int().nonnegative().optional(),
           uri: z.string().optional(),
+          stageId: z.string().min(1).optional(),
         })
         .optional(),
     }),
