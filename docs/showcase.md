@@ -21,11 +21,11 @@
 | 事件协议 | append-only AgentEvent v1、纯函数 reducer、SSE 重放/取消 | protocol 61 测试；事件检查器 | 事件面板 |
 | 流式渲染 | 块级增量分段、闭合块冻结、长会话虚拟列表 | 10k 块/500 增量 513ms；200 增量 1.81ms；60fps | 长会话 / 性能面板 |
 | 交互状态 | 工具状态机、半截 JSON、审批、reasoning、引用 | M1 演示；fixture 回放 | 功能测试快捷项 |
-| Agent runtime | Hono + LangGraph 工具循环、checkpointer、BM25 RAG | 8 篇文档；API 51 测试；离线假模型 E2E | 知识库问答 |
+| Agent runtime | Hono + LangGraph 工具循环、checkpointer、BM25 RAG | 8 篇文档；API 52 测试；离线假模型 E2E | 知识库问答 |
 | 历史会话 | 物化快照 + cursor 分页、JSONL 持久化、重启种子恢复 | 22 轮分页验证；同 thread 单 run 409 | 会话侧栏 |
 | 安全边界 | 输入 guard、输出脱敏、检索数据分隔 | 拦截请求不调用模型；三类测试 | 安全拒答 |
 | 双运行时 | 无 Key 自动 mock；配置 Key 进入实时 Agent | 生产构建两种模式冒烟 | Header 运行时标识 |
-| 发版工作台 | 确定性阶段、阶段审批、LLM 冲突、失败 RCA、diff/log/audit artifact | 10 阶段端到端；LLM/fallback 双路径；失败→RCA→修复审批→重跑 | Releases |
+| 发版工作台 | 确定性阶段、阶段审批、LLM 冲突、失败 RCA、回滚 child run、diff/log/audit artifact | 10 阶段端到端；LLM/fallback；失败 RCA；回滚审批与 parent 审计 | Releases |
 
 ## 3. 展示方案待办
 
