@@ -4,6 +4,7 @@ import { createPortal } from "react-dom";
 import { BookOpen, Sparkles } from "lucide-react";
 
 import { EngineeringNotes } from "@/components/devtools/engineering-notes";
+import { GithubIcon } from "@/components/icons/github-icon";
 import { Button } from "@/components/ui/button";
 import type { AppView } from "@/lib/hash-router";
 import { useSidePanel } from "@/lib/side-panel-state";
@@ -86,6 +87,16 @@ export function AppHeader({
             <span className="hidden sm:inline">工程说明</span>
           </Button>
           {children}
+          <Button variant="ghost" size="icon" asChild>
+            <a
+              href="https://github.com/geyao2015/agent-workbench"
+              target="_blank"
+              rel="noreferrer"
+              aria-label="GitHub 仓库"
+            >
+              <GithubIcon className="size-4" />
+            </a>
+          </Button>
         </div>
       </header>
 
