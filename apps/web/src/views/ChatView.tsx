@@ -21,6 +21,7 @@ import { EventInspector } from "@/components/devtools/event-inspector";
 import { PerformancePanel } from "@/components/devtools/performance-panel";
 import { Button } from "@/components/ui/button";
 import { buildChatRows, type ChatRun } from "@/lib/chat/chat-rows";
+import { useChatQueue } from "@/lib/chat/use-chat-queue";
 import { navigate } from "@/lib/hash-router";
 import { useSidePanel } from "@/lib/side-panel-state";
 import {
@@ -100,25 +101,6 @@ export function ChatView() {
   const userMessageIdsRef = useRef<Set<string>>(new Set());
   const handoffStartingRef = useRef(false);
   const autoRunRef = useRef(false);
-  const [queued, setQueued] = useState<string[]>([]);
-  const queuedRef = useRef<string[]>([]);
-
-  function replaceQueue(next: string[]) {
-    queuedRef.current = next;
-    setQueued(next);
-  }
-
-  function enqueueMessage(text: string) {
-    replaceQueue([...queuedRef.current, text]);
-  }
-
-  function removeQueued(index: number) {
-    replaceQueue(queuedRef.current.filter((_, itemIndex) => itemIndex !== index));
-  }
-
-  function clearQueue() {
-    replaceQueue([]);
-  }
 
   useEffect(() => {
     return () => {
@@ -699,20 +681,15 @@ export function ChatView() {
   const isPaused = activeRun?.status === "paused";
   const isWaitingApproval = activeRun?.status === "waiting_approval";
 
-  useEffect(() => {
-    if (isStreaming || isPaused || isWaitingApproval || isLoadingHistory) {
-      return;
-    }
-
-    const [next, ...rest] = queuedRef.current;
-
-    if (!next) {
-      return;
-    }
-
-    replaceQueue(rest);
-    void startRun(undefined, next);
-  }, [isStreaming, isPaused, isWaitingApproval, isLoadingHistory]);
+  const { queued, enqueueMessage, removeQueued, clearQueue } = useChatQueue({
+    isStreaming,
+    isPaused,
+    isWaitingApproval,
+    isLoadingHistory,
+    onSend: (text) => {
+      void startRun(undefined, text);
+    },
+  });
 
   const chatRows = useMemo(
     () =>
