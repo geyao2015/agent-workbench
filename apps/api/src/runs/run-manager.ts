@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 
 import type { RunKind } from "@agent-workbench/protocol";
 
+import { inspectUserPrompt } from "../agent/guard.js";
 import { AgentRunner, type HistoryMessage } from "../agent/runner.js";
 import type { ChatAgent } from "../agent/graph.js";
 import type { KnowledgeBase } from "../kb/index.js";
@@ -119,6 +120,23 @@ export class RunManager {
     }
 
     try {
+      const decision = inspectUserPrompt(prompt);
+
+      if (decision.blocked && decision.reply) {
+        console.warn(`[guard] blocked ${decision.category} request`);
+
+        run.log.append("text.delta", {
+          messageId,
+          delta: decision.reply,
+        });
+        run.log.append("message.completed", {
+          messageId,
+          stopReason: "stop",
+        });
+        run.log.append("run.completed", { status: "done" });
+        return;
+      }
+
       const runner = new AgentRunner(
         this.deps.agent,
         run.log,

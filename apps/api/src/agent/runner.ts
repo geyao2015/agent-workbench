@@ -9,6 +9,11 @@ import {
 import type { KnowledgeBase } from "../kb/index.js";
 import type { RunLog } from "../runs/run-log.js";
 import type { ChatAgent } from "./graph.js";
+import {
+  inspectUserPrompt,
+  redactSecrets,
+  StreamingRedactor,
+} from "./guard.js";
 
 export interface HistoryMessage {
   role: "user" | "assistant";
@@ -103,6 +108,8 @@ export class AgentRunner {
   private readonly toolStates = new Map<number, ToolStreamState>();
   private readonly toolStateById = new Map<string, ToolStreamState>();
   private readonly citations = new Map<string, { title: string; locator?: string }>();
+  private readonly textRedactor = new StreamingRedactor();
+  private readonly reasoningRedactor = new StreamingRedactor();
   private nextToolIndex = 0;
   private reasoningId: string | null = null;
   private reasoningCount = 0;
@@ -150,6 +157,7 @@ export class AgentRunner {
       }
 
       this.completeReasoning();
+      this.flushText();
       this.commitUsage();
       this.emitCitations();
       this.log.append("message.completed", {
@@ -165,6 +173,7 @@ export class AgentRunner {
       });
     } catch (cause) {
       this.completeReasoning();
+      this.flushText();
 
       if (input.signal.aborted || isAbortError(cause)) {
         this.log.append("message.completed", {
@@ -195,7 +204,12 @@ export class AgentRunner {
           ? new HumanMessage(message.text.slice(0, MAX_HISTORY_CHARS))
           : new AIMessage(message.text.slice(0, MAX_HISTORY_CHARS)),
       )
-      .filter((message) => textFromContent(message.content).trim().length > 0);
+      .filter((message) => textFromContent(message.content).trim().length > 0)
+      .filter(
+        (message) =>
+          message._getType() !== "human" ||
+          !inspectUserPrompt(textFromContent(message.content)).blocked,
+      );
   }
 
   private handleAiMessage(message: AIMessageChunk): void {
@@ -209,10 +223,15 @@ export class AgentRunner {
 
     if (text) {
       this.completeReasoning();
-      this.log.append("text.delta", {
-        messageId: this.messageId,
-        delta: text,
-      });
+
+      const safe = this.textRedactor.push(text);
+
+      if (safe) {
+        this.log.append("text.delta", {
+          messageId: this.messageId,
+          delta: safe,
+        });
+      }
     }
 
     const toolCallChunks = message.tool_call_chunks ?? [];
@@ -294,10 +313,11 @@ export class AgentRunner {
     this.startToolIfReady(state);
     this.readyToolIfParsed(state, true);
 
-    const content =
+    const content = redactSecrets(
       typeof message.content === "string"
         ? message.content
-        : JSON.stringify(message.content);
+        : JSON.stringify(message.content),
+    );
     const finishedAt = Date.now();
 
     this.log.append("tool.result", {
@@ -320,11 +340,15 @@ export class AgentRunner {
       });
     }
 
-    this.log.append("reasoning.delta", {
-      messageId: this.messageId,
-      delta,
-      blockId: this.reasoningId,
-    });
+    const safe = this.reasoningRedactor.push(delta);
+
+    if (safe) {
+      this.log.append("reasoning.delta", {
+        messageId: this.messageId,
+        delta: safe,
+        blockId: this.reasoningId,
+      });
+    }
   }
 
   private completeReasoning(): void {
@@ -332,11 +356,34 @@ export class AgentRunner {
       return;
     }
 
+    const tail = this.reasoningRedactor.flush();
+
+    if (tail) {
+      this.log.append("reasoning.delta", {
+        messageId: this.messageId,
+        delta: tail,
+        blockId: this.reasoningId,
+      });
+    }
+
     this.log.append("reasoning.completed", {
       messageId: this.messageId,
       blockId: this.reasoningId,
     });
     this.reasoningId = null;
+  }
+
+  private flushText(): void {
+    const tail = this.textRedactor.flush();
+
+    if (!tail) {
+      return;
+    }
+
+    this.log.append("text.delta", {
+      messageId: this.messageId,
+      delta: tail,
+    });
   }
 
   private ensureToolState(index: number): ToolStreamState {
