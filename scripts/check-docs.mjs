@@ -15,6 +15,7 @@ const docs = [
   "docs/glossary.md",
   "docs/showcase.md",
   "docs/multimodal.md",
+  "docs/agent-map.md",
   "docs/evaluation.md",
 ];
 const budgets = {
@@ -29,6 +30,7 @@ const budgets = {
   "docs/glossary.md": 80,
   "docs/showcase.md": 80,
   "docs/multimodal.md": 80,
+  "docs/agent-map.md": 80,
   "docs/evaluation.md": 100,
 };
 

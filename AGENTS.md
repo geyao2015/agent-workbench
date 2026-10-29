@@ -40,6 +40,7 @@
 | 项目定位、场景、演示流程、功能范围、非目标、项目状态摘要、仓库结构、文档索引 | `README.md` |
 | 技术选型、架构与范围决策、求职叙事、待确认项、变更记录 | `docs/decision.md` |
 | 阶段划分、阶段状态、能力成长、M0 执行清单、时间盒与验收标准 | `docs/plan.md` |
+| Agent 应用难点分层、能力覆盖与推进顺序 | `docs/agent-map.md` |
 | AgentEvent / Span、reducer、fixture、transport、历史会话快照 | `docs/protocol.md` |
 | 渲染实现、增量分段、性能数据 | `docs/rendering.md` |
 | 页面展示亮点、演示编排、避免过度宣称 | `docs/showcase.md` |

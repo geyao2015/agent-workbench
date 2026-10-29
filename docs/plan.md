@@ -2,7 +2,7 @@
 
 最后更新：2026-10-29
 
-本文件是阶段划分、阶段状态、执行清单与验收标准的唯一来源。当前项目阶段摘要见 [README.md §8](../README.md#8-当前阶段)；技术选型与运行方式见 [decision.md §2](decision.md#2-技术选型与运行方式)；协议契约见 [protocol.md](protocol.md)。
+本文件是阶段划分、阶段状态、执行清单与验收标准的唯一来源；跨阶段能力地图见 [agent-map.md](agent-map.md)。当前项目阶段摘要见 [README.md §8](../README.md#8-当前阶段)；技术选型与运行方式见 [decision.md §2](decision.md#2-技术选型与运行方式)；协议契约见 [protocol.md](protocol.md)。
 
 阶段状态取值：`未开始` / `进行中` / `已完成`。状态变化时同步更新本文件的「最后更新」日期。
 
