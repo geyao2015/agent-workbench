@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 import type { AgentEvent } from "@agent-workbench/protocol";
 import { afterEach, describe, expect, it } from "vitest";
 
+import { KnowledgeBase } from "../kb/index.js";
 import { RunLog } from "../runs/run-log.js";
 import type { ActiveRun } from "../runs/run-registry.js";
 import { ApprovalRegistry } from "./approvals.js";
@@ -19,7 +20,11 @@ import { loadReleaseScenarios } from "./scenario.js";
 const releasesDir = fileURLToPath(
   new URL("../../../../data/releases", import.meta.url),
 );
+const docsDir = fileURLToPath(
+  new URL("../../../../data/docs", import.meta.url),
+);
 const scenario = loadReleaseScenarios(releasesDir)[0];
+const kb = KnowledgeBase.load(docsDir);
 
 if (!scenario) {
   throw new Error("缺少 release 场景");
@@ -63,6 +68,7 @@ function makeHarness(
     artifacts,
     approvals,
     conflictResolver,
+    kb,
     signal: controller.signal,
     checkpoint: () => {},
   });
@@ -95,21 +101,50 @@ async function waitFor(
 }
 
 describe("ReleaseRuntime", () => {
-  it("批准后完成确定性主链路并生成 audit", async () => {
+  it("批准两次后完成失败 RCA 与重跑链路并生成 audit", async () => {
     const { runtime, log, artifacts, approvals } = makeHarness();
     const execution = runtime.execute();
 
-    await waitFor(() =>
-      log.snapshotEvents().some((event) => event.type === "approval.required"),
+    await waitFor(
+      () =>
+        log.snapshotEvents().filter((event) => event.type === "approval.required")
+          .length >= 1,
     );
 
-    const approval = findEvent(log.snapshotEvents(), "approval.required");
+    const firstApproval = log
+      .snapshotEvents()
+      .find((event) => event.type === "approval.required");
 
-    if (!approval) {
-      throw new Error("缺少 approval.required");
+    if (!firstApproval || firstApproval.type !== "approval.required") {
+      throw new Error("缺少第一次 approval.required");
     }
 
-    expect(approvals.resolve(approval.payload.approvalId, { approved: true, note: "同意" })).toBe(true);
+    approvals.resolve(firstApproval.payload.approvalId, {
+      approved: true,
+      note: "同意",
+    });
+
+    await waitFor(
+      () =>
+        log.snapshotEvents().filter((event) => event.type === "approval.required")
+          .length >= 2,
+    );
+
+    const approvalsRequired = log
+      .snapshotEvents()
+      .filter((event) => event.type === "approval.required");
+    const secondApproval = approvalsRequired[1];
+
+    if (!secondApproval || secondApproval.type !== "approval.required") {
+      throw new Error("缺少第二次 approval.required");
+    }
+
+    expect(secondApproval.payload.stageId).toBe("fix");
+    approvals.resolve(secondApproval.payload.approvalId, {
+      approved: true,
+      note: "修复方案同意",
+    });
+
     await execution;
     log.finish();
 
@@ -121,6 +156,9 @@ describe("ReleaseRuntime", () => {
     const artifactsCreated = events.flatMap((event) =>
       event.type === "artifact.created" ? [event.payload] : [],
     );
+    const toolNames = events.flatMap((event) =>
+      event.type === "tool.started" ? [event.payload.name] : [],
+    );
 
     expect(completed?.payload.status).toBe("done");
     expect(stages.map((stage) => stage.stageId)).toEqual([
@@ -128,32 +166,69 @@ describe("ReleaseRuntime", () => {
       "conflict",
       "diff",
       "test.1",
+      "rca",
+      "fix",
+      "test.2",
       "notes",
       "tag",
       "audit",
     ]);
-    expect(stages.every((stage) => stage.status === "success")).toBe(true);
+    expect(stages.find((stage) => stage.stageId === "test.1")?.status).toBe(
+      "error",
+    );
+    expect(stages.find((stage) => stage.stageId === "rca")?.status).toBe(
+      "success",
+    );
+    expect(stages.find((stage) => stage.stageId === "test.2")?.status).toBe(
+      "success",
+    );
     expect(artifactsCreated.map((artifact) => artifact.kind)).toEqual([
       "diff",
+      "log_bundle",
+      "document",
       "release_notes",
       "document",
     ]);
+    expect(toolNames).toEqual(["search_logs", "get_log_context", "search_kb"]);
 
-    const audit = artifactsCreated.find((artifact) => artifact.kind === "document");
+    const rca = artifactsCreated.find(
+      (artifact) => artifact.kind === "document" && artifact.stageId === "rca",
+    );
+
+    if (!rca) {
+      throw new Error("缺少 RCA artifact");
+    }
+
+    const rcaContent = artifacts.read("run_release", rca.artifactId);
+    const rcaBody = JSON.parse(rcaContent?.body ?? "{}") as {
+      rootCause: string;
+      evidence: unknown[];
+      runbook?: { sourceId: string };
+    };
+
+    expect(rcaBody.rootCause).toContain("payment_conflict");
+    expect(rcaBody.evidence).toHaveLength(3);
+    expect(rcaBody.runbook?.sourceId).toBe("incident-042-payment-callback");
+
+    const audit = artifactsCreated.find(
+      (artifact) => artifact.kind === "document" && artifact.stageId === "audit",
+    );
 
     if (!audit) {
       throw new Error("缺少 audit artifact");
     }
 
     const content = artifacts.read("run_release", audit.artifactId);
-
-    expect(content?.mime).toBe("application/json");
-
     const body = JSON.parse(content?.body ?? "{}") as {
-      approvals: Array<{ approved: boolean }>;
+      approvals: Array<{ approved: boolean; stageId: string }>;
     };
 
-    expect(body.approvals[0]?.approved).toBe(true);
+    expect(body.approvals).toHaveLength(2);
+    expect(body.approvals.map((approval) => approval.stageId)).toEqual([
+      "diff",
+      "fix",
+    ]);
+    expect(body.approvals.every((approval) => approval.approved)).toBe(true);
   });
 
   it("拒绝审批后跳过 diff、执行 audit 并取消 run", async () => {
@@ -215,6 +290,22 @@ describe("ReleaseRuntime", () => {
     }
 
     approvals.resolve(approval.payload.approvalId, { approved: true });
+
+    await waitFor(
+      () =>
+        log.snapshotEvents().filter((event) => event.type === "approval.required")
+          .length >= 2,
+    );
+
+    const second = log
+      .snapshotEvents()
+      .filter((event) => event.type === "approval.required")[1];
+
+    if (!second || second.type !== "approval.required") {
+      throw new Error("缺少修复审批");
+    }
+
+    approvals.resolve(second.payload.approvalId, { approved: true });
     await execution;
     log.finish();
 

@@ -1,0 +1,4 @@
+2026-10-14T10:02:11Z INFO callback received order=ORD-1842 attempt=1 idempotencyKey=idem-1842
+2026-10-14T10:05:44Z WARN retry queue depth=60000
+2026-10-14T10:14:01Z ERROR consumer treats payment_conflict as retryable attempt=3
+2026-10-14T10:28:13Z INFO rollback batch writer flag; retry count dropping

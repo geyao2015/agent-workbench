@@ -69,6 +69,7 @@ const release = new ReleaseService({
   artifacts,
   approvals,
   conflictResolver,
+  kb,
 });
 const agentRuntime = (() => {
   if (config.mode !== "agent") {

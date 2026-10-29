@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 import type { AgentEvent } from "@agent-workbench/protocol";
 import { afterEach, describe, expect, it } from "vitest";
 
+import { KnowledgeBase } from "./kb/index.js";
 import { createReleaseApi } from "./release-api.js";
 import { ApprovalRegistry } from "./release/approvals.js";
 import { ArtifactStore } from "./release/artifacts.js";
@@ -18,7 +19,9 @@ import { ThreadStore } from "./runs/thread-store.js";
 const releasesDir = fileURLToPath(
   new URL("../../../data/releases", import.meta.url),
 );
+const docsDir = fileURLToPath(new URL("../../../data/docs", import.meta.url));
 const scenarios = loadReleaseScenarios(releasesDir);
+const kb = KnowledgeBase.load(docsDir);
 const tempDirs: string[] = [];
 
 function makeApp() {
@@ -35,6 +38,7 @@ function makeApp() {
     artifacts,
     approvals,
     conflictResolver: new DeterministicConflictResolver(),
+    kb,
   });
   const app = createReleaseApi({
     release,
@@ -126,6 +130,34 @@ describe("release API", () => {
 
     expect(resolveResponse.status).toBe(200);
 
+    await waitFor(
+      async () =>
+        (await getEvents(app, created.runId)).filter(
+          (event) => event.type === "approval.required",
+        ).length >= 2,
+    );
+
+    const fixApproval = (await getEvents(app, created.runId)).filter(
+      (event) => event.type === "approval.required",
+    )[1];
+
+    if (!fixApproval || fixApproval.type !== "approval.required") {
+      throw new Error("缺少修复审批");
+    }
+
+    expect(fixApproval.payload.stageId).toBe("fix");
+
+    const fixResponse = await app.request(
+      `/api/releases/approvals/${fixApproval.payload.approvalId}`,
+      {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ approved: true }),
+      },
+    );
+
+    expect(fixResponse.status).toBe(200);
+
     await waitFor(async () =>
       (await getEvents(app, created.runId)).some(
         (event) => event.type === "run.completed",
@@ -151,6 +183,21 @@ describe("release API", () => {
     expect(artifactResponse.status).toBe(200);
     expect(artifact.mime).toBe("application/json");
     expect(artifact.body).toContain("diff --git");
+    expect(
+      events.some(
+        (event) =>
+          event.type === "artifact.created" &&
+          event.payload.kind === "log_bundle",
+      ),
+    ).toBe(true);
+    expect(
+      events.some(
+        (event) =>
+          event.type === "artifact.created" &&
+          event.payload.kind === "document" &&
+          event.payload.stageId === "rca",
+      ),
+    ).toBe(true);
 
     const threadsResponse = await app.request("/api/releases/threads");
     const threads = (await threadsResponse.json()) as {

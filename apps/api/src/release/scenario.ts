@@ -1,8 +1,9 @@
 import { existsSync, readFileSync, readdirSync } from "node:fs";
-import { resolve } from "node:path";
+import { basename, resolve } from "node:path";
 
 import { z } from "zod";
 
+import { findEvidence } from "./logs.js";
 import type { ReleaseScenario } from "./types.js";
 
 const stageKindSchema = z.enum([
@@ -10,6 +11,8 @@ const stageKindSchema = z.enum([
   "conflict_resolve",
   "diff_approval",
   "test",
+  "rca",
+  "fix_approval",
   "release_notes",
   "dry_run_tag",
   "audit",
@@ -32,6 +35,14 @@ const scenarioFileSchema = z.object({
   branch: z.string().min(1),
   tag: z.string().min(1),
   conflictContext: z.string().min(1),
+  rca: z.object({
+    incidentId: z.string().min(1),
+    rootCause: z.string().min(1),
+    fix: z.string().min(1),
+    confidence: z.enum(["low", "medium", "high"]),
+    evidence: z.array(z.string().min(1)).min(1),
+    runbookQuery: z.string().min(1),
+  }),
   stages: z.array(stageSchema).min(1),
 });
 
@@ -60,6 +71,7 @@ const ciFileSchema = z.object({
       status: z.enum(["success", "error"]),
       summary: z.string(),
       durationMs: z.number().nonnegative().optional(),
+      logFile: z.string().optional(),
     }),
   ),
 });
@@ -96,11 +108,27 @@ export function loadReleaseScenarios(rootDir: string): ReleaseScenario[] {
       resolve(directory, "notes-template.md"),
       "utf8",
     );
+    const logsDir = resolve(directory, "logs");
+    const logs: Record<string, string> = {};
+
+    if (existsSync(logsDir)) {
+      for (const logEntry of readdirSync(logsDir, { withFileTypes: true })) {
+        if (logEntry.isFile()) {
+          logs[basename(logEntry.name)] = readFileSync(
+            resolve(logsDir, logEntry.name),
+            "utf8",
+          );
+        }
+      }
+    }
+
+    findEvidence(logs, scenarioFile.rca.evidence);
 
     scenarios.push({
       ...scenarioFile,
       files: repo.files,
       ciAttempts: ci.attempts,
+      logs,
       notesTemplate,
     });
   }

@@ -6,6 +6,7 @@ coverage/
 !.env.example
 .DS_Store
 *.log
+!data/releases/**/logs/*.log
 
 # 个人学习笔记，仅本地保留
 learn-notes/

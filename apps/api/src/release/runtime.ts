@@ -2,13 +2,21 @@ import { randomUUID } from "node:crypto";
 
 import type { Risk } from "@agent-workbench/protocol";
 
+import type { KnowledgeBase } from "../kb/index.js";
 import type { ActiveRun, RunRegistry } from "../runs/run-registry.js";
 import type { ApprovalRegistry } from "./approvals.js";
 import type { ArtifactStore } from "./artifacts.js";
 import type { ConflictResolver } from "./conflict.js";
 import { buildDiffArtifact } from "./diff.js";
+import {
+  findEvidence,
+  formatLogHits,
+  getLogContext,
+  searchLogs,
+} from "./logs.js";
 import type {
   AuditArtifactBody,
+  RcaArtifactBody,
   ReleaseScenario,
   ReleaseStage,
 } from "./types.js";
@@ -34,6 +42,8 @@ export class ReleaseRuntime {
   private readonly stagesUsed: AuditArtifactBody["stages"] = [];
   private rejected = false;
   private pendingApprovalId: string | null = null;
+  private testFailed = false;
+  private toolSeq = 0;
 
   constructor(
     private readonly deps: {
@@ -42,6 +52,7 @@ export class ReleaseRuntime {
       artifacts: ArtifactStore;
       approvals: ApprovalRegistry;
       conflictResolver: ConflictResolver;
+      kb: KnowledgeBase;
       signal: AbortSignal;
       checkpoint: () => void;
     },
@@ -120,6 +131,21 @@ export class ReleaseRuntime {
 
       case "test": {
         this.runTest(stage);
+        return;
+      }
+
+      case "rca": {
+        await this.analyzeFailure(stage);
+        return;
+      }
+
+      case "fix_approval": {
+        if (!this.testFailed) {
+          this.completeStage(stage, "skipped", "测试通过，无需修复审批");
+          return;
+        }
+
+        await this.requestApproval(stage);
         return;
       }
 
@@ -261,11 +287,154 @@ export class ReleaseRuntime {
     };
 
     if (attempt.status === "error") {
+      this.testFailed = true;
       this.completeStage(stage, "error", attempt.summary);
-      throw new Error(attempt.summary);
+      this.writeLogBundle(stage);
+
+      if (stage.id !== "test.1") {
+        throw new Error(attempt.summary);
+      }
+
+      return;
     }
 
     this.completeStage(stage, "success", attempt.summary);
+  }
+
+  private writeLogBundle(stage: ReleaseStage): void {
+    const body = Object.entries(this.deps.scenario.logs)
+      .map(([file, content]) => `===== ${file} =====\n${content.trim()}`)
+      .join("\n\n");
+    const artifactId = `art_logs_${randomUUID()}`;
+    const title = `${this.deps.scenario.version} 测试日志`;
+    const info = this.deps.artifacts.write(this.deps.run.runId, artifactId, {
+      mime: "text/plain",
+      body,
+    });
+
+    this.deps.run.log.append("artifact.created", {
+      artifactId,
+      kind: "log_bundle",
+      title,
+      mime: info.mime,
+      size: info.size,
+      uri: info.uri,
+      stageId: stage.id,
+    });
+    this.artifactsUsed.push({ artifactId, kind: "log_bundle", title });
+  }
+
+  private async analyzeFailure(stage: ReleaseStage): Promise<void> {
+    if (!this.testFailed) {
+      this.completeStage(stage, "skipped", "测试未失败，跳过 RCA");
+      return;
+    }
+
+    const { rca, logs } = this.deps.scenario;
+    const searchHits = searchLogs(logs, rca.runbookQuery, 6);
+    this.emitTool(
+      "search_logs",
+      { query: rca.runbookQuery },
+      formatLogHits(searchHits),
+      8,
+    );
+
+    const evidence = findEvidence(logs, rca.evidence);
+    const first = evidence[0];
+
+    if (first) {
+      this.emitTool(
+        "get_log_context",
+        { file: first.file, line: first.line, radius: 2 },
+        formatLogHits(getLogContext(logs, first.file, first.line, 2)),
+        6,
+      );
+    }
+
+    const runbookHits = this.deps.kb.search(rca.runbookQuery, 4);
+    const runbook = runbookHits[0];
+    const runbookText =
+      runbookHits.length > 0
+        ? runbookHits
+            .map(
+              (hit, index) =>
+                `[${index + 1}] sourceId=${hit.sourceId} | ${hit.locator}\n${hit.snippet}`,
+            )
+            .join("\n\n")
+        : "知识库未命中相关 runbook。";
+
+    this.emitTool(
+      "search_kb",
+      { query: rca.runbookQuery },
+      runbookText,
+      5,
+    );
+
+    const body: RcaArtifactBody = {
+      incidentId: rca.incidentId,
+      version: this.deps.scenario.version,
+      rootCause: rca.rootCause,
+      fix: rca.fix,
+      confidence: rca.confidence,
+      evidence,
+      ...(runbook
+        ? {
+            runbook: {
+              sourceId: runbook.sourceId,
+              title: runbook.title,
+              locator: runbook.locator,
+            },
+          }
+        : {}),
+      generatedAt: new Date().toISOString(),
+    };
+    const artifactId = `art_rca_${randomUUID()}`;
+    const title = `${this.deps.scenario.version} 根因分析`;
+    const info = this.deps.artifacts.write(this.deps.run.runId, artifactId, {
+      mime: "application/json",
+      body: JSON.stringify(body, null, 2),
+    });
+
+    this.deps.run.log.append("artifact.created", {
+      artifactId,
+      kind: "document",
+      title,
+      mime: info.mime,
+      size: info.size,
+      uri: info.uri,
+      stageId: stage.id,
+    });
+    this.artifactsUsed.push({ artifactId, kind: "document", title });
+
+    this.completeStage(
+      stage,
+      "success",
+      `定位 ${rca.incidentId} 根因，命中 ${evidence.length} 条证据`,
+    );
+  }
+
+  private emitTool(
+    name: string,
+    args: Record<string, unknown>,
+    content: string,
+    durationMs: number,
+  ): void {
+    const toolCallId = `tc_rca_${this.toolSeq}`;
+    this.toolSeq += 1;
+    const log = this.deps.run.log;
+
+    log.append("tool.started", { toolCallId, name });
+    log.append("tool.args.delta", {
+      toolCallId,
+      delta: JSON.stringify(args),
+    });
+    log.append("tool.ready", { toolCallId, args });
+    log.append("tool.result", {
+      toolCallId,
+      status: "success",
+      content,
+      durationMs,
+    });
   }
 
   private writeReleaseNotes(stage: ReleaseStage): void {
@@ -388,6 +557,7 @@ export class ReleaseService {
       artifacts: ArtifactStore;
       approvals: ApprovalRegistry;
       conflictResolver: ConflictResolver;
+      kb: KnowledgeBase;
     },
   ) {
     this.scenarios = deps.scenarios;
@@ -443,6 +613,7 @@ export class ReleaseService {
         artifacts: this.deps.artifacts,
         approvals: this.deps.approvals,
         conflictResolver: this.deps.conflictResolver,
+        kb: this.deps.kb,
         signal,
         checkpoint: () => this.deps.registry.persist(run),
       });

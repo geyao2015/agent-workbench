@@ -1,0 +1,4 @@
+[10:14:02] payment-callback contract test failed
+expected: duplicate callback returns 200 duplicate=true
+received: 409 payment_conflict
+hint: consumer treats payment_conflict as retryable

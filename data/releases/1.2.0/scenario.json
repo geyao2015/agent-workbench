@@ -6,6 +6,18 @@
   "branch": "release/1.2.0",
   "tag": "v1.2.0-rc.1",
   "conflictContext": "1.2.0 发版要求支付请求超时保持 5000ms；INC-042 之后支付网关回调客户端最多重试 3 次并带 200ms 退避；缺少幂等键属于调用方错误，应显式抛错而不是静默返回。",
+  "rca": {
+    "incidentId": "INC-042",
+    "rootCause": "回调客户端把 409 payment_conflict 当作可重试错误，导致重复回调被放大；幂等键已存在时应视为成功，而不是继续重试。",
+    "fix": "重复回调返回 200 且 duplicate=true；客户端只对 state_conflict 进入人工处理，不再把 payment_conflict 放入重试队列。",
+    "confidence": "high",
+    "evidence": [
+      "expected: duplicate callback returns 200 duplicate=true",
+      "received: 409 payment_conflict",
+      "consumer treats payment_conflict as retryable"
+    ],
+    "runbookQuery": "INC-042 payment_conflict retry duplicate"
+  },
   "stages": [
     {
       "id": "preflight",
@@ -29,6 +41,23 @@
       "id": "test.1",
       "kind": "test",
       "name": "测试"
+    },
+    {
+      "id": "rca",
+      "kind": "rca",
+      "name": "日志根因分析"
+    },
+    {
+      "id": "fix",
+      "kind": "fix_approval",
+      "name": "修复审批",
+      "risk": "high",
+      "description": "应用支付回调幂等修复前需要人工确认"
+    },
+    {
+      "id": "test.2",
+      "kind": "test",
+      "name": "测试（重跑）"
     },
     {
       "id": "notes",

@@ -1,9 +1,15 @@
 {
   "attempts": {
     "test.1": {
+      "status": "error",
+      "summary": "支付回调契约测试失败：409 被当作可重试",
+      "durationMs": 4200,
+      "logFile": "ci-test1.log"
+    },
+    "test.2": {
       "status": "success",
-      "summary": "单元测试 128 passed，契约测试 12 passed",
-      "durationMs": 4200
+      "summary": "单元测试 128 passed，契约测试 12 passed（修复后）",
+      "durationMs": 3900
     }
   }
 }

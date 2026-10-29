@@ -5,6 +5,8 @@ export type ReleaseStageKind =
   | "conflict_resolve"
   | "diff_approval"
   | "test"
+  | "rca"
+  | "fix_approval"
   | "release_notes"
   | "dry_run_tag"
   | "audit";
@@ -36,6 +38,37 @@ export interface CiAttempt {
   status: "success" | "error";
   summary: string;
   durationMs?: number;
+  logFile?: string;
+}
+
+export interface ReleaseRcaConfig {
+  incidentId: string;
+  rootCause: string;
+  fix: string;
+  confidence: "low" | "medium" | "high";
+  evidence: string[];
+  runbookQuery: string;
+}
+
+export interface LogHit {
+  file: string;
+  line: number;
+  text: string;
+}
+
+export interface RcaArtifactBody {
+  incidentId: string;
+  version: string;
+  rootCause: string;
+  fix: string;
+  confidence: "low" | "medium" | "high";
+  evidence: LogHit[];
+  runbook?: {
+    sourceId: string;
+    title: string;
+    locator: string;
+  };
+  generatedAt: string;
 }
 
 export interface ReleaseScenario {
@@ -49,6 +82,8 @@ export interface ReleaseScenario {
   stages: ReleaseStage[];
   files: ReleaseFile[];
   ciAttempts: Record<string, CiAttempt>;
+  logs: Record<string, string>;
+  rca: ReleaseRcaConfig;
   notesTemplate: string;
 }
 
