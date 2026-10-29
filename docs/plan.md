@@ -93,3 +93,5 @@ M0 之前不做 M1 及以后的内容。
   - 现有节点生成器只保留给 `pnpm bench:streaming` 和压测入口，并在快捷项标注“压测数据”。
   - 长会话改为 30–50 轮真实 Q&A，长报告改为发版检查/事故复盘；图片改用本地合成截图 + 固定识别文本。
   - 增加 `fixtures:check`：校验领域锚点、引用 `sourceId`、占位词和块数，挂进测试或独立命令。
+- [ ] 工程化门禁：oxlint（type-aware）+ Prettier 清理后接入 GitHub Actions，CI 跑 format/lint/typecheck/test/build/check-docs，E2E 可选。
+- [ ] 部署与演示入口：确定平台、mock 标注、环境变量校验与健康检查。
