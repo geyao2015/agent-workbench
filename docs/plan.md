@@ -66,5 +66,7 @@ M0 之前不做 M1 及以后的内容。
 
 - [x] 安全防护（已完成）：确定性 input guard、检索数据分隔、流式输出脱敏与三类测试；历史种子会过滤被拦截的用户输入。
 - [ ] 展示层：按 [showcase.md](showcase.md) 设计首屏工程亮点与 Demo 入口；guard 作为示例，方案待定。
-- [ ] RAG 检索评测（M3 期间准备）：语料扩到 30–50 篇，50 题检索金标集（含无答案与改写题），离线脚本报告 Recall@1/@4、MRR 与无答案拒答率。
-- [ ] RAG 端到端评测（M4）：忠实度、引用准确率、答案正确性；LLM judge + 人工抽检，按 tag 分组报告。
+- [ ] 评测集构造（M3 期间准备）：语料扩到 30–50 篇；检索题存 `data/eval/retrieval.jsonl`，字段 `query / goldSourceIds / answerable / tags`；50 题覆盖单文档、跨文档、版本、无答案与改写；金标人工编写或模型生成候选后人工校验，冻结 test set，不用于调参。
+- [ ] RAG 检索评测（M3 期间准备）：离线脚本报告 Recall@1/@4、MRR 与无答案拒答率，按 tag 分组。
+- [ ] RAG 端到端评测（M4）：题目补 `goldAnswerPoints` / `goldEvidenceIds`；衡量忠实度、引用准确率、答案正确性；确定性检查 + LLM judge + 20–30% 人工抽检。
+- [ ] RCA/Release 评测集（M3 期间准备）：10–20 个合成事故，含日志、金标根因、关键证据行与修复建议；Release 冲突/审批以确定性状态机测试为主。
