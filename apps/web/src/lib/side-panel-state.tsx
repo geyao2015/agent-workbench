@@ -27,6 +27,7 @@ export function SidePanelProvider({ children }: { children: ReactNode }) {
   const [closing, setClosing] = useState(false);
   const [instantOpen, setInstantOpen] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const triggerRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     return () => {
@@ -35,6 +36,20 @@ export function SidePanelProvider({ children }: { children: ReactNode }) {
       }
     };
   }, []);
+
+  useEffect(() => {
+    if (activePanel !== null || closing) {
+      return;
+    }
+
+    const trigger = triggerRef.current;
+
+    if (trigger?.isConnected) {
+      trigger.focus();
+    }
+
+    triggerRef.current = null;
+  }, [activePanel, closing]);
 
   function closePanel() {
     if (!activePanel || closing) {
@@ -68,6 +83,13 @@ export function SidePanelProvider({ children }: { children: ReactNode }) {
       }
 
       return;
+    }
+
+    if (activePanel === null && !closing) {
+      triggerRef.current =
+        document.activeElement instanceof HTMLElement
+          ? document.activeElement
+          : null;
     }
 
     setInstantOpen(activePanel !== null);

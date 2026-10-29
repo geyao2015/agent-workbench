@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 
 import { X } from "lucide-react";
 
@@ -23,6 +23,9 @@ export function SidePanel({
 }: SidePanelProps) {
   const { closing, instantOpen } = useSidePanel();
   const [entered, setEntered] = useState(instantOpen);
+  const [overlay, setOverlay] = useState(false);
+  const asideRef = useRef<HTMLElement | null>(null);
+  const closeRef = useRef<HTMLButtonElement | null>(null);
 
   useEffect(() => {
     if (instantOpen) {
@@ -35,10 +38,96 @@ export function SidePanel({
     return () => cancelAnimationFrame(frame);
   }, [instantOpen]);
 
+  useEffect(() => {
+    const query = window.matchMedia("(min-width: 1024px)");
+    const sync = () => setOverlay(!query.matches);
+
+    sync();
+    query.addEventListener("change", sync);
+
+    return () => query.removeEventListener("change", sync);
+  }, []);
+
   const open = entered && !closing;
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    const node = asideRef.current;
+
+    if (!node) {
+      return;
+    }
+
+    function focusables(): HTMLElement[] {
+      return Array.from(
+        node!.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        ),
+      );
+    }
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        onClose();
+        return;
+      }
+
+      if (!overlay || event.key !== "Tab") {
+        return;
+      }
+
+      const items = focusables();
+
+      if (items.length === 0) {
+        event.preventDefault();
+        return;
+      }
+
+      const first = items[0];
+      const last = items[items.length - 1];
+
+      if (!first || !last) {
+        event.preventDefault();
+        return;
+      }
+
+      const active = document.activeElement as HTMLElement | null;
+
+      if (!node!.contains(active)) {
+        event.preventDefault();
+        first.focus();
+        return;
+      }
+
+      if (event.shiftKey && active === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && active === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    }
+
+    if (overlay) {
+      closeRef.current?.focus();
+    }
+
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [open, overlay, onClose]);
 
   return (
     <aside
+      ref={asideRef}
+      role={overlay ? "dialog" : "complementary"}
+      aria-modal={overlay && open ? true : undefined}
+      aria-label={title}
+      aria-hidden={!open && !closing ? true : undefined}
       className={cn(
         "absolute inset-0 z-30 w-full overflow-hidden lg:static lg:z-auto lg:h-full lg:transition-[width] lg:duration-300 lg:ease-in-out",
         open ? "lg:w-96" : "lg:w-0",
@@ -59,6 +148,7 @@ export function SidePanel({
             ) : null}
           </div>
           <Button
+            ref={closeRef}
             variant="ghost"
             size="icon"
             onClick={onClose}
