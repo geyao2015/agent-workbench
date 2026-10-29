@@ -73,7 +73,7 @@ M0 之前不做 M1 及以后的内容。
 ## 5. 跨阶段待办
 
 - [x] 安全防护（已完成）：确定性 input guard、检索数据分隔、流式输出脱敏与三类测试；历史种子会过滤被拦截的用户输入。
-- [ ] 展示层：按 [showcase.md](showcase.md) 设计首屏工程亮点与 Demo 入口；guard 作为示例，方案待定。
+- [x] 展示层 v1：首屏工程亮点卡、工程说明抽屉、guard 独立卡片与 Demo 入口已实现；盲测与落地页见 [showcase.md](showcase.md)。
 - [x] 评测集构造：16 篇语料；`data/eval/retrieval.jsonl` 50 题（含无答案）；金标冻结，不用于调参。
 - [x] RAG 检索评测：`pnpm eval:retrieval`，Recall@1/@4、MRR、Abstain。
 - [ ] RAG 端到端评测：补 `goldAnswerPoints` / `goldEvidenceIds`；忠实度、引用准确率、答案正确性；需真实模型 + judge + 人工抽检。
