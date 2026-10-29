@@ -1,11 +1,71 @@
 import { parseAgentEvent } from "@agent-workbench/protocol";
-import type { AgentEvent, RunKind } from "@agent-workbench/protocol";
+import type {
+  AgentEvent,
+  RunHistoryPage,
+  RunKind,
+  ThreadSummary,
+} from "@agent-workbench/protocol";
 
 interface CreateRunResponse {
   runId: string;
   threadId: string;
-  fixture: string;
   kind: RunKind;
+}
+
+export interface RuntimeInfo {
+  mode: "agent" | "mock";
+  provider?: "anthropic" | "openai";
+  model?: string;
+  docs?: number;
+}
+
+export async function fetchRuntimeInfo(signal?: AbortSignal): Promise<RuntimeInfo> {
+  const response = await fetch("/api/runtime", { signal });
+
+  if (!response.ok) {
+    throw new HttpError(response.status, `读取运行时信息失败：HTTP ${response.status}`);
+  }
+
+  return (await response.json()) as RuntimeInfo;
+}
+
+export async function fetchThreads(signal?: AbortSignal): Promise<ThreadSummary[]> {
+  const response = await fetch("/api/threads", { signal });
+
+  if (!response.ok) {
+    throw new HttpError(response.status, `读取会话列表失败：HTTP ${response.status}`);
+  }
+
+  const input = (await response.json()) as { threads?: unknown };
+
+  return Array.isArray(input.threads) ? (input.threads as ThreadSummary[]) : [];
+}
+
+export async function fetchThreadRuns(
+  threadId: string,
+  cursor?: string,
+  signal?: AbortSignal,
+): Promise<RunHistoryPage> {
+  const params = new URLSearchParams({ limit: "20" });
+
+  if (cursor) {
+    params.set("cursor", cursor);
+  }
+
+  const response = await fetch(
+    `/api/threads/${encodeURIComponent(threadId)}/runs?${params.toString()}`,
+    { signal },
+  );
+
+  if (!response.ok) {
+    const detail = await response.text().catch(() => "");
+    throw new HttpError(
+      response.status,
+      `读取会话历史失败：HTTP ${response.status}${detail ? `（${detail}）` : ""}`,
+    );
+  }
+
+  return (await response.json()) as RunHistoryPage;
 }
 
 export interface StartChatRunInput {

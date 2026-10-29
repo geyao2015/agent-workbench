@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 interface AppHeaderProps {
   eventCount: number;
   hasConversation: boolean;
+  runtimeLabel: string;
   onToggleInspector: () => void;
   onTogglePerformance: () => void;
   onReset: () => void;
@@ -13,6 +14,7 @@ interface AppHeaderProps {
 export function AppHeader({
   eventCount,
   hasConversation,
+  runtimeLabel,
   onToggleInspector,
   onTogglePerformance,
   onReset,
@@ -27,9 +29,7 @@ export function AppHeader({
           <div className="flex items-center gap-2">
             <h1 className="truncate text-sm font-semibold">Agent Workbench</h1>
           </div>
-          <p className="truncate text-xs text-muted-foreground">
-            Mock 模式 · 本地 fixture 回放，不调用模型
-          </p>
+          <p className="truncate text-xs text-muted-foreground">{runtimeLabel}</p>
         </div>
       </div>
 

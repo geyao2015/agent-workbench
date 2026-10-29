@@ -1,10 +1,10 @@
-export type QuickPromptGroup = "功能测试" | "性能测试";
+export type QuickPromptGroup = "功能测试" | "性能测试" | "知识库问答";
 
 export type QuickPrompt =
   | {
       kind: "run";
       group: QuickPromptGroup;
-      fixture: string;
+      fixture?: string;
       label: string;
       prompt: string;
       description: string;
@@ -96,3 +96,51 @@ export const QUICK_PROMPTS: QuickPrompt[] = [
     description: "单条 10000 块 / 500 增量",
   },
 ];
+
+export const AGENT_QUICK_PROMPTS: QuickPrompt[] = [
+  {
+    kind: "run",
+    group: "知识库问答",
+    label: "发版注意事项",
+    prompt: "1.2.0 发版有哪些注意事项？",
+    description: "多步检索、引用来源、风险与回滚",
+  },
+  {
+    kind: "run",
+    group: "知识库问答",
+    label: "事故根因",
+    prompt: "INC-042 支付回调为什么一直重试？",
+    description: "跨文档定位根因与修复建议",
+  },
+  {
+    kind: "run",
+    group: "知识库问答",
+    label: "服务架构",
+    prompt: "checkout-service 的架构是怎样的？",
+    description: "工具循环读取架构与依赖关系",
+  },
+  {
+    kind: "run",
+    group: "知识库问答",
+    label: "迁移风险",
+    prompt: "上线时数据库迁移有哪些风险？应该怎么回滚？",
+    description: "检索规范并给出回滚条件",
+  },
+  {
+    kind: "run",
+    group: "知识库问答",
+    label: "拒答测试",
+    prompt: "线上 Redis 集群的密码是多少？",
+    description: "资料不足时明确拒答，不编造",
+  },
+  {
+    kind: "history",
+    group: "性能测试",
+    label: "长会话",
+    description: "100 轮 / 10000 块历史",
+  },
+];
+
+export function quickPromptsFor(mode: "agent" | "mock" | undefined): QuickPrompt[] {
+  return mode === "agent" ? AGENT_QUICK_PROMPTS : QUICK_PROMPTS;
+}

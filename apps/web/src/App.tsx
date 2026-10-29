@@ -3,19 +3,26 @@ import type { FormEvent } from "react";
 
 import {
   createRunState,
+  fromRunSnapshot,
   reduce,
   type AgentEvent,
   type RunState,
+  type ThreadSummary,
 } from "@agent-workbench/protocol";
 
 import { AppHeader } from "@/components/app-header";
 import { ChatComposer } from "@/components/chat/chat-composer";
 import { ChatFeed } from "@/components/chat/chat-feed";
 import { EmptyState } from "@/components/chat/empty-state";
+import { ThreadSidebar } from "@/components/chat/thread-sidebar";
 import { EventInspector } from "@/components/devtools/event-inspector";
 import { PerformancePanel } from "@/components/devtools/performance-panel";
+import { Button } from "@/components/ui/button";
 import { buildChatRows, type ChatRun } from "@/lib/chat/chat-rows";
-import type { QuickPrompt } from "@/lib/chat/quick-prompts";
+import {
+  quickPromptsFor,
+  type QuickPrompt,
+} from "@/lib/chat/quick-prompts";
 import {
   recordFirstToken,
   recordTextUpdate,
@@ -24,10 +31,14 @@ import {
 import {
   cancelRun,
   fetchLongConversation,
+  fetchRuntimeInfo,
+  fetchThreadRuns,
+  fetchThreads,
   pauseRun,
   resolveApproval as resolveApprovalRequest,
   startChatRun,
   streamRunEvents,
+  type RuntimeInfo,
 } from "@/transport/sse";
 
 function isAbortError(cause: unknown): boolean {
@@ -68,6 +79,12 @@ export default function App() {
     null,
   );
   const [followVersion, setFollowVersion] = useState(0);
+  const [runtime, setRuntime] = useState<RuntimeInfo | null>(null);
+  const [threads, setThreads] = useState<ThreadSummary[]>([]);
+  const [activeThreadId, setActiveThreadId] = useState<string | null>(null);
+  const [historyCursor, setHistoryCursor] = useState<string | null>(null);
+  const [isLoadingThreads, setIsLoadingThreads] = useState(false);
+  const [isLoadingEarlier, setIsLoadingEarlier] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
   const runIdRef = useRef<string | null>(null);
   const threadIdRef = useRef<string | null>(null);
@@ -86,6 +103,45 @@ export default function App() {
       }
     };
   }, []);
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    void fetchRuntimeInfo(controller.signal)
+      .then((info) => {
+        if (!controller.signal.aborted) {
+          setRuntime(info);
+        }
+      })
+      .catch(() => {});
+
+    return () => controller.abort();
+  }, []);
+
+  useEffect(() => {
+    if (runtime?.mode !== "agent") {
+      return;
+    }
+
+    const controller = new AbortController();
+    void refreshThreads(controller.signal);
+
+    return () => controller.abort();
+  }, [runtime]);
+
+  async function refreshThreads(signal?: AbortSignal) {
+    setIsLoadingThreads(true);
+
+    try {
+      setThreads(await fetchThreads(signal));
+    } catch {
+      // mock 模式下没有会话接口，忽略即可
+    } finally {
+      if (!signal?.aborted) {
+        setIsLoadingThreads(false);
+      }
+    }
+  }
 
   function clearStopTimer() {
     if (stopTimerRef.current !== null) {
@@ -177,6 +233,10 @@ export default function App() {
       }
     } finally {
       finishRun(controller);
+
+      if (!controller.signal.aborted) {
+        void refreshThreads();
+      }
     }
   }
 
@@ -213,6 +273,8 @@ export default function App() {
       );
       runIdRef.current = run.runId;
       threadIdRef.current = run.threadId;
+      setActiveThreadId(run.threadId);
+      void refreshThreads();
       await consumeEvents(controller, run.runId, run.events);
     } catch (cause) {
       if (!isAbortError(cause)) {
@@ -244,6 +306,9 @@ export default function App() {
     setIsStreaming(false);
     setIsStopping(false);
     setIsLoadingHistory(true);
+    setIsLoadingEarlier(false);
+    setActiveThreadId(null);
+    setHistoryCursor(null);
     setReconnectAttempt(0);
 
     try {
@@ -296,6 +361,95 @@ export default function App() {
         abortRef.current = null;
         setIsLoadingHistory(false);
       }
+    }
+  }
+
+  async function openThread(threadId: string) {
+    if (threadId === activeThreadId && runs.length > 0) {
+      return;
+    }
+
+    const currentRunId = runIdRef.current;
+
+    if (currentRunId && isStreaming) {
+      void cancelRun(currentRunId).catch(() => {});
+    }
+
+    abortRef.current?.abort();
+
+    const controller = new AbortController();
+    abortRef.current = controller;
+    runIdRef.current = null;
+    threadIdRef.current = threadId;
+    lastEventIdRef.current = null;
+    runStartedAtRef.current = null;
+    firstTokenSeenRef.current = false;
+    userMessageIdsRef.current = new Set();
+    clearStopTimer();
+
+    setActiveThreadId(threadId);
+    setInput("");
+    setRuns([]);
+    setEvents([]);
+    setError(null);
+    setIsStreaming(false);
+    setIsStopping(false);
+    setIsLoadingHistory(true);
+    setIsLoadingEarlier(false);
+    setHistoryCursor(null);
+    setReconnectAttempt(0);
+
+    try {
+      const page = await fetchThreadRuns(threadId, undefined, controller.signal);
+
+      if (controller.signal.aborted) {
+        return;
+      }
+
+      setRuns(
+        page.runs.map((snapshot) => ({
+          runId: snapshot.runId,
+          state: fromRunSnapshot(snapshot),
+        })),
+      );
+      setHistoryCursor(page.nextCursor);
+      setFollowVersion((value) => value + 1);
+    } catch (cause) {
+      if (!isAbortError(cause)) {
+        setError(cause instanceof Error ? cause.message : "加载会话失败");
+      }
+    } finally {
+      if (abortRef.current === controller) {
+        abortRef.current = null;
+        setIsLoadingHistory(false);
+      }
+    }
+  }
+
+  async function loadEarlierRuns() {
+    if (!activeThreadId || !historyCursor || isLoadingEarlier) {
+      return;
+    }
+
+    setIsLoadingEarlier(true);
+
+    try {
+      const page = await fetchThreadRuns(activeThreadId, historyCursor);
+      const older = page.runs.map((snapshot) => ({
+        runId: snapshot.runId,
+        state: fromRunSnapshot(snapshot),
+      }));
+
+      setRuns((previous) => {
+        const known = new Set(previous.map((run) => run.runId));
+
+        return [...older.filter((run) => !known.has(run.runId)), ...previous];
+      });
+      setHistoryCursor(page.nextCursor);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "加载更早的会话失败");
+    } finally {
+      setIsLoadingEarlier(false);
     }
   }
 
@@ -463,6 +617,9 @@ export default function App() {
     setIsStreaming(false);
     setIsStopping(false);
     setIsLoadingHistory(false);
+    setIsLoadingEarlier(false);
+    setActiveThreadId(null);
+    setHistoryCursor(null);
     setReconnectAttempt(0);
   }
 
@@ -499,6 +656,17 @@ export default function App() {
     [chatRows],
   );
   const hasConversation = chatRows.length > 0;
+  const runtimeLabel =
+    runtime === null
+      ? "连接运行时…"
+      : runtime.mode === "agent"
+        ? `实时 Agent · ${runtime.provider ?? "模型"}/${runtime.model ?? ""} · 知识库 ${runtime.docs ?? 0} 篇`
+        : "Mock 模式 · 本地 fixture 回放，不调用模型";
+  const prompts = quickPromptsFor(runtime?.mode);
+  const emptyDescription =
+    runtime?.mode === "agent"
+      ? "检索本地工程知识库，LangGraph 工具循环，回答带引用来源。"
+      : "事件从本地 fixture 逐条流式回放，并实时投影到聊天界面。";
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -518,13 +686,37 @@ export default function App() {
       <AppHeader
         eventCount={events.length}
         hasConversation={hasConversation}
+        runtimeLabel={runtimeLabel}
         onToggleInspector={() => setShowInspector((value) => !value)}
         onTogglePerformance={() => setShowPerformance((value) => !value)}
         onReset={resetConversation}
       />
 
       <div className="flex min-h-0 flex-1">
+        {runtime?.mode === "agent" ? (
+          <ThreadSidebar
+            threads={threads}
+            activeThreadId={activeThreadId}
+            loading={isLoadingThreads}
+            onSelect={(threadId) => void openThread(threadId)}
+            onNew={resetConversation}
+          />
+        ) : null}
+
         <main className="flex min-h-0 flex-1 flex-col">
+          {historyCursor ? (
+            <div className="flex justify-center border-b bg-background/80 px-4 py-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => void loadEarlierRuns()}
+                disabled={isLoadingEarlier}
+              >
+                {isLoadingEarlier ? "加载中…" : "加载更早的对话"}
+              </Button>
+            </div>
+          ) : null}
+
           {chatRows.length > 0 ? (
             <ChatFeed
               rows={chatRows}
@@ -536,7 +728,11 @@ export default function App() {
           ) : (
             <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain [scrollbar-gutter:stable]">
               <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-8 md:px-8">
-                <EmptyState onPick={handleQuickPick} />
+                <EmptyState
+                  prompts={prompts}
+                  description={emptyDescription}
+                  onPick={handleQuickPick}
+                />
               </div>
             </div>
           )}
