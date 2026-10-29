@@ -688,6 +688,10 @@ export function ChatView() {
         ? `实时 Agent · ${runtime.provider ?? "模型"}/${runtime.model ?? ""} · 知识库 ${runtime.docs ?? 0} 篇`
         : "Mock 模式 · 本地 fixture 回放，不调用模型";
   const prompts = quickPromptsFor(runtime?.mode);
+  const eventCountLabel =
+    events.length > 999
+      ? `${Math.min(9, Math.floor(events.length / 1000))}k+`
+      : String(events.length);
   const emptyDescription =
     runtime?.mode === "agent"
       ? "检索本地工程知识库，LangGraph 工具循环，回答带引用来源。"
@@ -722,7 +726,12 @@ export function ChatView() {
         >
           <Activity />
           <span className="hidden sm:inline">事件</span>
-          {events.length}
+          <span
+            className="inline-block w-[3ch] shrink-0 text-right font-mono tabular-nums"
+            title={String(events.length)}
+          >
+            {eventCountLabel}
+          </span>
         </Button>
         <Button
           variant="outline"
