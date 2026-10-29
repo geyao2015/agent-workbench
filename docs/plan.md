@@ -63,9 +63,9 @@ M0 之前不做 M1 及以后的内容。
 | M3 S3 | test.1 失败 → log_bundle → 日志工具/RCA → 修复审批 → test.2 重跑；Logs 页 |
 | M3 S4 | 完成 run → 回滚 child run（parentRunId）→ 回滚审批 → 审计记录 mode/target/parent |
 | M3 S5 | `prepare_release` handoff 卡片 → Release run（`sourceRunId`）；耗时 / 审批 / artifact 指标 |
-| M4 | Trace 从事件派生；16 篇语料 + 50 题检索基线；10 个 RCA 案例；元数据过滤；离线评测报告 |
+| M4 | Trace 从事件派生；16 篇语料 + 50 题检索基线；10 个 RCA 案例；元数据过滤；离线评测报告；数据集渲染基准（`data/bench/results.json`） |
 
-- 合计测试：protocol 62、API 62；`typecheck` / `build` / `check-docs` 全绿。
+- 合计测试：protocol 62、API 62；Playwright 4 条关键路径 UI 回归；`typecheck` / `build` / `check-docs` 全绿。
 - 已知限制：运行中的 Chat / Release run 依赖内存 runtime，服务重启后不可恢复，pending approval 失效；已完成 run 与 artifact 仍可读。
 - 安全：guard 拦截索要密钥/系统提示词/越狱输入，检索结果标记为不可信数据，输出做密钥脱敏。
 - M4 已落地离线基线；真实模型端到端答案质量、引用准确率与成本估算待 Key/单价。
@@ -79,3 +79,4 @@ M0 之前不做 M1 及以后的内容。
 - [ ] RAG 端到端评测：补 `goldAnswerPoints` / `goldEvidenceIds`；忠实度、引用准确率、答案正确性；需真实模型 + judge + 人工抽检。
 - [x] RCA 评测集：10 个合成事故，证据定位与 runbook 检索；`pnpm eval:rca`。
 - [ ] 成本与真实 provider 延迟：待配置 Key 与单价。
+- [ ] 对话追加与分支：生成中允许继续输入并排队/追加，不必等当前 run 结束；支持从指定消息拆出分支 thread。需要先定义排队语义、分支元数据和单活跃 run 约束的调整。

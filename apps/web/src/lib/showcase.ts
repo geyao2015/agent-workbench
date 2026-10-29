@@ -54,42 +54,31 @@ export interface EngineeringNoteSection {
 
 export const ENGINEERING_NOTES: EngineeringNoteSection[] = [
   {
-    title: "协议与状态",
+    title: "契约优先",
     items: [
-      "append-only AgentEvent v1，按 seq 去重；未知事件与字段前向兼容。",
-      "纯函数 reducer 是唯一 UI 状态源；Chat / Release / Trace 都是事件投影。",
-      "SSE Last-Event-ID 重放；取消与审批恢复不产生重复事件。",
+      "事件日志是唯一状态源：Chat / Release / Trace 都是 append-only 事件的投影，seq 去重同时服务审批、取消和断线重连。",
+      "工具与审批不嵌入 Markdown：生命周期内容走事件时间线，避免流式占位不同步和内容注入。",
     ],
   },
   {
     title: "流式渲染",
     items: [
-      "块级增量分段，闭合块冻结；避免每 token 全量 parse 与整树重渲染。",
-      "长会话行级虚拟化；10k 块 / 500 增量 reduce 513ms，headless 60fps。",
+      "只增量解析最后一个开放块，闭合块冻结；10k 块 / 500 增量 reduce 从 2.39s 降到 514ms。",
+      "长会话按行虚拟化，窗口外不渲染；闭合块 memo，避免 token 增量引发整树重渲染。",
     ],
   },
   {
-    title: "Agent runtime",
+    title: "有边界的 Agent",
     items: [
-      "LangGraph 工具循环 + checkpointer；知识库工具包含元数据过滤。",
-      "本地 BM25 检索：Recall@1 85.4%、Recall@4 100%、MRR 0.920。",
-      "确定性输入 guard、检索数据分隔与流式输出脱敏。",
+      "确定性阶段负责发版主链路，LLM 只做冲突解决等有边界任务；结构化输出失败或超时回退确定性方案。",
+      "检索是工具不是固定链路：Agent 决定何时查、查几次、是否改写 query，同时做元数据过滤与不可信数据分隔。",
     ],
   },
   {
-    title: "Release 工作台",
+    title: "验证与限制",
     items: [
-      "确定性阶段 + 阶段级人工审批；diff、日志、审计与指标全部来自事件。",
-      "LLM 冲突解决使用结构化输出，失败/超时回退确定性方案。",
-      "失败 RCA、回滚 child run 与 Chat handoff 均保留审计链。",
-    ],
-  },
-  {
-    title: "评测与限制",
-    items: [
-      "50 题检索金标与会话、10 个 RCA 案例；命令：pnpm eval:retrieval / pnpm eval:rca。",
-      "Trace 当前由事件日志派生，模型调用细粒度 Span 待 runtime 埋点。",
-      "模拟发版环境；真实模型端到端质量与成本仍需配置 Key 后验证。",
+      "离线基线：50 题检索金标（Recall@1 85.4%、Recall@4 100%）与 10 个 RCA 案例；真实模型质量与成本未验证。",
+      "发版是模拟环境，不接真实 CI/CD；审批、审计与回滚链路完整可演示，但不宣称生产可用。",
     ],
   },
 ];
