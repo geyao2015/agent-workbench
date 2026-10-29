@@ -83,7 +83,13 @@ SSE → Zod 校验 → 纯函数 reducer → 行级投影 → 虚拟列表。
 | 200 增量基准 | 21.98ms | 1.81ms |
 | 2000 块分段 | 0.64ms | 0.66ms |
 
-Headless Chrome 10k 块流式实测（1280×900）：同时挂载 20 个 block，60fps，首 token 111ms，最近提交 0.2ms、最大提交 13ms；JS Heap 134.1MB（峰值 174.3MB），无长帧。生产构建加载 10k 块历史：20 个 block、60fps、JS Heap 63.7MB；生产构建下 Profiler 不提供提交耗时。
+| 总块数 / 增量 | reducer | 首 token | 实际挂载块 | FPS | JS Heap |
+| --- | --- | --- | --- | --- | --- |
+| 200 / 50 | 2ms | 60ms | 200 | 60 | 10.0MB |
+| 2000 / 100 | 22ms | 54ms | 873 | 60 | 17.3MB |
+| 10000 / 500 | 522ms | 33ms | 2194 | 60 | 51.6MB |
+
+上表为 2026-10-29 生产构建、1280×900 mock 运行时，`data/bench/streaming.jsonl` 定义规模；`pnpm bench:streaming` 生成 fixture 并写 `data/bench/results.json`。10k 场景仅挂载约 22% 的块。复现：`pnpm build && PORT=8788 pnpm start`，另开终端 `BENCH_BASE_URL=http://localhost:8788 pnpm bench:streaming`；开发模式 StrictMode 会重复计数，不作为基准。
 
 ## 6. 剩余限制
 

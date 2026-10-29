@@ -42,7 +42,7 @@ function useFps(active: boolean): void {
 
 function Metric({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-md border bg-muted/30 px-2 py-1.5">
+    <div data-metric={label} className="rounded-md border bg-muted/30 px-2 py-1.5">
       <dt className="text-[10px] text-muted-foreground">{label}</dt>
       <dd className="font-mono text-xs">{value}</dd>
     </div>
@@ -130,6 +130,7 @@ export function PerformancePanel({
             stats.fps > 0 ? `${stats.fps}fps` : active ? "测量中…" : "—"
           }
         />
+        <Metric label="提交次数" value={String(stats.commitCount)} />
         <Metric label="最近提交" value={`${stats.lastCommitMs}ms`} />
         <Metric label="最大提交" value={`${stats.maxCommitMs}ms`} />
         <RuntimeMetrics key={runtimeEpoch} />

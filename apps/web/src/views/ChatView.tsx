@@ -99,6 +99,7 @@ export function ChatView() {
   const firstTokenSeenRef = useRef(false);
   const userMessageIdsRef = useRef<Set<string>>(new Set());
   const handoffStartingRef = useRef(false);
+  const autoRunRef = useRef(false);
 
   useEffect(() => {
     return () => {
@@ -133,6 +134,28 @@ export function ChatView() {
     void refreshThreads(controller.signal);
 
     return () => controller.abort();
+  }, [runtime]);
+
+  useEffect(() => {
+    if (runtime?.mode !== "mock" || autoRunRef.current) {
+      return;
+    }
+
+    const params = new URLSearchParams(window.location.hash.split("?")[1] ?? "");
+    const fixture = params.get("fixture");
+
+    if (!fixture) {
+      return;
+    }
+
+    autoRunRef.current = true;
+    resetRenderStats();
+
+    if (params.get("bench") === "1") {
+      setShowPerformance(true);
+    }
+
+    void startRun(fixture, "流式渲染基准");
   }, [runtime]);
 
   async function refreshThreads(signal?: AbortSignal) {

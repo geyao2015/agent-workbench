@@ -10,6 +10,7 @@
     "build": "pnpm --filter @agent-workbench/web build && pnpm --filter @agent-workbench/api build",
     "start": "pnpm --filter @agent-workbench/api start",
     "bench": "pnpm -r bench",
+    "bench:streaming": "pnpm --filter @agent-workbench/protocol build && node scripts/bench-streaming.mjs",
     "fixtures:large": "node scripts/generate-large-fixture.mjs",
     "test": "pnpm -r test",
     "test:e2e": "playwright test",
