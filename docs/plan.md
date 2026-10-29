@@ -65,6 +65,7 @@ M0 之前不做 M1 及以后的内容。
 | M3 S5 | `prepare_release` handoff 卡片 → Release run（`sourceRunId`）；耗时 / 审批 / artifact 指标 |
 
 - 合计测试：protocol 61、API 54；`typecheck` / `build` / `check-docs` 全绿。
+- 已知限制：运行中的 Chat / Release run 依赖内存 runtime，服务重启后不可恢复，pending approval 失效；已完成 run 与 artifact 仍可读。
 - 安全：guard 拦截索要密钥/系统提示词/越狱输入，检索结果标记为不可信数据，输出做密钥脱敏。
 - M2 未纳入：检索元数据过滤、recall@k 与 Trace，按 M4 处理。
 - M4 待做：Trace 瀑布、日志 RCA 评测、性能与成本报告、检索元数据过滤。
