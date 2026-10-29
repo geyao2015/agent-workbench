@@ -727,7 +727,7 @@ export function ChatView() {
           aria-pressed={activePanel === "events"}
         >
           <Activity />
-          <span className="hidden sm:inline">事件</span>
+          <span className="sr-only lg:not-sr-only">事件</span>
           <span
             className="inline-block w-[3ch] shrink-0 text-right font-mono tabular-nums"
             title={String(events.length)}
@@ -738,10 +738,11 @@ export function ChatView() {
         <Button
           variant="outline"
           size="sm"
+          className="hidden sm:inline-flex"
           onClick={() => setShowPerformance((value) => !value)}
         >
           <Gauge />
-          <span className="hidden sm:inline">性能</span>
+          <span className="hidden lg:inline">性能</span>
         </Button>
         <Button
           variant="ghost"
@@ -750,7 +751,7 @@ export function ChatView() {
           disabled={!hasConversation}
         >
           <RotateCcw />
-          <span className="hidden sm:inline">新对话</span>
+          <span className="sr-only lg:not-sr-only">新对话</span>
         </Button>
       </AppHeader>
 

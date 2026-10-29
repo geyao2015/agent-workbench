@@ -455,7 +455,7 @@ export function ReleaseDetailView({
       >
         <Button variant="ghost" size="sm" onClick={() => navigate("#/releases")}>
           <ArrowLeft />
-          列表
+          <span className="sr-only lg:not-sr-only">列表</span>
         </Button>
         {canRollback ? (
           <Button
@@ -465,13 +465,13 @@ export function ReleaseDetailView({
             disabled={rollingBack}
           >
             {rollingBack ? <Loader2 className="animate-spin" /> : <RotateCcw />}
-            回滚
+            <span className="sr-only lg:not-sr-only">回滚</span>
           </Button>
         ) : null}
         {active ? (
           <Button variant="outline" size="sm" onClick={() => void cancelCurrentRun()}>
             <XCircle />
-            取消
+            <span className="sr-only lg:not-sr-only">取消</span>
           </Button>
         ) : null}
       </AppHeader>
