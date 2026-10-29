@@ -2,7 +2,7 @@
 
 > 从知识库对话到可审计发版。一个用于求职展示的研发 Agent 工作台：Chat 基于工程知识库对话，Release 执行可审计的发版流程。
 
-**状态：M2 已完成，准备进入 M3。** 技术选型与待确认项见 [docs/decision.md](docs/decision.md)；执行计划见 [docs/plan.md](docs/plan.md)；事件协议见 [docs/protocol.md](docs/protocol.md)。
+**状态：M3 进行中（S1 确定性主链路已完成）。** 技术选型与待确认项见 [docs/decision.md](docs/decision.md)；执行计划见 [docs/plan.md](docs/plan.md)；事件协议见 [docs/protocol.md](docs/protocol.md)。
 
 本文件是产品事实的唯一来源：项目定位、场景、演示流程、功能范围、非目标、当前状态、仓库结构与文档索引。
 
@@ -61,15 +61,10 @@ agent-workbench/
 ├── fixtures/             Chat / Release 场景事件 fixture
 ├── data/
 │   ├── docs/             合成工程文档（知识库）
+│   ├── releases/         合成发版场景与玩具仓库
 │   └── logs/             合成故障日志（M4）
-├── docs/
-│   ├── decision.md       决策与理由
-│   ├── plan.md           执行计划与阶段状态
-│   ├── protocol.md       事件协议草案
-│   ├── dependencies.md   三方依赖清单
-│   └── glossary.md       术语笔记
-├── scripts/
-│   └── check-docs.mjs    文档一致性检查
+├── docs/                 决策 / 计划 / 协议 / 渲染 / 依赖 / 术语 / 展示
+├── scripts/check-docs.mjs 文档一致性检查
 ├── .env.example          模型与运行时环境变量示例
 ├── .data/                本地会话与运行时数据（gitignore）
 ├── AGENTS.md             AI Agent 工作规则
@@ -108,7 +103,7 @@ agent-workbench/
 
 ## 8. 当前阶段
 
-**M2 已完成**：Hono + LangGraph 工具循环、checkpointer 会话记忆、本地知识库 RAG、引用、历史会话列表与真实模型接入均已落地。下一步进入 M3：Release 工作台。
+**M3 进行中**：S1 确定性主链路已完成——Release 列表、确定性阶段、冲突 diff、阶段级审批、测试 / notes / tag / 审计；LLM 冲突、失败 RCA、回滚与 Chat handoff 待后续切片。
 
 ```bash
 pnpm install

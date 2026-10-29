@@ -118,13 +118,22 @@ Block 归属规则（默认）：
 - 工具错误不是 run 错误；`tool.result.status = "error"` 后 Agent 可以继续。
 - 需要审批的工具在 `tool.ready` 后进入 `awaiting_approval`，不得先执行。
 
+阶段级审批（Release）使用独立事件，不与工具审批混用：
+
+| type | payload | 说明 |
+| --- | --- | --- |
+| `approval.required` | `{ approvalId, scope: "stage", stageId, title, description?, risk, args }` | 阶段 gate |
+| `approval.resolved` | `{ approvalId, approved, note? }` | 阶段审批结果 |
+
+阶段审批流程：`approval.required` → `run.paused { reason: "approval", approvalId }` → HTTP 决议 → `approval.resolved` → `run.resumed`。
+
 ### 4.4 Release 阶段与 artifact
 
 | type | payload | 说明 |
 | --- | --- | --- |
 | `stage.started` | `{ stageId, name, kind? }` | 阶段开始 |
 | `stage.completed` | `{ stageId, status: "success" \| "error" \| "skipped", summary? }` | 阶段结束 |
-| `artifact.created` | `{ artifactId, kind, title, mime?, size?, uri? }` | 大对象引用 |
+| `artifact.created` | `{ artifactId, kind, title, mime?, size?, uri?, stageId? }` | 大对象引用 |
 | `artifact.updated` | `{ artifactId, patch? }` | 可选，仅用于小元数据 |
 
 Artifact：
@@ -252,7 +261,9 @@ interface StageState {
 
 interface ApprovalState {
   id: string;
+  scope?: "tool" | "stage";
   toolCallId?: string;
+  stageId?: string;
   title: string;
   description?: string;
   args: unknown;
@@ -268,6 +279,7 @@ interface ArtifactState {
   mime?: string;
   size?: number;
   uri?: string;
+  stageId?: string;
   status: "created" | "ready" | "error";
 }
 ```
@@ -427,7 +439,7 @@ export interface Span {
 
 1. **Block ID 归属**：默认前端确定性分段；M1 已验证渲染指标，暂不切换后端下发。
 2. **Artifact 内联阈值**：默认 8KB 以下可内联；需要实测事件体积。
-3. **审批粒度**：工具级 vs 阶段级。默认不可逆工具用工具级，Release 整体用阶段级 gate。
+3. **审批粒度**：M3 S1 已实现。工具审批沿用 `tool.*`，Release 阶段使用 `approval.*` + `run.paused/resumed`。
 4. **取消语义**：工具是否必须支持 `AbortSignal`；默认是，超时后标记为 cancelled。
 5. **恢复来源**：开发期事件日志；生产期 checkpoint。接口保持一致。
 6. **Reasoning 可见性**：时间线默认展开，内容区限高滚动；调试抽屉仍可查看原文，避免长推理挤压正文。
@@ -446,3 +458,4 @@ export interface Span {
 | 2026-10-20 | v0 | `RunState.errors` 记录 `retryable / fatal`，区分局部错误与致命错误 |
 | 2026-10-29 | v1 | 冻结 v1；新增 `RunSnapshot` / `ThreadSummary` / `RunHistoryPage` 物化快照契约 |
 | 2026-10-29 | v1 | 历史会话按 cursor 分页返回快照，不回放全部原始事件 |
+| 2026-10-29 | v1 | 新增 `approval.required` / `approval.resolved` 阶段级审批；artifact 增加可选 `stageId` |
