@@ -42,6 +42,8 @@
 | 移动端 header 三栏互相挤压，抽屉又盖住 header | 窄屏隐藏品牌、导航与操作单行；抽屉改为内容区 absolute | 320–1440 无重叠；桌面仍保持停靠侧栏 |
 | 320px 下 Release 详情 tabs 溢出，尾部不可达 | tab 栏横向滚动、按钮不换行、补 tablist 语义 | 最窄断点下 Audit 仍可点击 |
 | 单 chunk 646KB，首屏和 Release 一起加载 | Release 路由懒加载 + markdown/react vendor 分组 | 主包 244KB；Release chunk 31KB 延迟加载 |
+| 性能面板浮在右下角，遮挡对话与输入框 | 改为与事件共用的停靠侧栏，移动端从 header 下方展开 | 桌面主区收缩 384px；抽屉互斥；E2E |
+| 单文件过大：`index.ts` 887 行，mock 与业务混在一起 | mock runtime / demo 数据拆到独立模块 | index 167 行；mock runtime 540 行；E2E 行为不变 |
 
 ## 4. 展示方案待办
 
