@@ -22,6 +22,7 @@ import { AgentCard } from "@/components/agent-card/agent-card";
 import { AuditTable } from "@/components/release/audit-table";
 import { DiffViewer } from "@/components/release/diff-viewer";
 import { ReleaseEventLog } from "@/components/release/event-log";
+import { LogsView } from "@/components/release/logs-view";
 import { StageTimeline } from "@/components/release/stage-timeline";
 import { Button } from "@/components/ui/button";
 import { navigate } from "@/lib/hash-router";
@@ -35,10 +36,11 @@ import {
   streamReleaseRunEvents,
 } from "@/transport/release";
 
-type Tab = "overview" | "diff" | "audit" | "events";
+type Tab = "overview" | "logs" | "diff" | "audit" | "events";
 
 const TAB_LABELS: Array<{ id: Tab; label: string }> = [
   { id: "overview", label: "Overview" },
+  { id: "logs", label: "Logs" },
   { id: "diff", label: "Diff" },
   { id: "audit", label: "Audit" },
   { id: "events", label: "Events" },
@@ -62,16 +64,11 @@ function isActive(state: RunState | null): boolean {
   );
 }
 
-function latestArtifact(state: RunState, kind: "diff" | "document") {
-  return Object.values(state.artifacts)
-    .filter(
-      (artifact) =>
-        artifact.kind === kind &&
-        (kind !== "document" ||
-          artifact.stageId === "audit" ||
-          artifact.title.includes("审计")),
-    )
-    .at(-1);
+function latestArtifact(
+  state: RunState,
+  predicate: (artifact: RunState["artifacts"][string]) => boolean,
+) {
+  return Object.values(state.artifacts).filter(predicate).at(-1);
 }
 
 export function ReleaseDetailView({
@@ -90,9 +87,15 @@ export function ReleaseDetailView({
   const [diffLoading, setDiffLoading] = useState(false);
   const [auditBody, setAuditBody] = useState<string | null>(null);
   const [auditLoading, setAuditLoading] = useState(false);
+  const [logBody, setLogBody] = useState<string | null>(null);
+  const [logLoading, setLogLoading] = useState(false);
+  const [rcaBody, setRcaBody] = useState<string | null>(null);
+  const [rcaLoading, setRcaLoading] = useState(false);
   const [resolving, setResolving] = useState(false);
   const diffArtifactRef = useRef<string | null>(null);
   const auditArtifactRef = useRef<string | null>(null);
+  const logArtifactRef = useRef<string | null>(null);
+  const rcaArtifactRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!threadId) {
@@ -109,10 +112,16 @@ export function ReleaseDetailView({
     setLoading(true);
     setDiffBody(null);
     setAuditBody(null);
+    setLogBody(null);
+    setRcaBody(null);
     setDiffLoading(false);
     setAuditLoading(false);
+    setLogLoading(false);
+    setRcaLoading(false);
     diffArtifactRef.current = null;
     auditArtifactRef.current = null;
+    logArtifactRef.current = null;
+    rcaArtifactRef.current = null;
 
     void (async () => {
       try {
@@ -209,7 +218,7 @@ export function ReleaseDetailView({
       return;
     }
 
-    const artifact = latestArtifact(state, "diff");
+    const artifact = latestArtifact(state, (item) => item.kind === "diff");
 
     if (!artifact?.uri || diffArtifactRef.current === artifact.id) {
       return;
@@ -232,7 +241,12 @@ export function ReleaseDetailView({
       return;
     }
 
-    const artifact = latestArtifact(state, "document");
+    const artifact = latestArtifact(
+      state,
+      (item) =>
+        item.kind === "document" &&
+        (item.stageId === "audit" || item.title.includes("审计")),
+    );
 
     if (!artifact?.uri || auditArtifactRef.current === artifact.id) {
       return;
@@ -250,18 +264,79 @@ export function ReleaseDetailView({
     return () => controller.abort();
   }, [state]);
 
+  useEffect(() => {
+    if (!state) {
+      return;
+    }
+
+    const artifact = latestArtifact(
+      state,
+      (item) => item.kind === "log_bundle",
+    );
+
+    if (!artifact?.uri || logArtifactRef.current === artifact.id) {
+      return;
+    }
+
+    logArtifactRef.current = artifact.id;
+    const controller = new AbortController();
+    setLogLoading(true);
+
+    void fetchReleaseArtifact(artifact.uri, controller.signal)
+      .then((content) => setLogBody(content.body))
+      .catch(() => setLogBody(null))
+      .finally(() => setLogLoading(false));
+
+    return () => controller.abort();
+  }, [state]);
+
+  useEffect(() => {
+    if (!state) {
+      return;
+    }
+
+    const artifact = latestArtifact(
+      state,
+      (item) =>
+        item.kind === "document" &&
+        item.stageId === "rca",
+    );
+
+    if (!artifact?.uri || rcaArtifactRef.current === artifact.id) {
+      return;
+    }
+
+    rcaArtifactRef.current = artifact.id;
+    const controller = new AbortController();
+    setRcaLoading(true);
+
+    void fetchReleaseArtifact(artifact.uri, controller.signal)
+      .then((content) => setRcaBody(content.body))
+      .catch(() => setRcaBody(null))
+      .finally(() => setRcaLoading(false));
+
+    return () => controller.abort();
+  }, [state]);
+
   const pendingApproval: ApprovalState | undefined = state
     ? Object.values(state.approvals).find(
         (approval) => approval.status === "pending" && approval.stageId,
       )
     : undefined;
   const active = isActive(state);
-  const successCount = state
+  const stageCount = state?.stageOrder.length ?? 0;
+  const doneCount = state
+    ? state.stageOrder.filter((stageId) => {
+        const status = state.stages[stageId]?.status;
+
+        return status === "success" || status === "error" || status === "skipped";
+      }).length
+    : 0;
+  const failedCount = state
     ? state.stageOrder.filter(
-        (stageId) => state.stages[stageId]?.status === "success",
+        (stageId) => state.stages[stageId]?.status === "error",
       ).length
     : 0;
-  const stageCount = state?.stageOrder.length ?? 0;
 
   async function resolveApproval(approved: boolean) {
     if (!pendingApproval || resolving) {
@@ -338,7 +413,9 @@ export function ReleaseDetailView({
                   </span>
                 </p>
                 <p className="mt-0.5 text-[11px] text-muted-foreground">
-                  阶段进度 {successCount}/{stageCount} · lastSeq {state.lastSeq}
+                  阶段 {doneCount}/{stageCount}
+                  {failedCount > 0 ? ` · 失败 ${failedCount}` : ""} · lastSeq{" "}
+                  {state.lastSeq}
                 </p>
               </div>
               <span
@@ -398,6 +475,15 @@ export function ReleaseDetailView({
 
               <StageTimeline state={state} />
             </div>
+          ) : null}
+
+          {tab === "logs" ? (
+            <LogsView
+              logBody={logBody}
+              logLoading={logLoading}
+              rcaBody={rcaBody}
+              rcaLoading={rcaLoading}
+            />
           ) : null}
 
           {tab === "diff" ? (
