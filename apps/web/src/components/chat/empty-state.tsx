@@ -31,7 +31,7 @@ export function EmptyState({
         <p className="px-1 text-xs font-medium tracking-wide text-muted-foreground">
           工程亮点
         </p>
-        <div className="grid w-full gap-2 sm:grid-cols-2">
+        <div className="grid w-full gap-2 sm:grid-cols-2 lg:grid-cols-3">
           {SHOWCASE_HIGHLIGHTS.map((highlight) => {
             const action = highlight.action;
             const promptItem =
@@ -87,7 +87,7 @@ export function EmptyState({
           <p className="px-1 text-xs font-medium tracking-wide text-muted-foreground">
             {group}
           </p>
-          <div className="grid w-full gap-3 sm:grid-cols-2">
+          <div className="grid w-full gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {prompts
               .filter((item) => item.group === group)
               .map((item) => (
