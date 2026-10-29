@@ -1,0 +1,10 @@
+{
+  "name": "chat-handoff",
+  "description": "用户准备发版，Agent 调用 prepare_release 生成 Release 工作台入口",
+  "runKind": "chat",
+  "threadId": "thread_fixture_handoff",
+  "timing": {
+    "mode": "delays",
+    "defaultMs": 40
+  }
+}

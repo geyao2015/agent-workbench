@@ -76,7 +76,7 @@ const agentRuntime = (() => {
     return undefined;
   }
 
-  const agent = createChatAgent(config, kb);
+  const agent = createChatAgent(config, kb, releaseScenarios);
   const runs = new RunManager({ agent, kb, store: threads, registry });
 
   return { runs };

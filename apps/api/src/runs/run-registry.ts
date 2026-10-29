@@ -12,6 +12,7 @@ export interface ActiveRun {
   title: string;
   createdAt: number;
   parentRunId?: string;
+  sourceRunId?: string;
   log: RunLog;
 }
 
@@ -34,6 +35,7 @@ export class RunRegistry {
     title: string;
     threadId?: string;
     parentRunId?: string;
+    sourceRunId?: string;
   }): { run: ActiveRun; signal: AbortSignal } {
     const threadId = input.threadId ?? `thread_${randomUUID()}`;
 
@@ -52,6 +54,7 @@ export class RunRegistry {
       kind: input.kind,
       title,
       ...(input.parentRunId ? { parentRunId: input.parentRunId } : {}),
+      ...(input.sourceRunId ? { sourceRunId: input.sourceRunId } : {}),
     });
 
     const controller = new AbortController();
@@ -62,6 +65,7 @@ export class RunRegistry {
       title,
       createdAt,
       ...(input.parentRunId ? { parentRunId: input.parentRunId } : {}),
+      ...(input.sourceRunId ? { sourceRunId: input.sourceRunId } : {}),
       log,
     };
 

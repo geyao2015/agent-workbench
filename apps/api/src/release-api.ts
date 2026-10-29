@@ -49,7 +49,7 @@ export function createReleaseApi(deps: ReleaseApiDeps): Hono {
 
   app.post("/api/releases", async (c) => {
     const body = await c.req
-      .json<{ scenarioId?: unknown; threadId?: unknown }>()
+      .json<{ scenarioId?: unknown; threadId?: unknown; sourceRunId?: unknown }>()
       .catch(() => null);
     const scenarioId =
       typeof body?.scenarioId === "string" && body.scenarioId.length > 0
@@ -58,6 +58,10 @@ export function createReleaseApi(deps: ReleaseApiDeps): Hono {
     const threadId =
       typeof body?.threadId === "string" && body.threadId.length > 0
         ? body.threadId
+        : undefined;
+    const sourceRunId =
+      typeof body?.sourceRunId === "string" && body.sourceRunId.length > 0
+        ? body.sourceRunId
         : undefined;
 
     if (threadId && threadId.length > MAX_THREAD_ID_LENGTH) {
@@ -69,7 +73,7 @@ export function createReleaseApi(deps: ReleaseApiDeps): Hono {
     }
 
     try {
-      const run = deps.release.start({ scenarioId, threadId });
+      const run = deps.release.start({ scenarioId, threadId, sourceRunId });
 
       return c.json({
         runId: run.runId,

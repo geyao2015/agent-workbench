@@ -655,7 +655,11 @@ export class ReleaseService {
     }));
   }
 
-  start(input: { scenarioId?: string; threadId?: string }): ActiveRun {
+  start(input: {
+    scenarioId?: string;
+    threadId?: string;
+    sourceRunId?: string;
+  }): ActiveRun {
     const scenario = input.scenarioId
       ? this.scenarios.find((candidate) => candidate.id === input.scenarioId)
       : this.scenarios[0];
@@ -668,6 +672,7 @@ export class ReleaseService {
       kind: "release",
       title: `${scenario.title} · ${scenario.service}`,
       threadId: input.threadId,
+      ...(input.sourceRunId ? { sourceRunId: input.sourceRunId } : {}),
     });
 
     void this.execute(run, scenario, signal);
