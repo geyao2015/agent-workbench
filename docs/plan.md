@@ -41,7 +41,7 @@
 
 开始前确认 [decision.md §8](decision.md#8-待确认) 的样式方案；部署平台不阻塞 M0。
 
-1. 初始化 pnpm monorepo（结构见 [README.md §5](../README.md#5-仓库结构规划)）。
+1. 初始化 pnpm monorepo（结构见 [README.md §5](../README.md#5-仓库结构)）。
 2. 实现 `AgentEvent` v1 类型 + Zod schema。
 3. 定义 fixture JSONL 格式与回放器（`fixtures/`）。
 4. 实现纯函数 reducer + 单测。

@@ -49,26 +49,26 @@ flowchart LR
 
 关键设计决策见 [docs/decision.md §1](docs/decision.md#1-架构与协议决策)；技术选型与运行方式见 [docs/decision.md §2](docs/decision.md#2-技术选型与运行方式)。
 
-## 5. 仓库结构（规划）
+## 5. 仓库结构
 
 ```
 agent-workbench/
 ├── apps/
-│   ├── web/              前端
-│   └── api/              后端
-├── packages/
-│   └── protocol/         共享协议包
-├── fixtures/             Chat / Release 场景事件 fixture
+│   ├── web/              前端（React + Vite）
+│   └── api/              后端（Hono + LangGraph）
+├── packages/protocol/    共享协议包
+├── e2e/                  Playwright UI 回归
+├── fixtures/             Chat 事件 fixture；bench-* 由脚本生成
 ├── data/
+│   ├── bench/            渲染基准数据集与结果
 │   ├── docs/             合成工程文档（知识库）
-│   ├── releases/         合成发版场景与玩具仓库
-│   └── logs/             合成故障日志（M4）
-├── docs/                 决策 / 计划 / 协议 / 渲染 / 依赖 / 术语 / 展示
-├── scripts/check-docs.mjs 文档一致性检查
-├── .env.example          模型与运行时环境变量示例
-├── .data/                本地会话与运行时数据（gitignore）
-├── AGENTS.md             AI Agent 工作规则
-├── CLAUDE.md             Claude Code 加载入口
+│   ├── eval/             检索 / RCA / 答案评测集与日志
+│   └── releases/         合成发版场景与玩具仓库
+├── docs/                 决策 / 计划 / 能力地图 / 协议 / 渲染 / 评测 / 多模态
+├── scripts/              文档检查、fixture 生成、渲染基准
+├── playwright.config.ts  E2E 配置
+├── .env.example / .data/  环境变量示例；本地会话数据（gitignore）
+├── AGENTS.md / CLAUDE.md  AI 规则与加载入口
 └── README.md
 ```
 
