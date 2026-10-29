@@ -22,6 +22,7 @@ import { PerformancePanel } from "@/components/devtools/performance-panel";
 import { Button } from "@/components/ui/button";
 import { buildChatRows, type ChatRun } from "@/lib/chat/chat-rows";
 import { navigate } from "@/lib/hash-router";
+import { useSidePanel } from "@/lib/side-panel-state";
 import {
   quickPromptsFor,
   type QuickPrompt,
@@ -74,7 +75,7 @@ export function ChatView() {
   const [events, setEvents] = useState<AgentEvent[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showInspector, setShowInspector] = useState(false);
+  const { activePanel, togglePanel, closePanel } = useSidePanel();
   const [showPerformance, setShowPerformance] = useState(false);
   const [isStopping, setIsStopping] = useState(false);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
@@ -722,7 +723,8 @@ export function ChatView() {
         <Button
           variant="outline"
           size="sm"
-          onClick={() => setShowInspector((value) => !value)}
+          onClick={() => togglePanel("events")}
+          aria-pressed={activePanel === "events"}
         >
           <Activity />
           <span className="hidden sm:inline">事件</span>
@@ -814,11 +816,11 @@ export function ChatView() {
           />
         </main>
 
-        {showInspector ? (
+        {activePanel === "events" ? (
           <EventInspector
             events={events}
             state={activeRun}
-            onClose={() => setShowInspector(false)}
+            onClose={closePanel}
           />
         ) : null}
 

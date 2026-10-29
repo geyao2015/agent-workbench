@@ -6,6 +6,7 @@ import { BookOpen, Sparkles } from "lucide-react";
 import { EngineeringNotes } from "@/components/devtools/engineering-notes";
 import { Button } from "@/components/ui/button";
 import type { AppView } from "@/lib/hash-router";
+import { useSidePanel } from "@/lib/side-panel-state";
 import { cn } from "@/lib/utils";
 
 const NAV_ITEMS: Array<{ id: AppView; label: string }> = [
@@ -26,14 +27,14 @@ export function AppHeader({
   onNavigate,
   children,
 }: AppHeaderProps) {
-  const [showNotes, setShowNotes] = useState(false);
+  const { activePanel, togglePanel, closePanel } = useSidePanel();
   const [notesRoot, setNotesRoot] = useState<HTMLElement | null>(null);
 
   useEffect(() => {
-    if (showNotes) {
+    if (activePanel === "notes") {
       setNotesRoot(document.getElementById("notes-root"));
     }
-  }, [showNotes]);
+  }, [activePanel]);
 
   return (
     <>
@@ -56,7 +57,10 @@ export function AppHeader({
             <button
               key={item.id}
               type="button"
-              onClick={() => onNavigate(item.id)}
+              onClick={() => {
+                closePanel();
+                onNavigate(item.id);
+              }}
               aria-current={activeView === item.id ? "page" : undefined}
               className={cn(
                 "rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
@@ -72,10 +76,11 @@ export function AppHeader({
 
         <div className="flex min-w-0 items-center justify-self-end gap-1.5">
           <Button
-            variant="ghost"
+            variant="outline"
             size="sm"
-            onClick={() => setShowNotes(true)}
+            onClick={() => togglePanel("notes")}
             aria-label="工程说明"
+            aria-pressed={activePanel === "notes"}
           >
             <BookOpen />
             <span className="hidden sm:inline">工程说明</span>
@@ -84,9 +89,9 @@ export function AppHeader({
         </div>
       </header>
 
-      {showNotes && notesRoot
+      {activePanel === "notes" && notesRoot
         ? createPortal(
-            <EngineeringNotes onClose={() => setShowNotes(false)} />,
+            <EngineeringNotes onClose={closePanel} />,
             notesRoot,
           )
         : null}
