@@ -65,7 +65,7 @@ export interface AgentEvent<T = unknown> {
 
 | type | payload | 说明 |
 | --- | --- | --- |
-| `run.started` | `{ kind, title?, parentRunId? }` | run 开始 |
+| `run.started` | `{ kind, title?, parentRunId?, sourceRunId? }` | run 开始；`sourceRunId` 用于 Chat handoff |
 | `run.paused` | `{ reason: "approval" \| "user", approvalId? }` | 等待审批或用户输入 |
 | `run.resumed` | `{ fromSeq? }` | 恢复执行 |
 | `run.completed` | `{ status: "done" \| "cancelled" \| "error", usage?: Usage }` | 终态；之后不再有事件 |
@@ -459,3 +459,4 @@ export interface Span {
 | 2026-10-29 | v1 | 冻结 v1；新增 `RunSnapshot` / `ThreadSummary` / `RunHistoryPage` 物化快照契约 |
 | 2026-10-29 | v1 | 历史会话按 cursor 分页返回快照，不回放全部原始事件 |
 | 2026-10-29 | v1 | 新增 `approval.required` / `approval.resolved` 阶段级审批；artifact 增加可选 `stageId` |
+| 2026-10-29 | v1 | `run.started` 增加可选 `sourceRunId`，记录 Chat → Release handoff 来源 |

@@ -22,7 +22,7 @@
 | 阶段 | 状态 | 完成后具备的能力 | 可演示交付 | 简历 / 面试可讲 | 时间盒 |
 | --- | --- | --- | --- | --- | --- |
 | M2 Chat Agent 全栈 | 已完成 | 能开发完整的 Chat Agent（前后端） | Hono + LangGraph、工具循环、记忆、知识库 RAG、引用、历史会话列表（[加载方式](protocol.md#10-待定问题随阶段决定)）、真实模型接入 | Agentic RAG、工具循环、checkpointer、SSE 全链路 | 约 3 周 |
-| M3 Release Agent | 进行中 | 能开发完整垂直 Agent 项目 | 可审计发版工作台：阶段、冲突解决、diff 审批、审计、回滚、日志排查；S1–S4 已完成 | 确定性工作流 + 有边界 LLM + HITL + 审计 | 3–4 周 |
+| M3 Release Agent | 已完成 | 能开发完整垂直 Agent 项目 | 可审计发版工作台：阶段、冲突解决、diff 审批、审计、回滚、日志排查、Chat handoff | 确定性工作流 + 有边界 LLM + HITL + 审计 | 3–4 周 |
 | M4 可观测性与评测 | 未开始 | 能调试、评测和运营 Agent | 日志根因分析、Trace 瀑布、事件回放、检索元数据过滤、检索/RCA 评测、性能与成本报告 | Trace/调试、评测体系、量化指标、架构文档 | 2–3 周 |
 
 ## 2. 阶段约束与验收
@@ -62,11 +62,12 @@ M0 之前不做 M1 及以后的内容。
 | M3 S2 | 结构化输出冲突解决 + 确定性回退；假模型验证 llm/fallback；Diff 展示 rationale |
 | M3 S3 | test.1 失败 → log_bundle → 日志工具/RCA → 修复审批 → test.2 重跑；Logs 页 |
 | M3 S4 | 完成 run → 回滚 child run（parentRunId）→ 回滚审批 → 审计记录 mode/target/parent |
+| M3 S5 | `prepare_release` handoff 卡片 → Release run（`sourceRunId`）；耗时 / 审批 / artifact 指标 |
 
-- 合计测试：protocol 61、API 52；`typecheck` / `build` / `check-docs` 全绿。
+- 合计测试：protocol 61、API 54；`typecheck` / `build` / `check-docs` 全绿。
 - 安全：guard 拦截索要密钥/系统提示词/越狱输入，检索结果标记为不可信数据，输出做密钥脱敏。
 - M2 未纳入：检索元数据过滤、recall@k 与 Trace，按 M4 处理。
-- S5 待做：Chat handoff、指标与面试材料。
+- M4 待做：Trace 瀑布、日志 RCA 评测、性能与成本报告、检索元数据过滤。
 
 ## 5. 跨阶段待办
 

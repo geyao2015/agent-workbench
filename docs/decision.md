@@ -109,3 +109,5 @@
 | 2026-10-29 | `RELEASE_CONFLICT_MODE` 支持 auto / llm / fixture；Diff artifact 记录 mode、fallbackReason、latency 与 rationale | 便于对比 LLM 与确定性方案，并为后续评测留下数据 |
 | 2026-10-29 | 失败 RCA 由确定性工具链完成（search_logs / get_log_context / search_kb），修复走阶段审批 | 日志根因需要可复现证据；LLM 仍只用于冲突解决等有边界任务 |
 | 2026-10-29 | 回滚使用 child run + `parentRunId`，回滚审批后写审计 | 保持 run 终态不可变，同时保留回滚与原始发版的审计链 |
+| 2026-10-29 | Chat handoff 使用 `prepare_release` 工具 + 独立 Release thread，`sourceRunId` 记录来源 | Chat 与 Release 界面分离，同时保留来源链；不在同一 thread 混合两种 run |
+| 2026-10-29 | Release 详情摘要展示耗时、审批数、artifact 数与失败阶段 | 让 M3 的确定性流程和人工 gate 有可量化证据 |

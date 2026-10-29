@@ -2,7 +2,7 @@
 
 > 从知识库对话到可审计发版。一个用于求职展示的研发 Agent 工作台：Chat 基于工程知识库对话，Release 执行可审计的发版流程。
 
-**状态：M3 进行中（S1 确定性主链路、S2 LLM 冲突、S3 失败 RCA、S4 回滚已完成）。** 技术选型与待确认项见 [docs/decision.md](docs/decision.md)；执行计划见 [docs/plan.md](docs/plan.md)；事件协议见 [docs/protocol.md](docs/protocol.md)。
+**状态：M3 已完成，准备进入 M4。** 技术选型与待确认项见 [docs/decision.md](docs/decision.md)；执行计划见 [docs/plan.md](docs/plan.md)；事件协议见 [docs/protocol.md](docs/protocol.md)。
 
 本文件是产品事实的唯一来源：项目定位、场景、演示流程、功能范围、非目标、当前状态、仓库结构与文档索引。
 
@@ -103,7 +103,7 @@ agent-workbench/
 
 ## 8. 当前阶段
 
-**M3 进行中**：S1 确定性主链路、S2 LLM 冲突、S3 失败 RCA、S4 回滚（child run + 回滚审批 + parent 审计）已完成；Chat handoff 与指标待后续切片。
+**M3 已完成**：S1 确定性主链路、S2 LLM 冲突、S3 失败 RCA、S4 回滚、S5 Chat handoff 与运行指标均已落地。下一步 M4：Trace 瀑布、日志 RCA 评测、性能与成本报告。
 
 ```bash
 pnpm install
