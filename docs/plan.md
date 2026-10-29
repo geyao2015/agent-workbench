@@ -22,7 +22,7 @@
 | 阶段 | 状态 | 完成后具备的能力 | 可演示交付 | 简历 / 面试可讲 | 时间盒 |
 | --- | --- | --- | --- | --- | --- |
 | M2 Chat Agent 全栈 | 已完成 | 能开发完整的 Chat Agent（前后端） | Hono + LangGraph、工具循环、记忆、知识库 RAG、引用、历史会话列表（[加载方式](protocol.md#10-待定问题随阶段决定)）、真实模型接入 | Agentic RAG、工具循环、checkpointer、SSE 全链路 | 约 3 周 |
-| M3 Release Agent | 进行中 | 能开发完整垂直 Agent 项目 | 可审计发版工作台：阶段、冲突解决、diff 审批、审计、回滚、日志排查；S1/S2 已完成 | 确定性工作流 + 有边界 LLM + HITL + 审计 | 3–4 周 |
+| M3 Release Agent | 进行中 | 能开发完整垂直 Agent 项目 | 可审计发版工作台：阶段、冲突解决、diff 审批、审计、回滚、日志排查；S1/S2/S3 已完成 | 确定性工作流 + 有边界 LLM + HITL + 审计 | 3–4 周 |
 | M4 可观测性与评测 | 未开始 | 能调试、评测和运营 Agent | 日志根因分析、Trace 瀑布、事件回放、检索元数据过滤、检索/RCA 评测、性能与成本报告 | Trace/调试、评测体系、量化指标、架构文档 | 2–3 周 |
 
 ## 2. 阶段约束与验收
@@ -78,7 +78,7 @@ M0 之前不做 M1 及以后的内容。
 - UI：`#/releases` 列表、阶段时间线、Diff、Audit、Events、审批操作；刷新后可从物化快照恢复。
 - 验证：headless Chrome 端到端通过；Chat 流式、历史与审批无回归。
 - 测试：protocol 61 个、API 40 个；`typecheck` / `build` / `check-docs` 全绿。
-- 后续切片：S2 已完成（见 §7），S3 失败 RCA、S4 回滚、S5 handoff 与指标待做。
+- 后续切片：S2（§7）与 S3（§8）已完成，S4 回滚、S5 handoff 与指标待做。
 
 ## 7. M3 S2 验收记录
 
@@ -87,4 +87,13 @@ M0 之前不做 M1 及以后的内容。
 - Diff artifact 记录 `mode` / `fallbackReason` / `latencyMs` 与每个 hunk 的 rationale；阶段摘要与 Diff UI 展示解决模式。
 - 验证：本地假结构化模型 → `mode=llm`；不可达模型 → `mode=fallback`（Connection error）；headless Chrome 验证 LLM 徽标与解决依据。
 - 测试：protocol 61 个、API 47 个；`typecheck` / `build` / `check-docs` 全绿。
-- 未完成：S3 失败 RCA、S4 回滚、S5 handoff 与指标。
+- 后续切片：S3 已完成（见 §8），S4 回滚、S5 handoff 与指标待做。
+
+## 8. M3 S3 验收记录
+
+- 失败路径：`test.1` 失败后不终止 run，生成 `log_bundle`，进入 RCA 阶段。
+- RCA：`search_logs` → `get_log_context` → `search_kb` 工具事件；证据行、runbook、根因与修复建议写入 RCA artifact。
+- 修复审批：阶段级 `fix` gate，批准后 `test.2` 重跑通过，再进入 notes / tag / audit。
+- UI：新增 Logs 页展示 RCA 与日志包；Overview 展示失败阶段与第二次审批；Audit 包含两次审批和 log/RCA artifact。
+- 验证：headless Chrome 跑通失败 → RCA → 修复审批 → 10 阶段完成；API 51 个、protocol 61 个测试；`typecheck` / `build` / `check-docs` 全绿。
+- 后续切片：S4 回滚、S5 handoff 与指标。

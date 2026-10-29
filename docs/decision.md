@@ -107,3 +107,4 @@
 | 2026-10-29 | M3 先交付 S1 确定性主链路，LLM 冲突、RCA、回滚分切片 | 控制范围，先验证事件与 UI 纵切 |
 | 2026-10-29 | LLM 冲突使用结构化输出 + 严格校验，失败/超时回退确定性方案 | 保证离线可演示与可审计，不把模型不可靠性带进发版主链路 |
 | 2026-10-29 | `RELEASE_CONFLICT_MODE` 支持 auto / llm / fixture；Diff artifact 记录 mode、fallbackReason、latency 与 rationale | 便于对比 LLM 与确定性方案，并为后续评测留下数据 |
+| 2026-10-29 | 失败 RCA 由确定性工具链完成（search_logs / get_log_context / search_kb），修复走阶段审批 | 日志根因需要可复现证据；LLM 仍只用于冲突解决等有边界任务 |
