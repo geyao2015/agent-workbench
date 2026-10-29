@@ -128,6 +128,7 @@ pnpm build && pnpm start    # 单 URL http://localhost:8787
 - [docs/rendering.md](docs/rendering.md) — 渲染实现、增量分段与性能数据
 - [docs/dependencies.md](docs/dependencies.md) — 三方依赖、版本与用途
 - [docs/glossary.md](docs/glossary.md) — 个人术语笔记（Thread / Run 等概念）
+- [docs/showcase.md](docs/showcase.md) — 页面展示亮点与演示编排（待设计）
 - [AGENTS.md](AGENTS.md) — AI 工作规则与文档来源约定
 - [CLAUDE.md](CLAUDE.md) — Claude Code 加载入口
 

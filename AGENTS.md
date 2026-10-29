@@ -42,6 +42,7 @@
 | 阶段划分、阶段状态、能力成长、M0 执行清单、时间盒与验收标准 | `docs/plan.md` |
 | AgentEvent / Span、reducer、fixture、transport、历史会话快照 | `docs/protocol.md` |
 | 渲染实现、增量分段、性能数据 | `docs/rendering.md` |
+| 页面展示亮点、演示编排、避免过度宣称 | `docs/showcase.md` |
 | 三方依赖、版本与用途 | `docs/dependencies.md` |
 | AI 工作规则、阶段门禁、文档维护约定 | `AGENTS.md` |
 | 加载入口 | `CLAUDE.md`（只引用，不写事实） |
@@ -55,6 +56,7 @@
 - 决策变化写入 `docs/decision.md §9` 变更记录；只记决策，不记文档搬家、排版等维护改动。
 - `README.md` 的项目状态摘要随阶段更新；M0–M4 的阶段状态只在 `docs/plan.md` 维护。
 - 不新增零散文档；确需新增时先确认，并更新 `README.md` 的文档索引。
+- 完成可演示的工程能力后，同步更新 `docs/showcase.md §2` 的亮点清单；展示文案与数据以该文件为准。
 - 文档保持短小；超出预算先删减再加内容。提交前运行 `node scripts/check-docs.mjs` 并检查 diff，检查不通过不提交。
 
 ## 5. 新会话启动清单
