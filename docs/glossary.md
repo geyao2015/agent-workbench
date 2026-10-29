@@ -1,6 +1,6 @@
 # 术语笔记
 
-最后更新：2026-10-21
+最后更新：2026-10-29
 
 个人笔记，用于回顾概念和沟通用词；规范定义以 [protocol.md](protocol.md) 和 [decision.md](decision.md) 为准。
 
@@ -30,7 +30,7 @@
 
 - `user`：用户输入；`assistant`：Agent 输出文本。
 - 工具调用、reasoning、审批不是消息角色，是独立的时间线行。
-- `eventId`：全局唯一；mock 用 `${runId}:${seq}`。
+- `eventId`：全局唯一；事件日志统一用 `${runId}:${seq}`。
 - `seq`：run 内递增，客户端按 seq 应用和去重；`runId` 是执行边界。
 
 ## Reducer

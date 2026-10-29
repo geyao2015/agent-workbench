@@ -15,9 +15,9 @@
 ## 2. 阶段门禁
 
 - 当前项目阶段以 `README.md` 的「状态」为准；M0–M4 各阶段状态以 `docs/plan.md` 为准。
-- 用户明确说「开始 M0」之前：不初始化 package.json / pnpm workspace，不安装依赖，不创建 `apps/`、`packages/` 代码，不写产品代码。
-- 当前允许：完善文档、协议草案、架构图、决策记录。
-- 用户说「开始 M0」后，按 `docs/plan.md §3` 执行；写代码前先确认 `docs/decision.md §8` 的待确认项。
+- 不越过当前阶段做下一阶段的产品代码；阶段未完成时，先确认是否具备进入条件。
+- 开始新阶段前确认 `docs/decision.md §8` 的待确认项；M0 历史执行清单见 `docs/plan.md §3`。
+- 跨阶段工作（文档、协议、架构图、决策记录）始终允许，但不得顺手扩大当前任务范围。
 
 ## 3. AI 操作规则
 
@@ -40,7 +40,7 @@
 | 项目定位、场景、演示流程、功能范围、非目标、项目状态摘要、仓库结构、文档索引 | `README.md` |
 | 技术选型、架构与范围决策、求职叙事、待确认项、变更记录 | `docs/decision.md` |
 | 阶段划分、阶段状态、能力成长、M0 执行清单、时间盒与验收标准 | `docs/plan.md` |
-| AgentEvent / Span、reducer、fixture、transport | `docs/protocol.md` |
+| AgentEvent / Span、reducer、fixture、transport、历史会话快照 | `docs/protocol.md` |
 | 渲染实现、增量分段、性能数据 | `docs/rendering.md` |
 | 三方依赖、版本与用途 | `docs/dependencies.md` |
 | AI 工作规则、阶段门禁、文档维护约定 | `AGENTS.md` |
@@ -60,7 +60,7 @@
 ## 5. 新会话启动清单
 
 1. 读 `README.md` → `docs/decision.md` → `docs/plan.md` → `docs/protocol.md` → 本文件。
-2. 检查是否已有代码；当前预期是**没有 `apps/`、`packages/` 代码**。
+2. 检查 `git status` 与代码现状；当前已有 M2 代码，阶段状态以 `docs/plan.md` 为准。
 3. 用一两句话向用户复述 `README.md` 的状态与下一步。
-4. 用户说「开始 M0」时，先确认 `docs/decision.md §8`，再按 `docs/plan.md §3` 执行。
+4. 进入新阶段前先确认 `docs/decision.md §8` 的待确认项，再按 `docs/plan.md` 对应阶段执行。
 5. 不要重新讨论已定决策；需要改变时，明确指出冲突点并请求确认。

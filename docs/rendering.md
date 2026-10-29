@@ -1,6 +1,6 @@
 # 渲染与性能实现
 
-最后更新：2026-10-21
+最后更新：2026-10-29
 
 本文件记录前端渲染实现、增量 Markdown 分段优化与性能数据。阶段划分见 [plan.md](plan.md)，协议契约见 [protocol.md](protocol.md)，渲染目标见 [decision.md §3](decision.md#3-前端三个深挖点)。
 
@@ -34,7 +34,7 @@ SSE → Zod 校验 → 纯函数 reducer → 行级投影 → 虚拟列表。
 - `AgentCard` 统一头部、状态、内容、操作与底栏；工具、审批、reasoning 及后续异构内容（音视频、PDF、流程卡）复用同一容器
 - 时间线按 `startedAtSeq` 合并消息与工具调用，保证同一 run 内文本与工具卡片正确交错
 - 工具卡片由 `ToolCallState` 投影：参数半截到达时尝试容错解析并展示部分结构，解析失败回退原文；`tool.ready` 后展示结构化参数，结果与耗时来自 `tool.result`
-- 审批作为工具卡片底栏，由 `ApprovalState` 投影；决定通过 `POST /api/approvals/:approvalId` 追加 `tool.approval_resolved` / `run.resumed` 事件，客户端按 `lastEventId` 恢复，前端状态不作为事实源
+- 审批作为工具卡片底栏，由 `ApprovalState` 投影；决定通过 `POST /api/approvals/:approvalId` 追加 `tool.approval_resolved` / `run.resumed` 事件，客户端按 `lastEventId` 恢复，前端状态不作为事实源；当前审批链路只在 mock 模式演示，M3 接入真实审批
 - 运行错误由 `RunState.errors` 投影为时间线错误行，区分局部错误与致命错误；工具错误仍留在工具卡内
 
 选择理由：

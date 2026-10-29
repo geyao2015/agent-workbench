@@ -299,20 +299,23 @@ export interface AgentTransport {
 }
 ```
 
-HTTP 形态（建议）：
+HTTP 形态（M2 已实现）：
 
 - `POST /api/runs` → 创建 run，返回 `runId`。
 - `GET /api/runs/:runId/events` → SSE；`Last-Event-ID` 用于断线重连。
 - `POST /api/runs/:runId/cancel` → 协作式取消。
-- `POST /api/approvals/:approvalId` → 提交审批。
+- `POST /api/approvals/:approvalId` → 提交审批（当前 mock 运行时）。
 - `GET /api/runs/:runId/artifacts/:artifactId` → 拉取 artifact 内容。
+- `GET /api/runtime` → 运行时模式、模型与知识库信息。
+- `GET /api/threads` → 会话列表。
+- `GET /api/threads/:threadId/runs?cursor=&limit=` → 物化快照分页。
 
 SSE 约定：
 
 - `id` 使用 `eventId`；断线后客户端回传 `Last-Event-ID`。
 - 心跳是 transport 层注释（例如 `: ping`），不是 AgentEvent。
 - 服务端从事件日志回放 `seq > lastSeq` 的事件；找不到时回退到 checkpoint 或完整回放。
-- 同一 thread 默认只允许一个活跃 run；需要并行时显式设计队列（M0 记录，不实现）。
+- 同一 thread 只允许一个活跃 run，冲突返回 409；并行队列未实现。
 
 取消语义：
 
@@ -422,7 +425,7 @@ export interface Span {
 
 ## 10. 待定问题（随阶段决定）
 
-1. **Block ID 归属**：默认前端确定性分段；若后端能稳定提供 block 边界，可切换为后端下发。M1 用渲染指标决定。
+1. **Block ID 归属**：默认前端确定性分段；M1 已验证渲染指标，暂不切换后端下发。
 2. **Artifact 内联阈值**：默认 8KB 以下可内联；需要实测事件体积。
 3. **审批粒度**：工具级 vs 阶段级。默认不可逆工具用工具级，Release 整体用阶段级 gate。
 4. **取消语义**：工具是否必须支持 `AbortSignal`；默认是，超时后标记为 cancelled。

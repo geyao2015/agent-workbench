@@ -61,7 +61,7 @@ agent-workbench/
 ├── fixtures/             Chat / Release 场景事件 fixture
 ├── data/
 │   ├── docs/             合成工程文档（知识库）
-│   └── logs/             合成故障日志
+│   └── logs/             合成故障日志（M4）
 ├── docs/
 │   ├── decision.md       决策与理由
 │   ├── plan.md           执行计划与阶段状态

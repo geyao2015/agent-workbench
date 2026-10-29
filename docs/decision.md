@@ -30,11 +30,11 @@
 | Agent | LangGraph JS / LangChain v1 | 已定 |
 | 协议 | append-only AgentEvent + Zod | 已定 |
 | 测试 | Vitest；Playwright（后期 E2E） | 已确认 |
-| 检索 | 本地索引 → SQLite FTS | 已定方向 |
-| 存储 | 内存 / JSONL → SQLite FTS；checkpointer 先内存 | 已定方向 |
+| 检索 | 本地索引 → SQLite FTS | 本地 BM25 已实现；SQLite FTS 待定 |
+| 存储 | 内存 / JSONL → SQLite FTS；checkpointer 先内存 | 内存 + JSONL 已实现；SQLite 待定 |
 | 样式 | Tailwind CSS + shadcn/ui | 已确认 |
 
-- M0 运行方式：单个 Hono 进程在本地同时服务 web 静态资源和 API；不引入部署平台。
+- 本地运行方式：单个 Hono 进程同时服务 web 静态资源和 API；不引入部署平台。
 - 开发期使用 Vite dev server（HMR），`/api` 代理到 Hono；构建后由 Hono 单进程托管 web 静态资源。
 - 不选 Next.js 全栈作为主方案：serverless 对长连接、长任务、取消/恢复限制多；若用需自托管 Node。
 - Express 只需达到"能读、能改、能解释区别"，不深研；Koa 不作为新项目选项。
