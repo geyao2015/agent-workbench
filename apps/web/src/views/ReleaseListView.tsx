@@ -105,8 +105,9 @@ export function ReleaseListView() {
         }
       />
 
-      <main className="min-h-0 flex-1 overflow-y-auto">
-        <div className="mx-auto w-full max-w-5xl space-y-6 px-4 py-8 md:px-8">
+      <div className="flex min-h-0 flex-1">
+        <main className="min-h-0 flex-1 overflow-y-auto">
+          <div className="mx-auto w-full max-w-5xl space-y-6 px-4 py-8 md:px-8">
           <section className="space-y-2">
             <div className="flex flex-wrap items-center gap-2">
               <h2 className="text-2xl font-semibold tracking-tight">
@@ -219,7 +220,9 @@ export function ReleaseListView() {
             )}
           </section>
         </div>
-      </main>
+        </main>
+        <div id="notes-root" className="contents" />
+      </div>
     </div>
   );
 }

@@ -14,7 +14,6 @@ export function EngineeringNotes({ onClose }: { onClose: () => void }) {
       title="工程说明"
       subtitle="架构取舍、性能数据、模拟环境与已知限制"
       onClose={onClose}
-      overlay
     >
       <div className="space-y-2">
         {NOTES.map((note) => (

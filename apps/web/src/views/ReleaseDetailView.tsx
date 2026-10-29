@@ -476,8 +476,9 @@ export function ReleaseDetailView({
         ) : null}
       </AppHeader>
 
-      <main className="min-h-0 flex-1 overflow-y-auto">
-        <div className="mx-auto w-full max-w-5xl space-y-4 px-4 py-6 md:px-8">
+      <div className="flex min-h-0 flex-1">
+        <main className="min-h-0 flex-1 overflow-y-auto">
+          <div className="mx-auto w-full max-w-5xl space-y-4 px-4 py-6 md:px-8">
           {loading ? (
             <div className="flex items-center gap-2 rounded-xl border bg-card px-4 py-6 text-sm text-muted-foreground">
               <Loader2 className="size-4 animate-spin" />
@@ -591,8 +592,10 @@ export function ReleaseDetailView({
           {tab === "audit" ? (
             <AuditTable body={auditBody} loading={auditLoading} />
           ) : null}
-        </div>
-      </main>
+          </div>
+        </main>
+        <div id="notes-root" className="contents" />
+      </div>
     </div>
   );
 }

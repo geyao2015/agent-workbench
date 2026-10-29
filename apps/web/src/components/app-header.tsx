@@ -1,4 +1,5 @@
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 
 import { BookOpen, Sparkles } from "lucide-react";
 
@@ -26,6 +27,13 @@ export function AppHeader({
   children,
 }: AppHeaderProps) {
   const [showNotes, setShowNotes] = useState(false);
+  const [notesRoot, setNotesRoot] = useState<HTMLElement | null>(null);
+
+  useEffect(() => {
+    if (showNotes) {
+      setNotesRoot(document.getElementById("notes-root"));
+    }
+  }, [showNotes]);
 
   return (
     <>
@@ -76,7 +84,12 @@ export function AppHeader({
         </div>
       </header>
 
-      {showNotes ? <EngineeringNotes onClose={() => setShowNotes(false)} /> : null}
+      {showNotes && notesRoot
+        ? createPortal(
+            <EngineeringNotes onClose={() => setShowNotes(false)} />,
+            notesRoot,
+          )
+        : null}
     </>
   );
 }

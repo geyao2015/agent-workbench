@@ -821,6 +821,8 @@ export function ChatView() {
             onClose={() => setShowInspector(false)}
           />
         ) : null}
+
+        <div id="notes-root" className="contents" />
       </div>
 
       {showPerformance ? (
