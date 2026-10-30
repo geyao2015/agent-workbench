@@ -79,6 +79,11 @@
       "service": "platform",
       "type": "checklist",
       "tags": ["security", "secrets", "review"]
+    },
+    "frontend-button": {
+      "service": "platform",
+      "type": "guide",
+      "tags": ["frontend", "ui", "component", "button"]
     }
   }
 }

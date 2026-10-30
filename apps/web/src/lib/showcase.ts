@@ -24,7 +24,7 @@ export const SHOWCASE_HIGHLIGHTS: ShowcaseHighlight[] = [
   {
     label: "Agent runtime",
     value: "Recall@1 85.4%",
-    detail: "LangGraph 工具循环、BM25 知识库、引用与拒答；16 篇合成文档。",
+    detail: "LangGraph 工具循环、BM25 知识库、引用与拒答；17 篇合成文档。",
     action: { type: "prompt", promptText: "1.2.0 发版有哪些注意事项" },
   },
   {

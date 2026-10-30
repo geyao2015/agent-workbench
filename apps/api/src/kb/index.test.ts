@@ -27,6 +27,12 @@ describe("KnowledgeBase", () => {
     expect(hits[0]?.sourceId).toBe("checkout-service-architecture");
   });
 
+  it("检索前端组件库的 Button 文档", () => {
+    const hits = kb.search("前端组件库 Button 按钮组件怎么用", 4);
+
+    expect(hits[0]?.sourceId).toBe("frontend-button");
+  });
+
   it("无命中时返回空数组", () => {
     expect(kb.search("量子纠缠 火星殖民", 4)).toEqual([]);
   });

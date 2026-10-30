@@ -1,12 +1,12 @@
 # 评测记录
 
-最后更新：2026-10-29
+最后更新：2026-10-30
 
 本文件是评测数据集、指标与基线的唯一来源。执行计划见 [plan.md](../product/plan.md)，渲染性能见 [rendering.md](../architecture/rendering.md)，产品状态见 [README.md](../../README.md)。
 
 ## 1. 数据集
 
-- 检索：`data/eval/retrieval.jsonl`，50 题（48 可回答 + 2 不可回答），覆盖 16 篇合成文档；标签含 single-doc、multi-doc、version、unanswerable。
+- 检索：`data/eval/retrieval.jsonl`，50 题（48 可回答 + 2 不可回答），覆盖 16 篇合成文档（知识库共 17 篇，Button 组件文档暂未入金标）；标签含 single-doc、multi-doc、version、unanswerable。
 - RCA：`data/eval/rca.jsonl`，10 个合成事故；每个案例包含日志文件、证据行与 runbook sourceId。
 - 答案：`data/eval/answer.jsonl`，12 题（含 2 道无答案），补充 goldPoints 与引用来源，用于端到端 harness。
 - 文档元数据：`data/docs/metadata.json`，含 service / type / tags，用于过滤。
