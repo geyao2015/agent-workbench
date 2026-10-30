@@ -6,14 +6,14 @@
 
 ## 1. 架构与协议决策
 
-- **两个场景，不合并界面**：Chat 与 Release 共享 runtime、协议和组件，但保持独立界面。理由：Chat 是渲染能力主展示面，Release 是结构化执行面，合并会同时牺牲两者。
+- **两个场景，不合并界面**：Chat 与迭代（发版为迭代内阶段）共享 runtime、协议和组件，但保持独立界面。理由：Chat 是渲染能力主展示面，迭代是结构化执行面，合并会同时牺牲两者。
 - **Chat 保持 Agent 属性**：保留工具循环、会话记忆和多步任务；不得退化为纯 RAG 问答链。
 - **协议优先**：先定义 append-only `AgentEvent` v1（`runId / messageId / blockId / toolCallId / seq`），再做 UI；冻结与版本规则见 [protocol.md §9](../architecture/protocol.md#9-版本与兼容)。
 - **Mock 是事件 fixture 回放器**，不是"关键词 → 假文本"；快捷选项对应完整事件序列。
 - **transport 统一抽象**为 `AsyncIterable<AgentEvent>`；mock 与真实 SSE 共用同一个 reducer。
 - **领域事件与 telemetry 分离**：`AgentEvent` 驱动 UI；`Span`（OTel 风格）进 trace store，通过 `runId / spanId / toolCallId` 关联，不混入事件流。
-- **单一状态源**：run 的事件日志是唯一状态源；聊天、Release 工作台、Trace 都是它的投影。
-- **Release UI 是事件投影**：阶段视图由事件驱动，不能硬编码流程。
+- **单一状态源**：run 的事件日志是唯一状态源；聊天、迭代工作台、Trace 都是它的投影。
+- **迭代与发版 UI 是事件投影**：阶段视图由事件驱动，不能硬编码流程。
 - **确定性优先**：发版步骤尽量是确定性工作流；LLM 只用于冲突解决、文案生成、风险摘要等有边界任务。
 - **不做通用平台**：共享协议、transport、组件即可，不为复用做通用 Agent / 知识库 / 日志平台抽象。
 - **前端先行**：后端接入只替换 transport 和 runtime，不重写已完成的渲染层。
@@ -72,20 +72,24 @@
 
 ## 5. 信息架构
 
-- 顶层导航：Chat / Releases，不设第三个业务 tab。
-- Release run 详情：Overview / Logs / Diff / Trace / Events / Audit。
+- 顶层导航：Chat / Iterations，不设第三个业务 tab；发版不单独占 tab。
+- 迭代详情：Overview / Logs / Diff / Trace / Events / Audit；发版 run 的 Trace 与 Events 仍按 run 聚合。
 - Chat：日志与检索结果以工具卡片内联展示；调试时打开 Trace/Events 抽屉。
 - 可选后期增加顶层 Log Explorer，用于跨 run 搜索和"让 Agent 分析"。
 
-## 6. Release 场景决策
+## 6. 迭代与发版场景决策
 
-- Release 在模拟环境中执行。理由：作品集不需要真实环境，同时避免真实凭证与 NDA 风险；审批、审计、回滚仍可完整演示。
+- **迭代是一级容器，发版是阶段**：一次迭代包含多个 feature、一份 PRD、一份技术方案、一个功能分支和一个迭代版本号；发版是迭代的出口阶段，不是独立场景。
+- **数据真实、执行模拟**：PRD、技术方案与发版记录是真实文档，写入知识库、可版本化、可被 Chat 检索引用；分支合并、CI 与部署仍是玩具仓库 + 模拟 CI。理由：作品集不需要真实环境，同时避免真实凭证与 NDA 风险，审批、审计、回滚仍可完整演示。
+- **新起 iterations 领域，不原地改名**：Release 的语义是"一次执行"，直接改名为容器概念会造成层级错位。迭代详情复用现有 tabs 与 stage / 审批 / artifact / 回滚 / Trace 派生；旧 Release 保持可跑，达到能力对等后整块删除。删除条件与顺序见 [plan.md §3.10](plan.md#310-迭代与发版流程)。
+- **feature 是轻量清单**：状态只做 pending / in_progress / done，不做 assignee、估点、看板与排期，避免退化为项目管理工具。
+- **协议按加法预留**：`run.started` 增加可选 `iterationId`，`RunKind` 暂不变；迭代、feature 与文档关联的表结构见 [storage.md §3.3](../architecture/storage.md#33-产品迭代)。
 - 数据与合规要求见 [README.md §7](../../README.md#7-非目标) 与 [§10](../../README.md#10-数据与合规)。
 
 ## 7. 求职叙事
 
 - 简历不要写"类 ChatGPT 应用"；写具体决策、难点和指标，且每条都能被追问三层。
-- 渲染与协议层完成可投 Agent 前端岗位；前后端全栈接入后可投全栈 AI 应用；Release、可观测性与评测完成后可投 Agent 工程师。
+- 渲染与协议层完成可投 Agent 前端岗位；前后端全栈接入后可投全栈 AI 应用；迭代与发版、可观测性与评测完成后可投 Agent 工程师。
 - 公司经历如实写"参与发版 Agent、负责冲突解决"；side project 写"独立重构的简化版"。
 - 要能回答：为什么不用 Next/Express、为什么事件与 telemetry 分离、如何评测检索和根因、流式渲染如何避免重渲染。
 - 核心观点：不是所有 Agent 都该做成聊天框；Chat 是入口，结构化执行面负责高风险、可审计流程。
@@ -134,3 +138,4 @@
 | 2026-10-30 | mock 会话在终态（完成/取消）写入 `ThreadStore`；`bench-*` 与断开未取消的 run 不落库；侧栏与运行时解耦，切换模式保留 threadId | 会话列表是历史记录，不应随模式隐藏；mock 历史可作为后续 agent 上下文 |
 | 2026-10-30 | 数据存储改为 DB 为源：SQLite + Kysely，日志独立库，大对象走 Storage；runtime 模式仍进程内；详见 [storage.md](../architecture/storage.md) | 本地跑通并可迁 Postgres；支撑产品迭代内容与 prompt 版本落库 |
 | 2026-10-30 | 知识库文档采用逻辑文档 + 不可变版本；检索仅索引 current 版本；引用钉 `docVersion`；文档 id 显式存储在元数据，正文互链只写 docId | 升版不能断链、不能让历史版本污染检索；旧 run 的引用需可回溯 |
+| 2026-10-30 | Release 升级为迭代容器：迭代含多 feature、PRD / 技术方案、功能分支与版本号，发版作为迭代内阶段；新起 iterations 领域，旧 Release 达到能力对等后整块删除；feature 仅保留轻量状态；`run.started` 加法预留 `iterationId`；数据真实、执行模拟 | 发版不应是独立场景；迭代才能承载多 feature 并联动知识库，原地改名会让容器与执行层语义错位 |

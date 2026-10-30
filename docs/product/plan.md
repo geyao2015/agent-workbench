@@ -69,7 +69,7 @@
 - [ ] `Storage` 与 repository 接口，文件实现收到接口后面。
 - [ ] 运行时落库：threads / runs / events，导入现有 `.data/threads`，快照改派生。
 - [ ] 文本内容落库：documents / chunks / FTS5，`data/docs` 改为 seed import。
-- [ ] 产品迭代落库：iterations 与 PRD / 技术方案 / 发版记录，知识库增加迭代分类。
+- [ ] 产品迭代落库：iterations / features / iteration_links 与 PRD / 技术方案 / 发版记录，知识库增加迭代分类。
 - [ ] prompt 版本、spans、独立日志库与 artifacts 接入 `Storage`。
 
 ### 3.8 工程化与交付
@@ -88,9 +88,14 @@
 
 - [ ] 整理文档：难点分析单独归类，清理重复与过期描述。
 
-### 3.10 Release 流程与范围
+### 3.10 迭代与发版流程
 
-- [ ] 重构发版流程与范围：当前固定阶段链（前置检查 → 冲突解决 → Diff 审批 → 测试 → RCA → 修复审批 → 重测 → 回滚 → Release Notes → 审计）不是目标形态；目标流程、阶段粒度与边界确认后按切片重做。
+- [ ] 新建迭代：版本号 + 目标 + PRD / 技术方案（上传或引用已有知识库文档），文档写入知识库并重建索引；feature 先手填，状态只用 pending / in_progress / done。
+- [ ] 迭代文档进入检索：PRD / 技术方案 / 发版记录按迭代分类写入（依赖 3.5 的写入与版本能力），Chat 可按迭代过滤并引用，引用钉 `docVersion`。
+- [ ] 迭代详情：顶层 `Releases` 改为 `Iterations`，不新增 tab；详情沿用 Overview / Logs / Diff / Trace / Events / Audit，发版作为迭代内阶段。
+- [ ] 协议加法：`run.started` 增加可选 `iterationId`，`RunKind` 暂不变；实现时同步 [protocol.md](../architecture/protocol.md) 的 Changelog 与 [storage.md](../architecture/storage.md)。
+- [ ] 发版段重做：当前固定阶段链（前置检查 → 冲突解决 → Diff 审批 → 测试 → RCA → 修复审批 → 重测 → 回滚 → Release Notes → 审计）不是目标形态；以迭代容器 + 功能分支为输入，阶段粒度确认后按切片重做，复用现有 stage / 审批 / artifact / 回滚与 Trace 派生。
+- [ ] 删除旧 Release：迭代发版段达到能力对等（冲突 → 审批 → 失败 RCA → 回滚，补齐 fixture 与 E2E）后，整块删除路由、UI、fixture、测试与文档，不留兼容层。
 
 ## 4. 验收与限制
 

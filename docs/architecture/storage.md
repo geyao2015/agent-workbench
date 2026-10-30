@@ -76,10 +76,15 @@ chunks_fts(content, locator)  -- FTS5 虚表，派生
 ### 3.3 产品迭代
 
 ```sql
-iterations(id pk, code, goal, status, started_at, shipped_at)
+iterations(id pk, code, goal, status, base_branch, feature_branch,
+           started_at, shipped_at)
+features(id pk, iteration_id, title, status, ord)  -- pending / in_progress / done
 iteration_links(iteration_id, doc_id, role,
                 pk(iteration_id, doc_id, role))  -- prd / tech_design / release_notes
 ```
+
+- `code` 即迭代版本号（如 `1.3.0`）；`feature_branch` 是迭代的功能分支，发版段以它合并到 `base_branch` 为输入。
+- feature 只记录标题、状态与顺序，不存 assignee、估点或排期。
 
 ### 3.4 prompt 版本
 
@@ -126,7 +131,7 @@ data/kb/seed/*.md       启动 seed 与测试夹具
 1. `Storage` 与 repository 接口：文件实现收到接口后，行为不变。
 2. 运行时落库：threads / runs / events，导入现有 `.data/threads` 数据，快照改为派生。
 3. 文本内容落库：documents / chunks / FTS5，`data/docs` 改为 seed import。
-4. 产品迭代落库：iterations 与 PRD / 技术方案 / 发版记录，知识库增加迭代分类。
+4. 产品迭代落库：iterations / features / iteration_links 与 PRD / 技术方案 / 发版记录，知识库增加迭代分类。
 5. prompt 版本、spans、日志库与 artifacts 接入 `Storage`。
 
 每步退出条件：可运行、旧数据可导入、读写路径有单测、typecheck 通过。
