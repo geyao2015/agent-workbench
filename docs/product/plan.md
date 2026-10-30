@@ -76,7 +76,7 @@
 
 - [ ] 测试统一并纳入 typecheck：单测与源码共置、统一 `.test.ts`（`packages/protocol/src/__tests__` 迁出）；E2E 保持根级并升级为独立 workspace（`e2e/package.json` + tsconfig，仍用 `pnpm dev` 起全链路），统一 `.spec.ts` 并纳入 tsconfig；共享辅助只抽 2 处以上复用的（事件构造、临时 store / app），不预先建 `packages/testing`。
 - [ ] 单测执行与调试：支持按包 / 文件 / 用例运行（`pnpm test -- <path>`、`-t`）与 watch 模式；补编辑器断点调试配置（`node --inspect-brk` 或 VS Code launch.json），能对单条用例断点逐帧调试。
-- [ ] 多分支并行开发（git worktree）：用 `claude -w <name>` / `EnterWorktree` 在 `.claude/worktrees/<name>` 建独立 checkout；补 `.gitignore` 的 `.claude/worktrees/`、`.worktreeinclude`（只复制 `.env`）、`worktree.baseRef`；dev 端口改 env 驱动（vite `server.port` + 由 `PORT` 注入 `/api` proxy target），E2E webServer 端口同样可配，避免并行实例争 5173/8787；各 worktree 独立 `pnpm install` 与 `.data/`。
+- [ ] 多分支并行开发（git worktree）：用 `claude -w <name>` / `EnterWorktree` 在 `.claude/worktrees/<name>` 建独立 checkout；补 `.gitignore` 的 `.claude/worktrees/`、`.worktreeinclude`（只复制 `.env`）、`worktree.baseRef`；各 worktree 用 `VITE_PORT` / `PORT` / `API_ORIGIN` 与独立 `.data/` 并行（端口 env 已就绪，E2E 固定 5174 / 8788 与 `.data/e2e`）；各 worktree 独立 `pnpm install`。
 - [ ] oxlint（type-aware）+ Prettier 清理后接入 GitHub Actions：format / lint / typecheck / test / build / check-docs；E2E 可选。
 - [ ] 本地开发与线上测试切换：环境变量与 API base URL 切换，补线上一套冒烟测试。
 - [ ] Mock 数据真实化：

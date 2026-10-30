@@ -4,6 +4,9 @@ import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 
+const webPort = Number(process.env.VITE_PORT ?? 5173);
+const apiOrigin = process.env.API_ORIGIN ?? "http://localhost:8787";
+
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   resolve: {
@@ -12,8 +15,9 @@ export default defineConfig({
     },
   },
   server: {
+    port: webPort,
     proxy: {
-      "/api": "http://localhost:8787",
+      "/api": apiOrigin,
     },
   },
   build: {
