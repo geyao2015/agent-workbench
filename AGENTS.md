@@ -42,6 +42,7 @@
 | 执行计划、待办分组、能力成长、验收标准与已知限制 | `docs/product/plan.md` |
 | Agent 应用难点分层、能力覆盖与推进顺序 | `docs/architecture/agent-map.md` |
 | AgentEvent / Span、reducer、fixture、transport、历史会话快照 | `docs/architecture/protocol.md` |
+| 数据分类、事实源、表结构与迁移顺序 | `docs/architecture/storage.md` |
 | 渲染实现、增量分段、性能数据 | `docs/architecture/rendering.md` |
 | 页面展示亮点、演示编排、避免过度宣称 | `docs/product/showcase.md` |
 | 评测集、指标与基线 | `docs/quality/evaluation.md` |

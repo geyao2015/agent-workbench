@@ -30,8 +30,8 @@
 | Agent | LangGraph JS / LangChain v1 | 已定 |
 | 协议 | append-only AgentEvent + Zod | 已定 |
 | 测试 | Vitest；Playwright（后期 E2E） | 已确认 |
-| 检索 | 本地索引 → SQLite FTS | 本地 BM25 已实现；SQLite FTS 待定 |
-| 存储 | 内存 / JSONL → SQLite FTS；checkpointer 先内存 | 内存 + JSONL 已实现；SQLite 待定 |
+| 检索 | 本地 BM25 → SQLite FTS5 | BM25 已实现；FTS5 已定，待实现 |
+| 存储 | SQLite（Kysely）+ Storage 抽象 → Postgres | 本地文件已实现；SQLite 已定，待实现 |
 | 样式 | Tailwind CSS + shadcn/ui | 已确认 |
 | 客户端状态 | zustand（全局运行时状态） | 已确认 |
 
@@ -125,3 +125,4 @@
 | 2026-10-30 | 每个 run 在 `run.started.payload.runtime` 快照模式与模型；流式期间切换先挂起，run 结束后生效 | 在跑 run 语义稳定，切换可审计、可提示 |
 | 2026-10-30 | 客户端全局状态引入 zustand 与 `@radix-ui/react-dropdown-menu` | 运行时状态跨 Chat/Release 共享且需要选择器订阅 |
 | 2026-10-30 | mock 会话在终态（完成/取消）写入 `ThreadStore`；`bench-*` 与断开未取消的 run 不落库；侧栏与运行时解耦，切换模式保留 threadId | 会话列表是历史记录，不应随模式隐藏；mock 历史可作为后续 agent 上下文 |
+| 2026-10-30 | 数据存储改为 DB 为源：SQLite + Kysely，日志独立库，大对象走 Storage；runtime 模式仍进程内；详见 [storage.md](../architecture/storage.md) | 本地跑通并可迁 Postgres；支撑产品迭代内容与 prompt 版本落库 |

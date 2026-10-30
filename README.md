@@ -113,9 +113,7 @@ pnpm test:e2e               # Playwright UI 回归（使用本地 Chrome）
 pnpm bench:streaming        # 流式渲染基准，结果写入 data/bench/results.json
 ```
 
-默认使用 fixture mock 运行时；配置 `ANTHROPIC_API_KEY` 或 `OPENAI_API_KEY`（可配 `OPENAI_BASE_URL` / `OPENAI_MODEL`）后，可在页面 header 全局切换实时 Agent。环境变量示例见 [.env.example](.env.example)，知识库位于 `data/docs/`，会话数据写入本地 `.data/`。
-
-待办分组、验收标准与已知限制见 [docs/product/plan.md](docs/product/plan.md)。
+默认使用 fixture mock 运行时；配置 `ANTHROPIC_API_KEY` 或 `OPENAI_API_KEY`（可配 `OPENAI_BASE_URL` / `OPENAI_MODEL`）后，可在页面 header 全局切换实时 Agent。环境变量示例见 [.env.example](.env.example)，知识库位于 `data/docs/`，会话数据写入本地 `.data/`；待办分组、验收标准与已知限制见 [docs/product/plan.md](docs/product/plan.md)。
 
 ## 9. 文档索引
 
@@ -124,6 +122,7 @@ pnpm bench:streaming        # 流式渲染基准，结果写入 data/bench/resul
 - [docs/product/showcase.md](docs/product/showcase.md) — 页面展示亮点与演示编排（待设计）
 - [docs/architecture/agent-map.md](docs/architecture/agent-map.md) — Agent 应用难点分层、能力覆盖与推进顺序
 - [docs/architecture/protocol.md](docs/architecture/protocol.md) — AgentEvent / Span 协议草案与 fixture 格式
+- [docs/architecture/storage.md](docs/architecture/storage.md) — 数据分类、表结构、存储兼容与迁移顺序
 - [docs/architecture/rendering.md](docs/architecture/rendering.md) — 渲染实现、增量分段与性能数据
 - [docs/architecture/multimodal.md](docs/architecture/multimodal.md) — 语音输入、图片上传与识别的规划与安全边界
 - [docs/quality/evaluation.md](docs/quality/evaluation.md) — 评测集、指标与基线

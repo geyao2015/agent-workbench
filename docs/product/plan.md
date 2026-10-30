@@ -64,11 +64,13 @@
 
 ### 3.7 持久化与数据库
 
-- [ ] 接入数据库，替代内存 checkpointer 与 JSONL 事件日志；选型与迁移策略先在 decision.md 确认。
-- [ ] 本地落库：服务日志、AgentEvent 事件日志、run/thread 元数据与 artifact 索引。
-- [ ] 知识库落库：`data/docs` 只作 seed fixture；上传内容写入数据库或 `.data/`，用 `documents` 表 + FTS5 索引替代启动时全量 BM25。
-- [ ] 存储形态（做 RAG / 多模态时再定）：Markdown 正文存 SQLite `TEXT` 供 FTS5；图片、音视频、PDF 存本地磁盘或 OSS，DB 只存 `storage_key` / `mime` / `size` / `hash`，经 `Storage` 抽象切换，不把大二进制塞 BLOB。
-- [ ] 迁移顺序：SQLite 单机闭环 → 多实例部署再评估 Postgres；向量检索等 BM25/FTS 召回不足再引入。
+表结构、兼容规则与迁移顺序见 [storage.md](../architecture/storage.md)，按顺序逐段实现：
+
+- [ ] `Storage` 与 repository 接口，文件实现收到接口后面。
+- [ ] 运行时落库：threads / runs / events，导入现有 `.data/threads`，快照改派生。
+- [ ] 文本内容落库：documents / chunks / FTS5，`data/docs` 改为 seed import。
+- [ ] 产品迭代落库：iterations 与 PRD / 技术方案 / 发版记录，知识库增加迭代分类。
+- [ ] prompt 版本、spans、独立日志库与 artifacts 接入 `Storage`。
 
 ### 3.8 工程化与交付
 
