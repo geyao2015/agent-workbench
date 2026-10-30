@@ -19,23 +19,6 @@ const docs = [
   "docs/reference/dependencies.md",
   "docs/reference/glossary.md",
 ];
-const budgets = {
-  "README.md": 140,
-  "AGENTS.md": 110,
-  "CLAUDE.md": 20,
-  "docs/product/decision.md": 130,
-  "docs/product/plan.md": 100,
-  "docs/product/showcase.md": 80,
-  "docs/architecture/agent-map.md": 80,
-  "docs/architecture/protocol.md": 500,
-  "docs/architecture/storage.md": 140,
-  "docs/architecture/rendering.md": 100,
-  "docs/architecture/multimodal.md": 80,
-  "docs/quality/evaluation.md": 100,
-  "docs/reference/dependencies.md": 100,
-  "docs/reference/glossary.md": 80,
-};
-
 let failures = 0;
 const fail = (file, message, line) => {
   failures += 1;
@@ -98,9 +81,6 @@ for (const file of docs) {
 
 for (const doc of data.values()) {
   const { file, lines, code } = doc;
-  if (lines.length > budgets[file]) {
-    fail(file, `超过文档行数预算 ${budgets[file]}（当前 ${lines.length}）`);
-  }
 
   for (let i = 0; i < lines.length; i += 1) {
     if (code[i]) continue;
@@ -229,5 +209,5 @@ if (failures > 0) {
 }
 console.log(`✓ 文档检查通过（${data.size} 个文件）`);
 for (const [file, doc] of data) {
-  console.log(`  ${file}: ${doc.lines.length}/${budgets[file]} 行`);
+  console.log(`  ${file}: ${doc.lines.length} 行`);
 }

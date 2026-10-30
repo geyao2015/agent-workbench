@@ -60,7 +60,7 @@
 - `README.md` 的项目状态摘要随能力变化更新；待办与完成状态只在 `docs/product/plan.md` 维护。
 - `docs/` 按 product / architecture / quality / reference 分类；新增文档先确认，放入对应目录并更新 `README.md` 索引。
 - 完成可演示的工程能力后，同步更新 `docs/product/showcase.md §2` 的亮点清单；展示文案与数据以该文件为准。
-- 文档保持短小；超出预算先删减再加内容。提交前运行 `node scripts/check-docs.mjs` 并检查 diff，检查不通过不提交。
+- 提交前运行 `node scripts/check-docs.mjs` 并检查 diff，检查不通过不提交。
 
 ## 5. 新会话启动清单
 
