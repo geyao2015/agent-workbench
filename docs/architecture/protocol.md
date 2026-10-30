@@ -317,17 +317,42 @@ export interface AgentTransport {
 }
 ```
 
-HTTP 形态（已实现）：
+HTTP 形态（已实现，25 个接口；只有 `/api/runtime` 携带运行时模式参数）：
 
-- `POST /api/runs` → 创建 run，返回 `runId`。
-- `GET /api/runs/:runId/events` → SSE；`Last-Event-ID` 用于断线重连。
-- `POST /api/runs/:runId/cancel` → 协作式取消。
-- `POST /api/approvals/:approvalId` → 提交审批（当前 mock 运行时）。
-- `GET /api/runs/:runId/artifacts/:artifactId` → 拉取 artifact 内容。
-- `GET /api/runtime` → 当前模式、模型、可用模型目录与知识库信息。
-- `POST /api/runtime` → `{ mode, modelId? }` 切换全局运行时；唯一携带模式参数的接口，其余接口由服务端当前模式或 run 归属决定。
-- `GET /api/threads` → 会话列表。
-- `GET /api/threads/:threadId/runs?cursor=&limit=` → 物化快照分页。
+| 方法 | 路径 | 功能与约束 |
+| --- | --- | --- |
+| GET | `/api/health` | 健康检查，返回当前运行时模式 |
+| GET | `/api/scenarios` | mock Chat fixture 列表，供快捷项 |
+| POST | `/api/demo/long-conversation` | 生成长会话事件集；仅压测，不作产品接口 |
+| GET | `/api/runtime` | 当前模式、模型、模型目录、docs/releases 计数 |
+| POST | `/api/runtime` | `{ mode, modelId? }` 切换全局运行时；无 Key 切 agent 返回 409 |
+| GET | `/api/kb/docs` | 知识库文档 `{ id, title }` |
+| GET | `/api/threads` | Chat 会话列表，按 `updatedAt` 倒序 |
+| GET | `/api/threads/:threadId/runs` | Chat 物化快照分页，`cursor` / `limit`（≤ 50） |
+| POST | `/api/runs` | 创建 Chat run，返回 `runId / threadId / kind` |
+| GET | `/api/runs/:runId/events` | Chat SSE 事件流 |
+| POST | `/api/runs/:runId/cancel` | 协作式取消 |
+| GET | `/api/runs/:runId/spans` | 从事件派生 `Span[]` |
+| POST | `/api/runs/:runId/pause` | 暂停并自动恢复；仅 mock |
+| POST | `/api/approvals/:approvalId` | 工具审批；仅 mock |
+| GET | `/api/releases/scenarios` | 发版场景列表 |
+| GET | `/api/releases/threads` | Release 会话列表 |
+| GET | `/api/releases/threads/:threadId/runs` | Release 物化快照分页 |
+| POST | `/api/releases` | `{ scenarioId?, threadId?, sourceRunId? }` 启动发版 run |
+| POST | `/api/releases/runs/:runId/rollback` | 创建回滚 child run；仅成功完成的非回滚 run |
+| POST | `/api/releases/runs/:runId/cancel` | 取消 Release run |
+| GET | `/api/releases/runs/:runId/events` | Release SSE 事件流 |
+| GET | `/api/releases/runs/:runId/spans` | 派生 span，活跃或已落库 run 均可 |
+| GET | `/api/releases/runs/:runId/events.json` | 原始事件快照，供调试与回放 |
+| POST | `/api/releases/approvals/:approvalId` | 阶段审批 |
+| GET | `/api/releases/runs/:runId/artifacts/:artifactId` | 拉取 artifact 内容 |
+
+路由分发：
+
+- `POST /api/runs` 按当前全局模式分发到 agent 或 mock；其余 run 级接口按 run 归属分发，切换模式不影响在跑 run。
+- mock 独有的暂停与工具审批接口在 agent 模式下不可用。
+- 创建类接口返回 `{ runId, threadId, kind }`；快照分页返回 `RunHistoryPage`；spans 返回 `{ spans }`；artifact 返回 `{ mime, body }`；错误统一 `{ error }`，可带 `code`。
+- 当前版本无鉴权与 CORS 配置，部署前需补。
 
 SSE 约定：
 
@@ -469,3 +494,4 @@ export interface Span {
 | 2026-10-29 | v1 | `run.started` 增加可选 `sourceRunId`，记录 Chat → Release handoff 来源 |
 | 2026-10-29 | v1 | 新增 `guard.blocked`，记录安全拦截类别；RunState 增加 `guards` |
 | 2026-10-30 | v1 | `run.started` 增加可选 `runtime`（`mode / provider / model`），快照 run 启动时的运行时；新增 `POST /api/runtime` 切换全局模式 |
+| 2026-10-30 | v1 | 补全 HTTP 接口清单（25 个）与路由分发、响应与错误语义 |
