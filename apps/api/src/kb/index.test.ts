@@ -44,6 +44,14 @@ describe("KnowledgeBase", () => {
     expect(doc?.content).toContain("灰度");
   });
 
+  it("列表返回元数据供目录树分组", () => {
+    const doc = kb.list().find((item) => item.id === "release-runbook");
+
+    expect(doc?.title).toBe("发版 Runbook");
+    expect(doc?.metadata?.service).toBe("checkout-service");
+    expect(doc?.metadata?.type).toBe("runbook");
+  });
+
   it("中文按 bigram、英文按词切分", () => {
     expect(tokenize("支付回调")).toEqual(["支付", "付回", "回调"]);
     expect(tokenize("INC-042 checkout-service")).toEqual([

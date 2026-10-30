@@ -26,6 +26,16 @@ export function createChatApi(deps: ChatApiDeps): Hono {
 
   app.get("/api/kb/docs", (c) => c.json({ docs: deps.kb.list() }));
 
+  app.get("/api/kb/docs/:docId", (c) => {
+    const doc = deps.kb.get(c.req.param("docId"));
+
+    if (!doc) {
+      return c.json({ error: "文档不存在" }, 404);
+    }
+
+    return c.json({ doc });
+  });
+
   app.get("/api/threads", (c) => c.json({ threads: deps.threads.list() }));
 
   app.get("/api/threads/:threadId/runs", (c) => {

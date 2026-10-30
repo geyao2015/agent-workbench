@@ -20,6 +20,12 @@ export interface KnowledgeDoc {
   metadata?: DocMetadata;
 }
 
+export interface KnowledgeDocSummary {
+  id: string;
+  title: string;
+  metadata?: DocMetadata;
+}
+
 export interface KnowledgeChunk {
   id: string;
   sourceId: string;
@@ -239,8 +245,12 @@ export class KnowledgeBase {
     return new KnowledgeBase(docs, chunks);
   }
 
-  list(): Array<{ id: string; title: string }> {
-    return [...this.docs.values()].map(({ id, title }) => ({ id, title }));
+  list(): KnowledgeDocSummary[] {
+    return [...this.docs.values()].map(({ id, title, metadata }) => ({
+      id,
+      title,
+      ...(metadata ? { metadata } : {}),
+    }));
   }
 
   get(sourceId: string): KnowledgeDoc | undefined {

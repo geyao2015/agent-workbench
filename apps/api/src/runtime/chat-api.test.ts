@@ -82,10 +82,25 @@ function makeApp(
   agentApi.post("/api/runs/:runId/cancel", (c) =>
     c.json({ cancelled: true, owner: "agent" }),
   );
+  const kbDoc = {
+    id: "release-runbook",
+    title: "发版 Runbook",
+    content: "# 发版 Runbook\n\n按灰度批次推进。",
+    metadata: {
+      service: "checkout-service",
+      type: "runbook",
+      tags: ["release"],
+    },
+  };
   const app = createChatApi({
     controller,
     threads,
-    kb: { list: () => [] } as unknown as KnowledgeBase,
+    kb: {
+      list: () => [
+        { id: kbDoc.id, title: kbDoc.title, metadata: kbDoc.metadata },
+      ],
+      get: (docId: string) => (docId === kbDoc.id ? kbDoc : undefined),
+    } as unknown as KnowledgeBase,
     agentApi,
     mock,
     docs: 16,
@@ -94,6 +109,37 @@ function makeApp(
 
   return { app, controller, threads };
 }
+
+describe("知识库文档接口", () => {
+  it("列表返回标题与元数据", async () => {
+    const { app } = makeApp();
+    const response = await app.request("/api/kb/docs");
+    const data = (await response.json()) as {
+      docs: Array<{ id: string; metadata?: { service?: string } }>;
+    };
+
+    expect(data.docs[0]?.id).toBe("release-runbook");
+    expect(data.docs[0]?.metadata?.service).toBe("checkout-service");
+  });
+
+  it("按 id 返回全文，未知 id 返回 404", async () => {
+    const { app } = makeApp();
+    const response = await app.request("/api/kb/docs/release-runbook");
+
+    expect(response.status).toBe(200);
+
+    const data = (await response.json()) as {
+      doc: { id: string; content: string };
+    };
+
+    expect(data.doc.id).toBe("release-runbook");
+    expect(data.doc.content).toContain("灰度批次");
+
+    const missing = await app.request("/api/kb/docs/unknown-doc");
+
+    expect(missing.status).toBe(404);
+  });
+});
 
 describe("chat api 运行时分发", () => {
   it("runtime 信息包含模式、模型列表与可用性", async () => {

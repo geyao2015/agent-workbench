@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { FormEvent } from "react";
 
-import { Activity, Gauge, RotateCcw } from "lucide-react";
+import { Activity, Gauge, Library, RotateCcw } from "lucide-react";
 
 import {
   createRunState,
@@ -19,6 +19,7 @@ import { EmptyState } from "@/components/chat/empty-state";
 import { ThreadSidebar } from "@/components/chat/thread-sidebar";
 import { EventInspector } from "@/components/devtools/event-inspector";
 import { PerformancePanel } from "@/components/devtools/performance-panel";
+import { KbBrowser } from "@/components/kb/kb-browser";
 import { Button } from "@/components/ui/button";
 import { buildChatRows, type ChatRun } from "@/lib/chat/chat-rows";
 import { useChatQueue } from "@/lib/chat/use-chat-queue";
@@ -74,6 +75,7 @@ export function ChatView() {
   const [runs, setRuns] = useState<ChatRun[]>([]);
   const [events, setEvents] = useState<AgentEvent[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
+  const [isKbOpen, setIsKbOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { activePanel, togglePanel, closePanel } = useSidePanel();
   const [isStopping, setIsStopping] = useState(false);
@@ -91,6 +93,7 @@ export function ChatView() {
   const [isLoadingThreads, setIsLoadingThreads] = useState(false);
   const [isLoadingEarlier, setIsLoadingEarlier] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
+  const kbTriggerRef = useRef<HTMLButtonElement | null>(null);
   const runIdRef = useRef<string | null>(null);
   const threadIdRef = useRef<string | null>(null);
   const lastEventIdRef = useRef<string | null>(null);
@@ -749,6 +752,16 @@ export function ChatView() {
         }
       >
         <Button
+          ref={kbTriggerRef}
+          variant="outline"
+          size="sm"
+          onClick={() => setIsKbOpen(true)}
+          aria-haspopup="dialog"
+        >
+          <Library />
+          <span className="sr-only lg:not-sr-only">知识库</span>
+        </Button>
+        <Button
           variant="outline"
           size="sm"
           onClick={() => togglePanel("events")}
@@ -757,7 +770,7 @@ export function ChatView() {
           <Activity />
           <span className="sr-only lg:not-sr-only">事件</span>
           <span
-            className="inline-block w-[3ch] shrink-0 text-right font-mono tabular-nums"
+            className="hidden w-[3ch] shrink-0 text-right font-mono tabular-nums sm:inline-block"
             title={String(events.length)}
           >
             {eventCountLabel}
@@ -863,6 +876,15 @@ export function ChatView() {
 
         <div id="notes-root" className="contents" />
       </div>
+
+      {isKbOpen ? (
+        <KbBrowser
+          onClose={() => {
+            setIsKbOpen(false);
+            requestAnimationFrame(() => kbTriggerRef.current?.focus());
+          }}
+        />
+      ) : null}
     </div>
   );
 }
