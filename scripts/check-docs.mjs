@@ -7,31 +7,31 @@ const docs = [
   "README.md",
   "AGENTS.md",
   "CLAUDE.md",
-  "docs/decision.md",
-  "docs/plan.md",
-  "docs/protocol.md",
-  "docs/rendering.md",
-  "docs/dependencies.md",
-  "docs/glossary.md",
-  "docs/showcase.md",
-  "docs/multimodal.md",
-  "docs/agent-map.md",
-  "docs/evaluation.md",
+  "docs/product/decision.md",
+  "docs/product/plan.md",
+  "docs/product/showcase.md",
+  "docs/architecture/agent-map.md",
+  "docs/architecture/protocol.md",
+  "docs/architecture/rendering.md",
+  "docs/architecture/multimodal.md",
+  "docs/quality/evaluation.md",
+  "docs/reference/dependencies.md",
+  "docs/reference/glossary.md",
 ];
 const budgets = {
   "README.md": 140,
   "AGENTS.md": 110,
   "CLAUDE.md": 20,
-  "docs/decision.md": 130,
-  "docs/plan.md": 100,
-  "docs/protocol.md": 500,
-  "docs/rendering.md": 100,
-  "docs/dependencies.md": 100,
-  "docs/glossary.md": 80,
-  "docs/showcase.md": 80,
-  "docs/multimodal.md": 80,
-  "docs/agent-map.md": 80,
-  "docs/evaluation.md": 100,
+  "docs/product/decision.md": 130,
+  "docs/product/plan.md": 100,
+  "docs/product/showcase.md": 80,
+  "docs/architecture/agent-map.md": 80,
+  "docs/architecture/protocol.md": 500,
+  "docs/architecture/rendering.md": 100,
+  "docs/architecture/multimodal.md": 80,
+  "docs/quality/evaluation.md": 100,
+  "docs/reference/dependencies.md": 100,
+  "docs/reference/glossary.md": 80,
 };
 
 let failures = 0;
@@ -177,11 +177,17 @@ for (const positions of seenTables.values()) {
   }
 }
 
+const docsPaths = {
+  decision: "docs/product/decision.md",
+  plan: "docs/product/plan.md",
+  protocol: "docs/architecture/protocol.md",
+};
+
 for (const doc of data.values()) {
   const { file, lines, code } = doc;
   for (let i = 0; i < lines.length; i += 1) {
     if (code[i]) continue;
-    const pattern = /(?:docs\/)?(README|AGENTS|decision|plan|protocol)\.md\s*§(\d+)/g;
+    const pattern = /(?:docs\/(?:[a-z]+\/)?)?(README|AGENTS|decision|plan|protocol)\.md\s*§(\d+)/g;
     let match;
     while ((match = pattern.exec(lines[i])) !== null) {
       const target =
@@ -189,7 +195,7 @@ for (const doc of data.values()) {
           ? "README.md"
           : match[1] === "AGENTS"
             ? "AGENTS.md"
-            : `docs/${match[1]}.md`;
+            : docsPaths[match[1]];
       const targetDoc = data.get(target);
       if (targetDoc && !targetDoc.sections.has(Number(match[2]))) {
         fail(file, `引用了不存在的章节：${match[0]}`, i + 1);

@@ -2,13 +2,13 @@
 
 最后更新：2026-10-30
 
-本文件是决策与理由的唯一来源。产品定位与功能范围见 [README.md](../README.md)；执行计划与待办见 [plan.md](plan.md)；协议契约见 [protocol.md](protocol.md)。
+本文件是决策与理由的唯一来源。产品定位与功能范围见 [README.md](../../README.md)；执行计划与待办见 [plan.md](plan.md)；协议契约见 [protocol.md](../architecture/protocol.md)。
 
 ## 1. 架构与协议决策
 
 - **两个场景，不合并界面**：Chat 与 Release 共享 runtime、协议和组件，但保持独立界面。理由：Chat 是渲染能力主展示面，Release 是结构化执行面，合并会同时牺牲两者。
 - **Chat 保持 Agent 属性**：保留工具循环、会话记忆和多步任务；不得退化为纯 RAG 问答链。
-- **协议优先**：先定义 append-only `AgentEvent` v1（`runId / messageId / blockId / toolCallId / seq`），再做 UI；冻结与版本规则见 [protocol.md §9](protocol.md#9-版本与兼容)。
+- **协议优先**：先定义 append-only `AgentEvent` v1（`runId / messageId / blockId / toolCallId / seq`），再做 UI；冻结与版本规则见 [protocol.md §9](../architecture/protocol.md#9-版本与兼容)。
 - **Mock 是事件 fixture 回放器**，不是"关键词 → 假文本"；快捷选项对应完整事件序列。
 - **transport 统一抽象**为 `AsyncIterable<AgentEvent>`；mock 与真实 SSE 共用同一个 reducer。
 - **领域事件与 telemetry 分离**：`AgentEvent` 驱动 UI；`Span`（OTel 风格）进 trace store，通过 `runId / spanId / toolCallId` 关联，不混入事件流。
@@ -44,7 +44,7 @@
 1. 流式 Markdown：块级增量解析、稳定 blockId、闭合块冻结、未闭合 fence/表格/强调降级；避免每 token 全量 parse 和整树重渲染。
 2. 长会话性能：块级虚拟化、闭合块 memo、按块订阅（`useSyncExternalStore`）、rAF 合并 token 增量；目标 10k 块稳定 60fps。
 3. 工具调用与运行状态：半截 JSON 参数解析、工具状态机、reasoning 折叠、interrupt/审批 UI。
-- 工具调用、审批、阶段、artifact 等有生命周期或交互的内容作为事件驱动的时间线行，不嵌入 Markdown；引用等只读轻量信息可内联到 Markdown。理由见 [rendering.md §2](rendering.md#2-工具与引用的渲染边界)。
+- 工具调用、审批、阶段、artifact 等有生命周期或交互的内容作为事件驱动的时间线行，不嵌入 Markdown；引用等只读轻量信息可内联到 Markdown。理由见 [rendering.md §2](../architecture/rendering.md#2-工具与引用的渲染边界)。
 
 所有深挖点都要有可量化证据：渲染次数、帧率、首 token 延迟、内存。
 
@@ -72,7 +72,7 @@
 ## 6. Release 场景决策
 
 - Release 在模拟环境中执行。理由：作品集不需要真实环境，同时避免真实凭证与 NDA 风险；审批、审计、回滚仍可完整演示。
-- 数据与合规要求见 [README.md §7](../README.md#7-非目标) 与 [§10](../README.md#10-数据与合规)。
+- 数据与合规要求见 [README.md §7](../../README.md#7-非目标) 与 [§10](../../README.md#10-数据与合规)。
 
 ## 7. 求职叙事
 
@@ -85,8 +85,8 @@
 ## 8. 待确认
 
 - 部署执行细节：后端 Render 或 Fly 二选一、实例规格、持久卷与跨域 SSE 实测（部署时确认）。
-- 语音输入选型：Web Speech（快、跨浏览器受限）vs 服务端 Whisper / 流式 ASR；第一版倾向 Web Speech adapter，见 [multimodal.md §4](multimodal.md#4-服务端与模型)。
-- 图片存储与发送策略：保留时长、是否默认发模型 provider、EXIF 清理规则，见 [multimodal.md §5](multimodal.md#5-安全与隐私)。
+- 语音输入选型：Web Speech（快、跨浏览器受限）vs 服务端 Whisper / 流式 ASR；第一版倾向 Web Speech adapter，见 [multimodal.md §4](../architecture/multimodal.md#4-服务端与模型)。
+- 图片存储与发送策略：保留时长、是否默认发模型 provider、EXIF 清理规则，见 [multimodal.md §5](../architecture/multimodal.md#5-安全与隐私)。
 - 视觉模型支持与成本：当前 provider 是否支持图片、超限如何降级，需真实 Key 验证。
 
 ## 9. 变更记录

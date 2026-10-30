@@ -2,7 +2,7 @@
 
 最后更新：2026-10-29
 
-本文件记录前端渲染实现、增量 Markdown 分段优化与性能数据。执行计划见 [plan.md](plan.md)，协议契约见 [protocol.md](protocol.md)，渲染目标见 [decision.md §3](decision.md#3-前端三个深挖点)。
+本文件记录前端渲染实现、增量 Markdown 分段优化与性能数据。执行计划见 [plan.md](../product/plan.md)，协议契约见 [protocol.md](protocol.md)，渲染目标见 [decision.md §3](../product/decision.md#3-前端三个深挖点)。
 
 ## 1. 数据流
 

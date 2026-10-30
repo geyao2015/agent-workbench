@@ -2,7 +2,7 @@
 
 最后更新：2026-10-29
 
-本文件是评测数据集、指标与基线的唯一来源。执行计划见 [plan.md](plan.md)，渲染性能见 [rendering.md](rendering.md)，产品状态见 [README.md](../README.md)。
+本文件是评测数据集、指标与基线的唯一来源。执行计划见 [plan.md](../product/plan.md)，渲染性能见 [rendering.md](../architecture/rendering.md)，产品状态见 [README.md](../../README.md)。
 
 ## 1. 数据集
 
@@ -52,7 +52,7 @@
 
 - Trace 从 run 事件日志派生：`agent.run`、`stage.*`、`tool.*`、`approval.wait`，包含耗时、状态与 token usage。
 - Release 详情 Trace tab 展示 waterfall；当前没有独立的模型调用 Span，细粒度模型 telemetry 待 runtime 埋点。
-- 渲染性能基线见 [rendering.md §5](rendering.md#5-性能数据)。
+- 渲染性能基线见 [rendering.md §5](../architecture/rendering.md#5-性能数据)。
 - token 来自 `run.completed.usage`；成本需要提供 provider 单价后才能计算，当前不展示估算成本。
 
 ## 6. 尚未评测

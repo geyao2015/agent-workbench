@@ -2,7 +2,7 @@
 
 > 从知识库对话到可审计发版。一个用于求职展示的研发 Agent 工作台：Chat 基于工程知识库对话，Release 执行可审计的发版流程。
 
-**状态：核心链路已完成（Chat、Release、Trace 与离线评测；真实模型端到端待配置 Key）。** 技术选型与待确认项见 [docs/decision.md](docs/decision.md)；执行计划与待办见 [docs/plan.md](docs/plan.md)；事件协议见 [docs/protocol.md](docs/protocol.md)。
+**状态：核心链路已完成（Chat、Release、Trace 与离线评测；真实模型端到端待配置 Key）。** 技术选型与待确认项见 [docs/product/decision.md](docs/product/decision.md)；执行计划与待办见 [docs/product/plan.md](docs/product/plan.md)；事件协议见 [docs/architecture/protocol.md](docs/architecture/protocol.md)。
 
 本文件是产品事实的唯一来源：项目定位、场景、演示流程、功能范围、非目标、当前状态、仓库结构与文档索引。
 
@@ -47,7 +47,7 @@ flowchart LR
   Web --> Protocol
 ```
 
-关键设计决策见 [docs/decision.md §1](docs/decision.md#1-架构与协议决策)；技术选型与运行方式见 [docs/decision.md §2](docs/decision.md#2-技术选型与运行方式)。
+关键设计决策见 [docs/product/decision.md §1](docs/product/decision.md#1-架构与协议决策)；技术选型与运行方式见 [docs/product/decision.md §2](docs/product/decision.md#2-技术选型与运行方式)。
 
 ## 5. 仓库结构
 
@@ -64,7 +64,7 @@ agent-workbench/
 │   ├── docs/             合成工程文档（知识库）
 │   ├── eval/             检索 / RCA / 答案评测集与日志
 │   └── releases/         合成发版场景与玩具仓库
-├── docs/                 决策 / 计划 / 能力地图 / 协议 / 渲染 / 评测 / 多模态
+├── docs/                 product / architecture / quality / reference
 ├── scripts/              文档检查、fixture 生成、渲染基准
 ├── playwright.config.ts  E2E 配置
 ├── .env.example / .data/  环境变量示例；本地会话数据（gitignore）
@@ -115,20 +115,20 @@ pnpm bench:streaming        # 流式渲染基准，结果写入 data/bench/resul
 
 默认不配置模型 Key 时自动使用 fixture mock 运行时；配置 `ANTHROPIC_API_KEY` 或 `OPENAI_API_KEY`（可配 `OPENAI_BASE_URL` / `OPENAI_MODEL`）后启用实时 Agent。环境变量示例见 [.env.example](.env.example)，知识库位于 `data/docs/`，会话数据写入本地 `.data/`。
 
-待办分组、验收标准与已知限制见 [docs/plan.md](docs/plan.md)。
+待办分组、验收标准与已知限制见 [docs/product/plan.md](docs/product/plan.md)。
 
 ## 9. 文档索引
 
-- [docs/decision.md](docs/decision.md) — 技术选型、架构与范围决策、求职叙事、待确认项、变更记录
-- [docs/plan.md](docs/plan.md) — 执行计划、待办分组、验收标准与已知限制
-- [docs/agent-map.md](docs/agent-map.md) — Agent 应用难点分层、能力覆盖与推进顺序
-- [docs/protocol.md](docs/protocol.md) — AgentEvent / Span 协议草案与 fixture 格式
-- [docs/rendering.md](docs/rendering.md) — 渲染实现、增量分段与性能数据
-- [docs/multimodal.md](docs/multimodal.md) — 语音输入、图片上传与识别的规划与安全边界
-- [docs/dependencies.md](docs/dependencies.md) — 三方依赖、版本与用途
-- [docs/glossary.md](docs/glossary.md) — 个人术语笔记（Thread / Run 等概念）
-- [docs/showcase.md](docs/showcase.md) — 页面展示亮点与演示编排（待设计）
-- [docs/evaluation.md](docs/evaluation.md) — 评测集、指标与基线
+- [docs/product/decision.md](docs/product/decision.md) — 技术选型、架构与范围决策、求职叙事、待确认项、变更记录
+- [docs/product/plan.md](docs/product/plan.md) — 执行计划、待办分组、验收标准与已知限制
+- [docs/product/showcase.md](docs/product/showcase.md) — 页面展示亮点与演示编排（待设计）
+- [docs/architecture/agent-map.md](docs/architecture/agent-map.md) — Agent 应用难点分层、能力覆盖与推进顺序
+- [docs/architecture/protocol.md](docs/architecture/protocol.md) — AgentEvent / Span 协议草案与 fixture 格式
+- [docs/architecture/rendering.md](docs/architecture/rendering.md) — 渲染实现、增量分段与性能数据
+- [docs/architecture/multimodal.md](docs/architecture/multimodal.md) — 语音输入、图片上传与识别的规划与安全边界
+- [docs/quality/evaluation.md](docs/quality/evaluation.md) — 评测集、指标与基线
+- [docs/reference/dependencies.md](docs/reference/dependencies.md) — 三方依赖、版本与用途
+- [docs/reference/glossary.md](docs/reference/glossary.md) — 个人术语笔记（Thread / Run 等概念）
 - [AGENTS.md](AGENTS.md) — AI 工作规则与文档来源约定
 - [CLAUDE.md](CLAUDE.md) — Claude Code 加载入口
 

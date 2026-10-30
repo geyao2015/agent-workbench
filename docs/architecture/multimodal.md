@@ -2,7 +2,7 @@
 
 最后更新：2026-10-29
 
-状态：规划中，尚未实现。执行计划见 [plan.md](plan.md) 的输入框分组；待确认项只在 [decision.md §8](decision.md#8-待确认) 维护。
+状态：规划中，尚未实现。执行计划见 [plan.md](../product/plan.md) 的输入框分组；待确认项只在 [decision.md §8](../product/decision.md#8-待确认) 维护。
 
 ## 1. 范围
 

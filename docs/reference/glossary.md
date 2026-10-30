@@ -2,7 +2,7 @@
 
 最后更新：2026-10-29
 
-个人笔记，用于回顾概念和沟通用词；规范定义以 [protocol.md](protocol.md) 和 [decision.md](decision.md) 为准。
+个人笔记，用于回顾概念和沟通用词；规范定义以 [protocol.md](../architecture/protocol.md) 和 [decision.md](../product/decision.md) 为准。
 
 ## 核心概念地图（边界 → 内容 → 状态 → 传播）
 
@@ -13,7 +13,7 @@
 | 状态模型 | AgentEvent / Reducer / 投影 | append-only 事件日志是唯一事实源，界面是它的投影 |
 | 传播与验证 | Transport / Fixture / Span | mock 与 SSE 共用 reducer；fixture 是契约；Span 走独立通道 |
 
-字段级定义见 [protocol.md §3–§8](protocol.md#3-事件信封)，渲染边界见 [rendering.md §2](rendering.md#2-工具与引用的渲染边界)。
+字段级定义见 [protocol.md §3–§8](../architecture/protocol.md#3-事件信封)，渲染边界见 [rendering.md §2](../architecture/rendering.md#2-工具与引用的渲染边界)。
 
 ## Thread 与 Run
 
@@ -41,7 +41,7 @@
 - 只做不可变更新，不碰时钟、随机数、DOM 和网络；时间取自 `event.ts`。
 - `text.delta` 有两条路径：带 `blockId` 直接追加且拒写已闭合块；不带则对未闭合尾块重新分段，已闭合前缀不动。
 - mock fixture 与真实 SSE 共用它，所以换 transport、回放、单测都不需要改 reducer。
-- 正式契约见 [protocol.md §5](protocol.md#5-reducer-契约)。
+- 正式契约见 [protocol.md §5](../architecture/protocol.md#5-reducer-契约)。
 
 ## Agent 应用最小概念
 

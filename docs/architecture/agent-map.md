@@ -2,7 +2,7 @@
 
 最后更新：2026-10-29
 
-本文件把 Agent 应用的难点按能力层拆开，用于排期和查缺口；执行计划与验收仍以 [plan.md](plan.md) 为准，架构决策见 [decision.md](decision.md)，协议契约见 [protocol.md](protocol.md)。
+本文件把 Agent 应用的难点按能力层拆开，用于排期和查缺口；执行计划与验收仍以 [plan.md](../product/plan.md) 为准，架构决策见 [decision.md](../product/decision.md)，协议契约见 [protocol.md](protocol.md)。
 
 状态：✅ 有完整纵切与证据；◐ 有基础未闭环；○ 只有规划。
 
@@ -48,6 +48,6 @@ Agent 核心   Loop / Tool / Context & Memory / RAG / 结构化输出
 
 ## 4. 维护规则
 
-- 完成一个能力层切片后更新“现状/下一步”，待办状态同步到 [plan.md](plan.md)。
+- 完成一个能力层切片后更新“现状/下一步”，待办状态同步到 [plan.md](../product/plan.md)。
 - 不把功能清单写进本文件；只写难点、缺口和证据。
 - 新增层或改变顺序前先确认，不顺手扩大范围。

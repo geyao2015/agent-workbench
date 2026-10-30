@@ -2,7 +2,7 @@
 
 最后更新：2026-10-30
 
-本文件是执行计划、待办分组、验收标准与已知限制的唯一来源；能力缺口与推进顺序见 [agent-map.md](agent-map.md)，架构决策见 [decision.md](decision.md)，协议契约见 [protocol.md](protocol.md)。
+本文件是执行计划、待办分组、验收标准与已知限制的唯一来源；能力缺口与推进顺序见 [agent-map.md](../architecture/agent-map.md)，架构决策见 [decision.md](decision.md)，协议契约见 [protocol.md](../architecture/protocol.md)。
 
 ## 1. 当前状态
 
@@ -21,8 +21,8 @@
 ### 3.1 输入框
 
 - [ ] 思考模式开关：运行时切换思考/非思考，经 `modelKwargs` 透传；前置是解决 GLM 关思考后流式 `tool_call` delta 缺 `role`、LangChain 丢块。
-- [ ] 语音输入：Web Speech adapter 优先，选型见 [decision.md §8](decision.md#8-待确认)；交互与降级见 [multimodal.md §2](multimodal.md#2-交互)。
-- [ ] 图片识别：上传、预览、视觉模型回答、mock 降级；安全边界见 [multimodal.md §5](multimodal.md#5-安全与隐私)。
+- [ ] 语音输入：Web Speech adapter 优先，选型见 [decision.md §8](decision.md#8-待确认)；交互与降级见 [multimodal.md §2](../architecture/multimodal.md#2-交互)。
+- [ ] 图片识别：上传、预览、视觉模型回答、mock 降级；安全边界见 [multimodal.md §5](../architecture/multimodal.md#5-安全与隐私)。
 - [ ] 文件与音视频上传：输入框支持图片、文件、音视频附件。
 
 ### 3.2 会话内容
