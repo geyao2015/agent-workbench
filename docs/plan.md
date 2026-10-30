@@ -86,8 +86,7 @@ M0 之前不做 M1 及以后的内容。
 - [x] RCA 评测集：10 个合成事故，证据定位与 runbook 检索；`pnpm eval:rca`。
 - [ ] 统计看板（性能 + 计费）：把 `PerformancePanel` 升级为统计看板，分「性能」「计费」两类；性能补真实 provider 首 token 与端到端延迟，计费按模型单价汇总 `run.completed.usage` 的 token 与成本并按 run / thread 聚合，无 Key 时标注 mock。
 - [ ] 真实 provider 基线（统计看板前置）：用免费额度的 OpenAI 兼容 provider 跑通一次真实调用，拿到单价与延迟数据。
-- [ ] 多模型切换与思考开关：运行时选择 provider / 模型 / 是否开启思考，不再靠改 `.env` 重启；思考开关需走 `modelKwargs` 透传。
-- [ ] 已知阻塞（多模型切换前置）：GLM 关闭思考后流式 tool_call delta 不带 `role`，LangChain 转换会丢块，第二轮起回答为空；需换流式解析路径或降级为非流式。
+- [ ] 多模型切换与思考开关：运行时选择 provider / 模型 / 思考模式，思考开关走 `modelKwargs` 透传；前置是解决 GLM 关思考后流式 tool_call delta 缺 `role`、LangChain 丢块的问题。
 - [x] 对话追加（客户端队列）：流式期间继续输入并排队，当前 run 结束后自动发送；取消、新会话、切换历史清空队列；E2E 覆盖自动发送与取消清空。
 - [ ] 对话分支：从指定消息拆出 branch thread；需要 `branchFrom` / `parentThreadId` 元数据和事件前缀/快照 fork。
 - [ ] 服务端队列：把追加队列移到 RunRegistry，解决多标签页一致性与 409 单活跃 run 约束；当前版本队列只在单页内存中。
