@@ -2,7 +2,6 @@ import { fileURLToPath } from "node:url";
 
 import { describe, expect, it } from "vitest";
 
-import type { RuntimeConfig } from "../config.js";
 import {
   createConflictResolver,
   DeterministicConflictResolver,
@@ -110,17 +109,8 @@ describe("conflict resolution", () => {
     expect(invalidResult.fallbackReason).toContain("缺少文件");
   });
 
-  it("mock 模式固定使用确定性方案", () => {
-    const config: RuntimeConfig = {
-      mode: "mock",
-      conflictMode: "auto",
-      port: 0,
-      docsDir: "",
-      releasesDir: "",
-      storeDir: "",
-    };
-
-    expect(createConflictResolver(config)).toBeInstanceOf(
+  it("没有可用模型时固定使用确定性方案", () => {
+    expect(createConflictResolver(undefined, "auto")).toBeInstanceOf(
       DeterministicConflictResolver,
     );
   });

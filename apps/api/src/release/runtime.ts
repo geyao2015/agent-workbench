@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import type { Risk } from "@agent-workbench/protocol";
 
 import type { KnowledgeBase } from "../kb/index.js";
+import type { RuntimeSelection } from "../runtime/controller.js";
 import type { ActiveRun, RunRegistry } from "../runs/run-registry.js";
 import type { ApprovalRegistry } from "./approvals.js";
 import type { ArtifactStore } from "./artifacts.js";
@@ -621,6 +622,11 @@ export class ScenarioNotFoundError extends Error {
   }
 }
 
+export interface ReleaseRuntimeSource {
+  snapshot(): RuntimeSelection;
+  resolveConflictResolver(selection: RuntimeSelection): ConflictResolver;
+}
+
 export class ReleaseService {
   private readonly scenarios: ReleaseScenario[];
 
@@ -630,7 +636,7 @@ export class ReleaseService {
       scenarios: ReleaseScenario[];
       artifacts: ArtifactStore;
       approvals: ApprovalRegistry;
-      conflictResolver: ConflictResolver;
+      runtime: ReleaseRuntimeSource;
       kb: KnowledgeBase;
     },
   ) {
@@ -668,14 +674,20 @@ export class ReleaseService {
       throw new ScenarioNotFoundError(input.scenarioId ?? "default");
     }
 
+    const selection = this.deps.runtime.snapshot();
     const { run, signal } = this.deps.registry.begin({
       kind: "release",
       title: `${scenario.title} · ${scenario.service}`,
       threadId: input.threadId,
       ...(input.sourceRunId ? { sourceRunId: input.sourceRunId } : {}),
+      runtime: {
+        mode: selection.mode,
+        ...(selection.provider ? { provider: selection.provider } : {}),
+        ...(selection.model ? { model: selection.model } : {}),
+      },
     });
 
-    void this.execute(run, scenario, signal);
+    void this.execute(run, scenario, signal, selection);
 
     return run;
   }
@@ -689,10 +701,16 @@ export class ReleaseService {
       throw new ScenarioNotFoundError(input.scenarioId ?? "default");
     }
 
+    const selection = this.deps.runtime.snapshot();
     const { run, signal } = this.deps.registry.begin({
       kind: "release",
       title: `回滚 ${scenario.version} → ${scenario.rollback.targetTag}`,
       parentRunId: input.parentRunId,
+      runtime: {
+        mode: selection.mode,
+        ...(selection.provider ? { provider: selection.provider } : {}),
+        ...(selection.model ? { model: selection.model } : {}),
+      },
     });
 
     void this.executeRuntime(
@@ -701,6 +719,7 @@ export class ReleaseService {
       signal,
       scenario.rollback.stages,
       "rollback",
+      selection,
       scenario.rollback.targetTag,
     );
 
@@ -711,6 +730,7 @@ export class ReleaseService {
     run: ActiveRun,
     scenario: ReleaseScenario,
     signal: AbortSignal,
+    selection: RuntimeSelection,
   ): Promise<void> {
     await this.executeRuntime(
       run,
@@ -718,6 +738,7 @@ export class ReleaseService {
       signal,
       scenario.stages,
       "release",
+      selection,
     );
   }
 
@@ -727,6 +748,7 @@ export class ReleaseService {
     signal: AbortSignal,
     stages: ReleaseScenario["stages"],
     mode: "release" | "rollback",
+    selection: RuntimeSelection,
     targetTag?: string,
   ): Promise<void> {
     try {
@@ -735,7 +757,7 @@ export class ReleaseService {
         scenario,
         artifacts: this.deps.artifacts,
         approvals: this.deps.approvals,
-        conflictResolver: this.deps.conflictResolver,
+        conflictResolver: this.deps.runtime.resolveConflictResolver(selection),
         kb: this.deps.kb,
         stages,
         mode,

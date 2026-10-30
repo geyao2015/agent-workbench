@@ -44,8 +44,13 @@ function makeManager() {
   const store = new ThreadStore(dir);
   const registry = new RunRegistry(store);
 
+  const runtime = {
+    snapshot: () => ({ mode: "agent" as const, version: 0 }),
+    resolveAgent: () => agent,
+  };
+
   return {
-    manager: new RunManager({ agent, kb, store, registry }),
+    manager: new RunManager({ runtime, kb, store, registry }),
     store,
     dir,
   };

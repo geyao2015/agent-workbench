@@ -2,7 +2,7 @@ import { HumanMessage, SystemMessage } from "@langchain/core/messages";
 import { z } from "zod";
 
 import { createChatModel } from "../agent/model.js";
-import type { RuntimeConfig } from "../config.js";
+import type { ConflictMode, ModelConfig } from "../config.js";
 import { resolveFiles } from "./diff.js";
 import type {
   ConflictResolution,
@@ -175,10 +175,13 @@ export function withFallback(
   };
 }
 
-export function createConflictResolver(config: RuntimeConfig): ConflictResolver {
+export function createConflictResolver(
+  config: ModelConfig | undefined,
+  conflictMode: ConflictMode,
+): ConflictResolver {
   const deterministic = new DeterministicConflictResolver();
 
-  if (config.mode !== "agent" || config.conflictMode === "fixture") {
+  if (!config || conflictMode === "fixture") {
     return deterministic;
   }
 

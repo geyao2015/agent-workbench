@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 
 import { createChatAgent } from "../agent/graph.js";
 import { AgentRunner } from "../agent/runner.js";
-import { loadRuntimeConfig } from "../config.js";
+import { loadRuntimeConfig, resolveModelConfig } from "../config.js";
 import { KnowledgeBase } from "../kb/index.js";
 import { loadReleaseScenarios } from "../release/scenario.js";
 import { RunLog } from "../runs/run-log.js";
@@ -119,8 +119,9 @@ export function evaluateAnswer(
 
 async function main() {
   const config = loadRuntimeConfig();
+  const model = resolveModelConfig(config);
 
-  if (config.mode !== "agent") {
+  if (!model) {
     console.log(
       "Answer evaluation skipped: configure ANTHROPIC_API_KEY or OPENAI_API_KEY.",
     );
@@ -134,7 +135,7 @@ async function main() {
   const scenarios = loadReleaseScenarios(
     fileURLToPath(new URL("../../../../data/releases", import.meta.url)),
   );
-  const agent = createChatAgent(config, kb, scenarios);
+  const agent = createChatAgent(model, kb, scenarios);
   const observations: Record<string, AnswerObservation> = {};
 
   for (const item of cases) {

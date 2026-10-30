@@ -4,6 +4,7 @@ import { inspectUserPrompt } from "../agent/guard.js";
 import { AgentRunner, type HistoryMessage } from "../agent/runner.js";
 import type { ChatAgent } from "../agent/graph.js";
 import type { KnowledgeBase } from "../kb/index.js";
+import type { RuntimeSelection } from "../runtime/controller.js";
 import type { ActiveRun, RunRegistry } from "./run-registry.js";
 import type { ThreadStore } from "./thread-store.js";
 
@@ -12,8 +13,13 @@ export interface CreateChatRunInput {
   threadId?: string;
 }
 
+export interface RunManagerRuntime {
+  snapshot(): RuntimeSelection;
+  resolveAgent(selection: RuntimeSelection): ChatAgent;
+}
+
 export interface RunManagerDeps {
-  agent: ChatAgent;
+  runtime: RunManagerRuntime;
   kb: KnowledgeBase;
   store: ThreadStore;
   registry: RunRegistry;
@@ -30,10 +36,16 @@ export class RunManager {
 
   createChatRun(input: CreateChatRunInput): ActiveRun {
     const title = input.prompt.replace(/\s+/g, " ").slice(0, 40);
+    const selection = this.deps.runtime.snapshot();
     const { run, signal } = this.deps.registry.begin({
       kind: "chat",
       title,
       threadId: input.threadId,
+      runtime: {
+        mode: selection.mode,
+        ...(selection.provider ? { provider: selection.provider } : {}),
+        ...(selection.model ? { model: selection.model } : {}),
+      },
     });
     const userMessageId = `msg_user_${randomUUID()}`;
     const assistantMessageId = `msg_assistant_${randomUUID()}`;
@@ -55,7 +67,7 @@ export class RunManager {
 
     const history = this.deps.store.historyMessages(run.threadId);
 
-    void this.execute(run, input.prompt, history, signal);
+    void this.execute(run, input.prompt, history, signal, selection);
 
     return run;
   }
@@ -73,6 +85,7 @@ export class RunManager {
     prompt: string,
     history: HistoryMessage[],
     signal: AbortSignal,
+    selection: RuntimeSelection,
   ): Promise<void> {
     const messageId = this.messageIds.get(run.runId);
 
@@ -114,7 +127,7 @@ export class RunManager {
       });
 
       const runner = new AgentRunner(
-        this.deps.agent,
+        this.deps.runtime.resolveAgent(selection),
         run.log,
         this.deps.kb,
         messageId,

@@ -32,12 +32,16 @@ function makeApp() {
   const registry = new RunRegistry(threads);
   const artifacts = new ArtifactStore(join(dir, "artifacts"));
   const approvals = new ApprovalRegistry();
+  const determinism = new DeterministicConflictResolver();
   const release = new ReleaseService({
     registry,
     scenarios,
     artifacts,
     approvals,
-    conflictResolver: new DeterministicConflictResolver(),
+    runtime: {
+      snapshot: () => ({ mode: "mock" as const, version: 0 }),
+      resolveConflictResolver: () => determinism,
+    },
     kb,
   });
   const app = createReleaseApi({

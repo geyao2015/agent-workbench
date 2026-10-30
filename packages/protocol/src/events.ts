@@ -43,6 +43,13 @@ const eventSchemas = [
       title: z.string().optional(),
       parentRunId: z.string().optional(),
       sourceRunId: z.string().optional(),
+      runtime: z
+        .object({
+          mode: z.enum(["agent", "mock"]),
+          provider: z.string().optional(),
+          model: z.string().optional(),
+        })
+        .optional(),
     }),
   ),
   event(

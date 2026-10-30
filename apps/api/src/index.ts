@@ -9,11 +9,11 @@ import { logger } from "hono/logger";
 
 import { createAgentApi } from "./agent-api.js";
 import { createChatAgent } from "./agent/graph.js";
-import { loadRuntimeConfig, publicRuntimeInfo, repoRoot } from "./config.js";
+import { loadRuntimeConfig, repoRoot } from "./config.js";
 import { loadFixtures, watchFixtures } from "./fixtures.js";
 import { KnowledgeBase } from "./kb/index.js";
 import { createLongConversationDemo } from "./mock/demo.js";
-import { registerMockRuntime } from "./mock/runtime.js";
+import { createMockRuntime } from "./mock/runtime.js";
 import { createReleaseApi } from "./release-api.js";
 import { ApprovalRegistry } from "./release/approvals.js";
 import { ArtifactStore } from "./release/artifacts.js";
@@ -23,6 +23,8 @@ import { loadReleaseScenarios } from "./release/scenario.js";
 import { RunManager } from "./runs/run-manager.js";
 import { RunRegistry } from "./runs/run-registry.js";
 import { ThreadStore } from "./runs/thread-store.js";
+import { createChatApi } from "./runtime/chat-api.js";
+import { RuntimeController } from "./runtime/controller.js";
 
 try {
   process.loadEnvFile(resolve(repoRoot, ".env"));
@@ -59,66 +61,60 @@ const registry = new RunRegistry(threads);
 const artifacts = new ArtifactStore(resolve(config.storeDir, "artifacts"));
 const approvals = new ApprovalRegistry();
 const releaseScenarios = loadReleaseScenarios(config.releasesDir);
-const conflictResolver = createConflictResolver(config);
+const controller = new RuntimeController(config, {
+  createAgent: (model) => createChatAgent(model, kb, releaseScenarios),
+  createConflictResolver: (model) =>
+    createConflictResolver(model, config.conflictMode),
+});
 const release = new ReleaseService({
   registry,
   scenarios: releaseScenarios,
   artifacts,
   approvals,
-  conflictResolver,
+  runtime: controller,
   kb,
 });
-const agentRuntime = (() => {
-  if (config.mode !== "agent") {
-    return undefined;
-  }
-
-  const agent = createChatAgent(config, kb, releaseScenarios);
-  const runs = new RunManager({ agent, kb, store: threads, registry });
-
-  return { runs };
-})();
+const runs = new RunManager({ runtime: controller, kb, store: threads, registry });
+const agentApi = createAgentApi({ runs });
+// mock 运行时：fixture 回放，保留暂停、审批与断线重放语义
+const mockRuntime = createMockRuntime(() => fixtures);
 
 const app = new Hono();
 
 app.use(logger());
 
-app.get("/api/health", (c) =>
-  c.json({
+app.get("/api/health", (c) => {
+  const mode = controller.snapshot().mode;
+
+  return c.json({
     status: "ok",
     service: "agent-workbench-api",
-    runtime: config.mode,
+    runtime: mode,
     message:
-      config.mode === "agent"
+      mode === "agent"
         ? "Hono agent runtime is running."
         : "Hono mock runtime is running. hello world!",
     timestamp: new Date().toISOString(),
-  }),
-);
-
-app.get("/api/runtime", (c) =>
-  c.json({
-    ...publicRuntimeInfo(config),
-    docs: kb.list().length,
-    releases: releaseScenarios.length,
-  }),
-);
+  });
+});
 
 app.route(
   "/",
   createReleaseApi({ release, registry, approvals, artifacts, threads }),
 );
 
-if (agentRuntime) {
-  app.route(
-    "/",
-    createAgentApi({
-      runs: agentRuntime.runs,
-      threads,
-      kb,
-    }),
-  );
-}
+app.route(
+  "/",
+  createChatApi({
+    controller,
+    threads,
+    kb,
+    agentApi,
+    mock: mockRuntime,
+    docs: kb.list().length,
+    releases: releaseScenarios.length,
+  }),
+);
 
 app.get("/api/scenarios", (c) =>
   c.json({
@@ -141,11 +137,6 @@ app.post("/api/demo/long-conversation", (c) => {
   }
 });
 
-// mock 运行时：fixture 回放，保留 M1 的暂停、审批与断线重放语义
-if (config.mode === "mock") {
-  registerMockRuntime(app, () => fixtures);
-}
-
 
 if (hasWebBuild) {
   app.use("/*", serveStatic({ root: webDist }));
@@ -154,10 +145,11 @@ if (hasWebBuild) {
 
 serve({ fetch: app.fetch, port }, (info) => {
   console.log(`API listening on http://localhost:${info.port}`);
+  const runtimeInfo = controller.info();
   console.log(
-    config.mode === "agent"
-      ? `Runtime: agent (${config.provider}/${config.model}) · KB ${kb.list().length} docs · Releases ${releaseScenarios.length}`
-      : `Runtime: mock · ${fixtures.size} fixtures · Releases ${releaseScenarios.length}`,
+    runtimeInfo.mode === "agent"
+      ? `Runtime: agent (${runtimeInfo.provider}/${runtimeInfo.model}) · KB ${kb.list().length} docs · Releases ${releaseScenarios.length}`
+      : `Runtime: mock · ${fixtures.size} fixtures · agent ${runtimeInfo.agentAvailable ? "available" : "unavailable"} · Releases ${releaseScenarios.length}`,
   );
   console.log(
     hasWebBuild

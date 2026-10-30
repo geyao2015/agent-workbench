@@ -1,9 +1,7 @@
 import { Hono } from "hono";
 
-import type { KnowledgeBase } from "./kb/index.js";
 import type { RunManager } from "./runs/run-manager.js";
 import { streamRunEvents } from "./runs/sse.js";
-import type { ThreadStore } from "./runs/thread-store.js";
 import { deriveSpans } from "./spans/derive.js";
 
 const MAX_PROMPT_LENGTH = 4000;
@@ -11,32 +9,10 @@ const MAX_THREAD_ID_LENGTH = 120;
 
 export interface AgentApiDeps {
   runs: RunManager;
-  threads: ThreadStore;
-  kb: KnowledgeBase;
 }
 
 export function createAgentApi(deps: AgentApiDeps): Hono {
   const app = new Hono();
-
-  app.get("/api/kb/docs", (c) => c.json({ docs: deps.kb.list() }));
-
-  app.get("/api/threads", (c) => c.json({ threads: deps.threads.list() }));
-
-  app.get("/api/threads/:threadId/runs", (c) => {
-    const cursor = c.req.query("cursor") ?? undefined;
-    const limit = Number(c.req.query("limit") ?? 20);
-    const page = deps.threads.page(
-      c.req.param("threadId"),
-      cursor,
-      Number.isFinite(limit) ? limit : undefined,
-    );
-
-    if (!page) {
-      return c.json({ error: "会话不存在" }, 404);
-    }
-
-    return c.json(page);
-  });
 
   app.post("/api/runs", async (c) => {
     const body = await c.req

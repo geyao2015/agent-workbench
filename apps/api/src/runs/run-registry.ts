@@ -36,6 +36,7 @@ export class RunRegistry {
     threadId?: string;
     parentRunId?: string;
     sourceRunId?: string;
+    runtime?: { mode: "agent" | "mock"; provider?: string; model?: string };
   }): { run: ActiveRun; signal: AbortSignal } {
     const threadId = input.threadId ?? `thread_${randomUUID()}`;
 
@@ -55,6 +56,7 @@ export class RunRegistry {
       title,
       ...(input.parentRunId ? { parentRunId: input.parentRunId } : {}),
       ...(input.sourceRunId ? { sourceRunId: input.sourceRunId } : {}),
+      ...(input.runtime ? { runtime: input.runtime } : {}),
     });
 
     const controller = new AbortController();

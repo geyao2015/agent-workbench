@@ -8,7 +8,7 @@ import {
 } from "@langchain/langgraph";
 import { ToolNode, toolsCondition } from "@langchain/langgraph/prebuilt";
 
-import type { RuntimeConfig } from "../config.js";
+import type { ModelConfig } from "../config.js";
 import type { KnowledgeBase } from "../kb/index.js";
 import type { ReleaseScenario } from "../release/types.js";
 import { createReleaseHandoffTool } from "./handoff.js";
@@ -17,7 +17,7 @@ import { SYSTEM_PROMPT } from "./prompt.js";
 import { createKbTools } from "./tools.js";
 
 export function createChatAgent(
-  config: RuntimeConfig,
+  config: ModelConfig,
   kb: KnowledgeBase,
   releaseScenarios: ReleaseScenario[],
 ) {

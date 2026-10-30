@@ -1,16 +1,22 @@
 import { randomUUID } from "node:crypto";
 
+import { Hono } from "hono";
 import { streamSSE } from "hono/streaming";
-import type { Hono } from "hono";
 
 import type { AgentEvent, Timing } from "@agent-workbench/protocol";
 
 import type { FixtureDefinition } from "../fixtures.js";
 
-export function registerMockRuntime(
-  app: Hono,
+export interface MockRuntime {
+  app: Hono;
+  owns(runId: string): boolean;
+}
+
+export function createMockRuntime(
   getFixtures: () => Map<string, FixtureDefinition>,
-): void {
+): MockRuntime {
+  const app = new Hono();
+
 interface MockRun {
   runId: string;
   threadId: string;
@@ -537,4 +543,6 @@ app.get("/api/runs/:runId/events", (c) => {
     }
   });
 });
+
+  return { app, owns: (runId) => runs.has(runId) };
 }
