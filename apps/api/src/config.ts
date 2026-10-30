@@ -24,7 +24,7 @@ export interface PublicRuntimeInfo {
   model?: string;
 }
 
-const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
+export const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
 
 function readMode(env: NodeJS.ProcessEnv): RuntimeMode | undefined {
   const value = env.RUNTIME_MODE?.trim();

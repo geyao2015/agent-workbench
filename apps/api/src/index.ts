@@ -9,7 +9,7 @@ import { logger } from "hono/logger";
 
 import { createAgentApi } from "./agent-api.js";
 import { createChatAgent } from "./agent/graph.js";
-import { loadRuntimeConfig, publicRuntimeInfo } from "./config.js";
+import { loadRuntimeConfig, publicRuntimeInfo, repoRoot } from "./config.js";
 import { loadFixtures, watchFixtures } from "./fixtures.js";
 import { KnowledgeBase } from "./kb/index.js";
 import { createLongConversationDemo } from "./mock/demo.js";
@@ -25,7 +25,7 @@ import { RunRegistry } from "./runs/run-registry.js";
 import { ThreadStore } from "./runs/thread-store.js";
 
 try {
-  process.loadEnvFile();
+  process.loadEnvFile(resolve(repoRoot, ".env"));
 } catch {
   // 没有 .env 时继续使用进程环境变量
 }
