@@ -1,6 +1,6 @@
 # 页面展示亮点记录
 
-最后更新：2026-10-29
+最后更新：2026-10-30
 
 状态：待设计，尚未实现。用于记录作品集页面如何呈现工程能力；方案确认前不改 UI。
 
@@ -22,14 +22,15 @@
 | 流式渲染 | 块级增量分段、闭合块冻结、长会话虚拟列表 | 10k 块/500 增量 513ms；200 增量 1.81ms；60fps | [blocks.ts](../../packages/protocol/src/blocks.ts) · [chat-feed.tsx](../../apps/web/src/components/chat/chat-feed.tsx) | 长会话 / 性能面板 |
 | 交互状态 | 工具状态机、半截 JSON、审批、reasoning、引用 | fixture 回放；工具状态演示 | [tool-card.tsx](../../apps/web/src/components/agent-card/tool-card.tsx) · [chat-rows.ts](../../apps/web/src/lib/chat/chat-rows.ts) | 功能测试快捷项 |
 | 对话追加 | 流式中继续输入并排队，run 结束后自动发送；取消清空 | E2E 覆盖自动发送与取消清空 | [ChatView.tsx](../../apps/web/src/views/ChatView.tsx) · [chat-composer.tsx](../../apps/web/src/components/chat/chat-composer.tsx) | Chat 输入框 |
-| Agent runtime | Hono + LangGraph 工具循环、checkpointer、BM25 RAG | 17 篇文档；API 80 测试；离线假模型 E2E | [graph.ts](../../apps/api/src/agent/graph.ts) · [tools.ts](../../apps/api/src/agent/tools.ts) · [kb/index.ts](../../apps/api/src/kb/index.ts) | 知识库问答 |
+| Agent runtime | Hono + LangGraph 工具循环、checkpointer、BM25 RAG | 17 篇文档；API 83 测试；离线假模型 E2E | [graph.ts](../../apps/api/src/agent/graph.ts) · [tools.ts](../../apps/api/src/agent/tools.ts) · [kb/index.ts](../../apps/api/src/kb/index.ts) | 知识库问答 |
+| 知识库浏览 | Chat header 入口，按 `service` → `type` 目录树浏览，Markdown 预览与元数据 | E2E 覆盖目录树、预览与 Esc 关闭；新增全文接口 | [kb-browser.tsx](../../apps/web/src/components/kb/kb-browser.tsx) · [kb/index.ts](../../apps/api/src/kb/index.ts) | Chat → 知识库 |
 | 历史会话 | 物化快照 + cursor 分页、JSONL 持久化、重启种子恢复 | 22 轮分页验证；同 thread 单 run 409 | [thread-store.ts](../../apps/api/src/runs/thread-store.ts) | 会话侧栏 |
 | 安全边界 | 输入 guard、独立拦截卡片、输出脱敏、检索数据分隔 | 拦截请求不调用模型；三类测试 | [guard.ts](../../apps/api/src/agent/guard.ts) · [runner.ts](../../apps/api/src/agent/runner.ts) | 安全拒答 |
 | 双运行时 | 默认 mock；header 全局切换实时 Agent，流式中切换挂起；无 Key 禁用；mock 终态落库 | E2E 覆盖切换、挂起、禁用与落库；`run.started.runtime` 快照 | [controller.ts](../../apps/api/src/runtime/controller.ts) · [runtime-store.ts](../../apps/web/src/lib/runtime-store.ts) | Header 运行时切换 |
 | 发版工作台 | 确定性阶段、阶段审批、LLM 冲突、失败 RCA、回滚 child run、Chat handoff | 10 阶段端到端；LLM/fallback；失败 RCA；回滚与 parent 审计；handoff 携带 sourceRunId | [release/runtime.ts](../../apps/api/src/release/runtime.ts) · [approvals.ts](../../apps/api/src/release/approvals.ts) · [ReleaseDetailView.tsx](../../apps/web/src/views/ReleaseDetailView.tsx) | Releases |
 | 评测与 Trace | 50 题检索金标、10 个 RCA 案例、事件派生 Span 瀑布 | Recall@1 85.4%、Recall@4 100%、MRR 0.920；RCA 证据 100%、runbook@4 100% | [eval/](../../apps/api/src/eval/) · [spans/derive.ts](../../apps/api/src/spans/derive.ts) | 文档 + Trace tab |
 | 渲染基准 | 数据集驱动的 reducer 与浏览器指标 | 200/2000/10000 块；10k 仅挂载 22% | [bench-streaming.mjs](../../scripts/bench-streaming.mjs) · [data/bench/](../../data/bench/) | [rendering.md §5](../architecture/rendering.md#5-性能数据) |
-| UI 自动化 | Playwright 覆盖 Chat 流式、Release 审批、运行时切换、移动端 header/抽屉、320px tabs | `pnpm test:e2e` 10 条关键路径 | [e2e/](../../e2e/) · [playwright.config.ts](../../playwright.config.ts) | `pnpm test:e2e` |
+| UI 自动化 | Playwright 覆盖 Chat 流式、Release 审批、运行时切换、移动端 header/抽屉、320px tabs、知识库浏览 | `pnpm test:e2e` 11 条关键路径 | [e2e/](../../e2e/) · [playwright.config.ts](../../playwright.config.ts) | `pnpm test:e2e` |
 
 ## 3. 工程问题记录（面试钩子）
 

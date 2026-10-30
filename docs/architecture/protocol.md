@@ -317,7 +317,7 @@ export interface AgentTransport {
 }
 ```
 
-HTTP 形态（已实现，25 个接口；只有 `/api/runtime` 携带运行时模式参数）：
+HTTP 形态（已实现，26 个接口；只有 `/api/runtime` 携带运行时模式参数）：
 
 | 方法 | 路径 | 功能与约束 |
 | --- | --- | --- |
@@ -326,7 +326,8 @@ HTTP 形态（已实现，25 个接口；只有 `/api/runtime` 携带运行时�
 | POST | `/api/demo/long-conversation` | 生成长会话事件集；仅压测，不作产品接口 |
 | GET | `/api/runtime` | 当前模式、模型、模型目录、docs/releases 计数 |
 | POST | `/api/runtime` | `{ mode, modelId? }` 切换全局运行时；无 Key 切 agent 返回 409 |
-| GET | `/api/kb/docs` | 知识库文档 `{ id, title }` |
+| GET | `/api/kb/docs` | 知识库文档 `{ id, title, metadata? }`，供目录树分组 |
+| GET | `/api/kb/docs/:docId` | 知识库文档全文与元数据；未知 id 返回 404 |
 | GET | `/api/threads` | Chat 会话列表，按 `updatedAt` 倒序 |
 | GET | `/api/threads/:threadId/runs` | Chat 物化快照分页，`cursor` / `limit`（≤ 50） |
 | POST | `/api/runs` | 创建 Chat run，返回 `runId / threadId / kind` |
@@ -495,3 +496,4 @@ export interface Span {
 | 2026-10-29 | v1 | 新增 `guard.blocked`，记录安全拦截类别；RunState 增加 `guards` |
 | 2026-10-30 | v1 | `run.started` 增加可选 `runtime`（`mode / provider / model`），快照 run 启动时的运行时；新增 `POST /api/runtime` 切换全局模式 |
 | 2026-10-30 | v1 | 补全 HTTP 接口清单（25 个）与路由分发、响应与错误语义 |
+| 2026-10-30 | v1 | 知识库列表补 `metadata`；新增 `GET /api/kb/docs/:docId`，接口数 26 |

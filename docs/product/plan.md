@@ -14,7 +14,8 @@
 - **Chat**：Hono + LangGraph 工具循环、BM25 知识库、引用与拒答、历史快照分页、对话追加队列；工具/审批/reasoning/引用时间线卡；离线检索 3/3 top-1，真实模型需配 Key 验证。
 - **Release**：确定性阶段、阶段审批、diff/audit artifact；LLM 冲突结构化输出 + 确定性回退；test.1 失败 → 日志 RCA → 修复审批 → test.2 重跑；回滚 child run（parentRunId）与审计；`prepare_release` handoff（sourceRunId）；耗时/审批/artifact 指标。
 - **评测、Trace 与安全**：Trace 从事件派生；17 篇语料（含前端组件库）+ 50 题检索金标（`eval:retrieval`）、10 个 RCA 案例（`eval:rca`）、元数据过滤、离线评测报告、渲染基准；input guard、检索数据分隔、输出脱敏。
-- **展示与回归**：工程亮点卡、工程说明抽屉、guard 卡片；protocol 62 / API 80 测试，Playwright 10 条关键路径，typecheck / build / check-docs 全绿。
+- **展示与回归**：工程亮点卡、工程说明抽屉、guard 卡片；protocol 62 / API 83 测试，Playwright 11 条关键路径，typecheck / build / check-docs 全绿。
+- **知识库浏览**：Chat header 入口；按 `service` → `type` 目录树浏览知识库，Markdown 预览与 `service` / `type` / `tags` 元数据；列表与全文接口见 [protocol.md §6](../architecture/protocol.md#6-transport-契约)。
 - **运行时切换**：默认 mock；`RuntimeController` 全局模式 + `MODEL_CATALOG` 目录；mock/agent 双运行时分发；header 切换控件（无 Key 禁用），流式中挂起切换；`run.started.runtime` 快照；mock 终态落库，侧栏与模式解耦。
 
 ## 3. 待办
@@ -51,11 +52,8 @@
 
 ### 3.5 知识库文件
 
-- [ ] 文件库列表：浏览知识库文档列表，展示 `service` / `type` / `tags` 等元数据；入口放 Chat 侧栏或独立页面待定。
-  - 目录树按 `metadata` 虚拟分组（`service` → `type`），不依赖 `data/docs` 物理布局（当前扁平，加载器只读顶层）；后续文档落库后树与接口契约不变。
-- [ ] 文档预览：点击文档在侧栏渲染 Markdown 原文并展示元数据，按 `chunkId` 高亮命中片段；新增内容接口 `GET /api/kb/docs/:docId?version=`（缺省当前版本，现有 `KnowledgeBase.get()` 未暴露），内容按不可信输入渲染与转义；为 [引用下钻](#32-会话内容) 的侧栏原文提供复用。
 - [ ] 文档 id 与互链：`metadata.json` 增加显式 `id`（初值同文件名），加载与 `check-docs` 校验 id 唯一、正文内链目标存在；内链只写 docId，按 id 解析跳转，不解析文件路径。
-- [ ] 文档版本：同一 docId 多个版本快照 + `currentVersion` 指针（模型见 [decision.md §4](decision.md#知识库文档模型)、[storage.md §3.2](../architecture/storage.md#32-文本内容)）；列表与预览默认当前版本，可切换历史版本并标「仅供查阅」；检索只索引当前版本；`citation.added` 增加可选 `docVersion`，实现时同步 [protocol.md](../architecture/protocol.md)。
+- [ ] 文档版本：同一 docId 多个版本快照 + `currentVersion` 指针（模型见 [decision.md §4](decision.md#知识库文档模型)、[storage.md §3.2](../architecture/storage.md#32-文本内容)）；列表与预览默认当前版本，可切换历史版本并标「仅供查阅」；预览接口增加 `version` 参数（缺省当前版本）；检索只索引当前版本；`citation.added` 增加可选 `docVersion`，实现时同步 [protocol.md](../architecture/protocol.md)。
 - [ ] 上传：新增文档并触发索引重建，上传后可在文件库查看；暂不做在线编辑。
 - [ ] 上传安全：限制类型与大小，文档内容按不可信数据处理。
 
