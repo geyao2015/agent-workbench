@@ -77,6 +77,7 @@ export class RuntimeController {
 
     return {
       ...selection,
+      ...(this.modelId ? { modelId: this.modelId } : {}),
       agentAvailable: this.agentAvailable(),
       models: this.config.models.map((option) => ({
         ...option,

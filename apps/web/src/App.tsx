@@ -1,8 +1,9 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect } from "react";
 
 import { Loader2 } from "lucide-react";
 
 import { useHashRoute } from "@/lib/hash-router";
+import { useRuntimeStore } from "@/lib/runtime-store";
 import { SidePanelProvider } from "@/lib/side-panel-state";
 import { ChatView } from "@/views/ChatView";
 
@@ -25,6 +26,11 @@ function ReleaseFallback() {
 
 export default function App() {
   const route = useHashRoute();
+  const initializeRuntime = useRuntimeStore((state) => state.initialize);
+
+  useEffect(() => {
+    void initializeRuntime();
+  }, [initializeRuntime]);
 
   return (
     <SidePanelProvider>

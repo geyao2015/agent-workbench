@@ -17,6 +17,14 @@ export default defineConfig({
     url: "http://localhost:5173",
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
-    env: { RUNTIME_MODE: "mock" },
+    env: {
+      RUNTIME_MODE: "mock",
+      OPENAI_API_KEY: "",
+      OPENAI_BASE_URL: "",
+      OPENAI_MODEL: "",
+      ANTHROPIC_API_KEY: "",
+      MODEL_PROVIDER: "",
+      MODEL_CATALOG: "",
+    },
   },
 });

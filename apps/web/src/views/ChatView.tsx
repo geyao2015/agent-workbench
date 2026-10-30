@@ -23,6 +23,7 @@ import { Button } from "@/components/ui/button";
 import { buildChatRows, type ChatRun } from "@/lib/chat/chat-rows";
 import { useChatQueue } from "@/lib/chat/use-chat-queue";
 import { navigate } from "@/lib/hash-router";
+import { useRuntimeStore } from "@/lib/runtime-store";
 import { useSidePanel } from "@/lib/side-panel-state";
 import {
   quickPromptsFor,
@@ -37,14 +38,12 @@ import { createReleaseRun } from "@/transport/release";
 import {
   cancelRun,
   fetchLongConversation,
-  fetchRuntimeInfo,
   fetchThreadRuns,
   fetchThreads,
   pauseRun,
   resolveApproval as resolveApprovalRequest,
   startChatRun,
   streamRunEvents,
-  type RuntimeInfo,
 } from "@/transport/sse";
 
 function isAbortError(cause: unknown): boolean {
@@ -84,7 +83,8 @@ export function ChatView() {
     null,
   );
   const [followVersion, setFollowVersion] = useState(0);
-  const [runtime, setRuntime] = useState<RuntimeInfo | null>(null);
+  const mode = useRuntimeStore((state) => state.info?.mode);
+  const setChatBusy = useRuntimeStore((state) => state.setChatBusy);
   const [threads, setThreads] = useState<ThreadSummary[]>([]);
   const [activeThreadId, setActiveThreadId] = useState<string | null>(null);
   const [historyCursor, setHistoryCursor] = useState<string | null>(null);
@@ -112,21 +112,7 @@ export function ChatView() {
   }, []);
 
   useEffect(() => {
-    const controller = new AbortController();
-
-    void fetchRuntimeInfo(controller.signal)
-      .then((info) => {
-        if (!controller.signal.aborted) {
-          setRuntime(info);
-        }
-      })
-      .catch(() => {});
-
-    return () => controller.abort();
-  }, []);
-
-  useEffect(() => {
-    if (runtime?.mode !== "agent") {
+    if (mode !== "agent") {
       return;
     }
 
@@ -134,10 +120,10 @@ export function ChatView() {
     void refreshThreads(controller.signal);
 
     return () => controller.abort();
-  }, [runtime]);
+  }, [mode]);
 
   useEffect(() => {
-    if (runtime?.mode !== "mock" || autoRunRef.current) {
+    if (mode !== "mock" || autoRunRef.current) {
       return;
     }
 
@@ -156,7 +142,39 @@ export function ChatView() {
     }
 
     void startRun(fixture, "流式渲染基准");
-  }, [runtime]);
+  }, [mode]);
+
+  useEffect(() => {
+    setChatBusy(isStreaming);
+
+    return () => {
+      setChatBusy(false);
+    };
+  }, [isStreaming, setChatBusy]);
+
+  const previousModeRef = useRef<"agent" | "mock" | undefined>(undefined);
+
+  useEffect(() => {
+    if (!mode) {
+      return;
+    }
+
+    const previous = previousModeRef.current;
+    previousModeRef.current = mode;
+
+    if (!previous || previous === mode) {
+      return;
+    }
+
+    // mock 会话不落库，切换后不复用旧 threadId，下一次提问从新会话开始。
+    threadIdRef.current = null;
+    setActiveThreadId(null);
+    clearQueue();
+
+    if (mode === "agent") {
+      void refreshThreads();
+    }
+  }, [mode]);
 
   async function refreshThreads(signal?: AbortSignal) {
     setIsLoadingThreads(true);
@@ -720,19 +738,13 @@ export function ChatView() {
     [chatRows],
   );
   const hasConversation = chatRows.length > 0;
-  const runtimeLabel =
-    runtime === null
-      ? "连接运行时…"
-      : runtime.mode === "agent"
-        ? `实时 Agent · ${runtime.provider ?? "模型"}/${runtime.model ?? ""} · 知识库 ${runtime.docs ?? 0} 篇`
-        : "Mock 模式 · 本地 fixture 回放，不调用模型";
-  const prompts = quickPromptsFor(runtime?.mode);
+  const prompts = quickPromptsFor(mode);
   const eventCountLabel =
     events.length > 999
       ? `${Math.min(9, Math.floor(events.length / 1000))}k+`
       : String(events.length);
   const emptyDescription =
-    runtime?.mode === "agent"
+    mode === "agent"
       ? "检索本地工程知识库，LangGraph 工具循环，回答带引用来源。"
       : "事件从本地 fixture 逐条流式回放，并实时投影到聊天界面。";
 
@@ -758,7 +770,7 @@ export function ChatView() {
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-muted/20">
       <AppHeader
-        subtitle={runtimeLabel}
+        subtitle="工程知识库对话 · 事件驱动 · 可回放"
         activeView="chat"
         onNavigate={(view) =>
           navigate(view === "chat" ? "#/chat" : "#/releases")
@@ -801,7 +813,7 @@ export function ChatView() {
       </AppHeader>
 
       <div className="relative flex min-h-0 flex-1">
-        {runtime?.mode === "agent" ? (
+        {mode === "agent" ? (
           <ThreadSidebar
             threads={threads}
             activeThreadId={activeThreadId}

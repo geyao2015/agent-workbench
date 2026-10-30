@@ -5,6 +5,7 @@ import { BookOpen, Sparkles } from "lucide-react";
 
 import { EngineeringNotes } from "@/components/devtools/engineering-notes";
 import { GithubIcon } from "@/components/icons/github-icon";
+import { RuntimeSwitcher } from "@/components/runtime-switcher";
 import { Button } from "@/components/ui/button";
 import type { AppView } from "@/lib/hash-router";
 import { useSidePanel } from "@/lib/side-panel-state";
@@ -81,6 +82,7 @@ export function AppHeader({
           data-testid="header-actions"
           className="flex min-w-0 items-center justify-self-end gap-1 md:gap-1.5"
         >
+          <RuntimeSwitcher />
           <Button
             variant="outline"
             size="sm"

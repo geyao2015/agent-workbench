@@ -12,11 +12,29 @@ interface CreateRunResponse {
   kind: RunKind;
 }
 
+export interface RuntimeModelInfo {
+  id: string;
+  label: string;
+  provider: "anthropic" | "openai";
+  model: string;
+  available: boolean;
+}
+
 export interface RuntimeInfo {
   mode: "agent" | "mock";
   provider?: "anthropic" | "openai";
   model?: string;
+  modelId?: string;
+  version: number;
+  agentAvailable: boolean;
+  models: RuntimeModelInfo[];
   docs?: number;
+  releases?: number;
+}
+
+export interface RuntimeSwitchInput {
+  mode: "agent" | "mock";
+  modelId?: string;
 }
 
 export async function fetchRuntimeInfo(signal?: AbortSignal): Promise<RuntimeInfo> {
@@ -24,6 +42,24 @@ export async function fetchRuntimeInfo(signal?: AbortSignal): Promise<RuntimeInf
 
   if (!response.ok) {
     throw new HttpError(response.status, `读取运行时信息失败：HTTP ${response.status}`);
+  }
+
+  return (await response.json()) as RuntimeInfo;
+}
+
+export async function switchRuntime(input: RuntimeSwitchInput): Promise<RuntimeInfo> {
+  const response = await fetch("/api/runtime", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(input),
+  });
+
+  if (!response.ok) {
+    const detail = await response.text().catch(() => "");
+    throw new HttpError(
+      response.status,
+      `切换运行时失败：HTTP ${response.status}${detail ? `（${detail}）` : ""}`,
+    );
   }
 
   return (await response.json()) as RuntimeInfo;
