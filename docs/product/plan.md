@@ -66,7 +66,7 @@
 
 表结构、数据库约定与迁移顺序见 [storage.md](../architecture/storage.md)，按顺序逐段实现：
 
-- [ ] 本地 pg：`docker compose` 起 Postgres，`DATABASE_URL` 进 `.env.example`，启动时执行迁移。
+- [ ] 本地 pg：先装 Docker Desktop 并确认 `docker compose version`，再用 `docker compose` 起 Postgres；`DATABASE_URL` 进 `.env.example`，启动时执行迁移。
 - [ ] `Storage` 与 repository 接口，文件实现收到接口后面。
 - [ ] 运行时落库：threads / runs / events，导入现有 `.data/threads`，快照改派生。
 - [ ] 集成测试切真库：每个 worker 独立 schema，纯单测保持离线。
