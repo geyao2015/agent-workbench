@@ -275,6 +275,77 @@ describe("AgentRunner", () => {
     expect(text).not.toContain("1234567890abcdef");
     expect(text).toContain("[已脱敏]");
   });
+
+  it("多轮工具调用复用 index 时每轮各自发事件", async () => {
+    const log = new RunLog({
+      runId: "run_rounds",
+      threadId: "thread_rounds",
+      kind: "chat",
+    });
+
+    log.append("run.started", { kind: "chat" });
+    log.append("message.started", { messageId: "msg_t", role: "assistant" });
+
+    const agent = fakeAgent([
+      new AIMessageChunk({
+        content: "",
+        tool_call_chunks: [
+          {
+            name: "search_kb",
+            args: '{"query":"发版"}',
+            id: "call_a",
+            index: 0,
+            type: "tool_call_chunk",
+          },
+        ],
+      }),
+      new ToolMessage({
+        content: "结果 A",
+        tool_call_id: "call_a",
+        name: "search_kb",
+        status: "success",
+      }),
+      new AIMessageChunk({
+        content: "",
+        tool_call_chunks: [
+          {
+            name: "get_document",
+            args: '{"sourceId":"testing-guide"}',
+            id: "call_b",
+            index: 0,
+            type: "tool_call_chunk",
+          },
+        ],
+      }),
+      new ToolMessage({
+        content: "结果 B",
+        tool_call_id: "call_b",
+        name: "get_document",
+        status: "success",
+      }),
+    ]);
+    const kb = { get: () => undefined } as unknown as KnowledgeBase;
+    const runner = new AgentRunner(agent, log, kb, "msg_t");
+
+    await runner.run({
+      threadId: "thread_rounds",
+      prompt: "先查知识库再取文档",
+      history: [],
+      signal: new AbortController().signal,
+    });
+
+    const events = log.snapshotEvents();
+
+    expect(
+      events.flatMap((event) =>
+        event.type === "tool.started" ? [event.payload] : [],
+      ),
+    ).toEqual([
+      { toolCallId: "call_a", name: "search_kb" },
+      { toolCallId: "call_b", name: "get_document" },
+    ]);
+    expect(events.filter((event) => event.type === "tool.ready")).toHaveLength(2);
+  });
 });
 
 function textOf(message: BaseMessage): string {

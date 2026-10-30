@@ -327,6 +327,9 @@ export class AgentRunner {
       durationMs: Math.max(0, finishedAt - (state.argsUpdatedAt ?? state.startedAt)),
     });
 
+    // 下一轮 AI 消息的 tool_call index 从 0 重新编号，释放占位避免复用上一轮状态
+    this.toolStates.delete(state.index);
+
     this.collectCitations(content);
   }
 
