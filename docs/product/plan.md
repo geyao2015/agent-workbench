@@ -53,7 +53,9 @@
 
 - [ ] 文件库列表：浏览知识库文档列表，展示 `service` / `type` / `tags` 等元数据；入口放 Chat 侧栏或独立页面待定。
   - 目录树按 `metadata` 虚拟分组（`service` → `type`），不依赖 `data/docs` 物理布局（当前扁平，加载器只读顶层）；后续文档落库后树与接口契约不变。
-- [ ] 文档预览：点击文档在侧栏渲染 Markdown 原文并展示元数据，按 `chunkId` 高亮命中片段；新增内容接口 `GET /api/kb/docs/:id`（现有 `KnowledgeBase.get()` 未暴露），内容按不可信输入渲染与转义；为 [引用下钻](#32-会话内容) 的侧栏原文提供复用。
+- [ ] 文档预览：点击文档在侧栏渲染 Markdown 原文并展示元数据，按 `chunkId` 高亮命中片段；新增内容接口 `GET /api/kb/docs/:docId?version=`（缺省当前版本，现有 `KnowledgeBase.get()` 未暴露），内容按不可信输入渲染与转义；为 [引用下钻](#32-会话内容) 的侧栏原文提供复用。
+- [ ] 文档 id 与互链：`metadata.json` 增加显式 `id`（初值同文件名），加载与 `check-docs` 校验 id 唯一、正文内链目标存在；内链只写 docId，按 id 解析跳转，不解析文件路径。
+- [ ] 文档版本：同一 docId 多个版本快照 + `currentVersion` 指针（模型见 [decision.md §4](decision.md#知识库文档模型)、[storage.md §3.2](../architecture/storage.md#32-文本内容)）；列表与预览默认当前版本，可切换历史版本并标「仅供查阅」；检索只索引当前版本；`citation.added` 增加可选 `docVersion`，实现时同步 [protocol.md](../architecture/protocol.md)。
 - [ ] 上传：新增文档并触发索引重建，上传后可在文件库查看；暂不做在线编辑。
 - [ ] 上传安全：限制类型与大小，文档内容按不可信数据处理。
 

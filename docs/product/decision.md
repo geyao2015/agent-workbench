@@ -58,6 +58,13 @@
 - 不设虚构公司品牌名，以服务名（主例 `checkout-service`）和事故编号（如 `INC-042`）作为语料锚点，保证文档、日志、发版记录可相互引用。
 - 评测指标：recall@k、引用准确率、答案忠实度。
 
+### 知识库文档模型
+
+- **逻辑文档 + 不可变版本**：文档升版沿用同一 `docId`，追加版本快照并移动 `currentVersion` 指针，不新建 docId。理由：目录树与历史链保持稳定，避免 `-v2` 类假文档碎片；表结构见 [storage.md §3.2](../architecture/storage.md#32-文本内容)。
+- **检索只收当前版本**：历史版本只供人查阅与审计，不进索引和模型上下文。理由：RAG 引用过期 API 比查不到更危险。
+- **引用钉版本**：`citation.added` 增加可选 `docVersion`，引用按 `docId + docVersion + chunkId` 定位。理由：文档升版后旧 run 的引用不能漂移到新内容。
+- **文档 id 显式维护**：id 存在文档元数据中，不从文件名或路径推导；正文互链只写 `docId`，不写文件路径。理由：移动或重命名文件不应断链；id 同时是检索金标与引用的锚点。
+
 ### 日志
 
 - 业务日志：Agent 工具（`search_logs`、`get_log_context`、`group_errors`、`get_commit_diff`），输出根因 + 证据 + 修复建议，用合成故障集评测。
@@ -126,3 +133,4 @@
 | 2026-10-30 | 客户端全局状态引入 zustand 与 `@radix-ui/react-dropdown-menu` | 运行时状态跨 Chat/Release 共享且需要选择器订阅 |
 | 2026-10-30 | mock 会话在终态（完成/取消）写入 `ThreadStore`；`bench-*` 与断开未取消的 run 不落库；侧栏与运行时解耦，切换模式保留 threadId | 会话列表是历史记录，不应随模式隐藏；mock 历史可作为后续 agent 上下文 |
 | 2026-10-30 | 数据存储改为 DB 为源：SQLite + Kysely，日志独立库，大对象走 Storage；runtime 模式仍进程内；详见 [storage.md](../architecture/storage.md) | 本地跑通并可迁 Postgres；支撑产品迭代内容与 prompt 版本落库 |
+| 2026-10-30 | 知识库文档采用逻辑文档 + 不可变版本；检索仅索引 current 版本；引用钉 `docVersion`；文档 id 显式存储在元数据，正文互链只写 docId | 升版不能断链、不能让历史版本污染检索；旧 run 的引用需可回溯 |

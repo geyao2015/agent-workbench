@@ -69,6 +69,9 @@ chunks_fts(content, locator)  -- FTS5 虚表，派生
 - `category`：`kb` / `prd` / `tech_design` / `release_notes`；`origin`：`seed` / `upload` / `generated`。
 - 一套模型覆盖知识库与产品迭代文档，版本、分类与引用能力复用。
 - chunk 落库而非每次现切：`citation.added` 已带 `chunkId` / `locator`，切分算法调整后旧引用仍需可回溯。
+- `documents.id` 由文档元数据显式声明，不从文件名或路径推导；`current_version` 必须指向 `document_versions` 中已存在的行，同一文档版本号唯一。
+- 历史版本只读保留；FTS 索引与检索只覆盖 `current_version`，历史版本仅供查阅与审计（理由见 [decision.md §4](../product/decision.md#知识库文档模型)）。
+- seed 期一个逻辑文档的多个版本存为独立文件，按 `<docId>@<version>.md` 命名，由元数据记录 `currentVersion`；落库后文件名不再参与标识。
 
 ### 3.3 产品迭代
 
