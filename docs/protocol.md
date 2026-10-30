@@ -1,6 +1,6 @@
 # Agent 事件协议（v1）
 
-**状态：v1 已冻结（M2 完成后）。冻结后只做加法：新增事件类型、可选字段与物化快照字段。**
+**状态：v1 已冻结（接入真实后端后）。冻结后只做加法：新增事件类型、可选字段与物化快照字段。**
 
 本文档定义 Chat 与 Release 共用的 `AgentEvent` 协议、reducer 契约、fixture 格式、transport 接口，以及与之分离的 telemetry `Span` 模型。
 
@@ -293,7 +293,7 @@ interface ArtifactState {
 时间线：
 
 - Chat 渲染按 `messageOrder` + 消息内 block 顺序。
-- Release 渲染按 `stageOrder`，工具调用挂在所属 stage 下（`stageId` 可选字段在 M0 定义，M3 使用）。
+- Release 渲染按 `stageOrder`，工具调用挂在所属 stage 下（`stageId` 为可选字段）。
 - 事件检查器直接展示原始事件 + reducer 快照。
 
 ## 6. Transport 契约
@@ -317,7 +317,7 @@ export interface AgentTransport {
 }
 ```
 
-HTTP 形态（M2 已实现）：
+HTTP 形态（已实现）：
 
 - `POST /api/runs` → 创建 run，返回 `runId`。
 - `GET /api/runs/:runId/events` → SSE；`Last-Event-ID` 用于断线重连。
@@ -434,24 +434,24 @@ export interface Span {
 
 ## 9. 版本与兼容
 
-- v1 已在 M2 接入真实后端后冻结。
+- v1 已在接入真实后端后冻结。
 - 允许的变更：新增事件类型、新增可选字段、新增 payload 字段。
 - 不允许的变更：改变已有事件语义、删除字段、改变字段类型。
 - 破坏性变更必须升 `v: 2`，并在本文件底部记录迁移说明。
 - 客户端必须忽略未知事件类型和未知字段。
 - 每次协议变更更新本文件末尾的 Changelog。
 
-## 10. 待定问题（随阶段决定）
+## 10. 待定问题（持续更新）
 
-1. **Block ID 归属**：默认前端确定性分段；M1 已验证渲染指标，暂不切换后端下发。
+1. **Block ID 归属**：默认前端确定性分段；已验证渲染指标，暂不切换后端下发。
 2. **Artifact 内联阈值**：默认 8KB 以下可内联；需要实测事件体积。
-3. **审批粒度**：M3 S1 已实现。工具审批沿用 `tool.*`，Release 阶段使用 `approval.*` + `run.paused/resumed`。
+3. **审批粒度**：已实现。工具审批沿用 `tool.*`，Release 阶段使用 `approval.*` + `run.paused/resumed`。
 4. **取消语义**：工具是否必须支持 `AbortSignal`；默认是，超时后标记为 cancelled。
 5. **恢复来源**：开发期事件日志；生产期 checkpoint。接口保持一致。
 6. **Reasoning 可见性**：时间线默认展开，内容区限高滚动；调试抽屉仍可查看原文，避免长推理挤压正文。
 7. **同一 thread 的并发 run**：默认单活跃 run；后续再设计队列。
 8. **Token 统计粒度**：默认在 `run.completed.usage` + span attributes；是否增加 `usage.updated` 待定。
-9. **历史会话加载**：M2 已实现。打开已有 thread 不做流式回放，也不一次性返回全部历史事件；默认按 cursor 分页返回服务端物化的消息/块，原始事件只用于调试与回放。若分页直接返回原始事件，分页边界必须附带 checkpoint 快照，否则 reducer 无法从中间 `seq` 重建状态。`/api/demo/long-conversation` 这类批量生成接口只作为性能压测工具，不作为产品历史接口。实现为 `GET /api/threads/:threadId/runs?cursor=&limit=`，返回 `RunSnapshot`（`appliedEventIds` 序列化为数组）与 `nextCursor`。
+9. **历史会话加载**：已实现。打开已有 thread 不做流式回放，也不一次性返回全部历史事件；默认按 cursor 分页返回服务端物化的消息/块，原始事件只用于调试与回放。若分页直接返回原始事件，分页边界必须附带 checkpoint 快照，否则 reducer 无法从中间 `seq` 重建状态。`/api/demo/long-conversation` 这类批量生成接口只作为性能压测工具，不作为产品历史接口。实现为 `GET /api/threads/:threadId/runs?cursor=&limit=`，返回 `RunSnapshot`（`appliedEventIds` 序列化为数组）与 `nextCursor`。
 
 ## 11. Changelog
 

@@ -4,7 +4,7 @@
 
 状态：待设计，尚未实现。用于记录作品集页面如何呈现工程能力；方案确认前不改 UI。
 
-本文件是展示层亮点与演示编排的唯一来源。产品功能事实见 [README.md](../README.md)，阶段见 [plan.md](plan.md)。
+本文件是展示层亮点与演示编排的唯一来源。产品功能事实见 [README.md](../README.md)，执行计划与待办见 [plan.md](plan.md)。
 
 ## 1. 目标与原则
 
@@ -20,7 +20,7 @@
 | --- | --- | --- | --- | --- |
 | 事件协议 | append-only AgentEvent v1、纯函数 reducer、SSE 重放/取消 | protocol 62 测试；事件检查器 | [events.ts](../packages/protocol/src/events.ts) · [reducer.ts](../packages/protocol/src/reducer.ts) | 事件面板 |
 | 流式渲染 | 块级增量分段、闭合块冻结、长会话虚拟列表 | 10k 块/500 增量 513ms；200 增量 1.81ms；60fps | [blocks.ts](../packages/protocol/src/blocks.ts) · [chat-feed.tsx](../apps/web/src/components/chat/chat-feed.tsx) | 长会话 / 性能面板 |
-| 交互状态 | 工具状态机、半截 JSON、审批、reasoning、引用 | M1 演示；fixture 回放 | [tool-card.tsx](../apps/web/src/components/agent-card/tool-card.tsx) · [chat-rows.ts](../apps/web/src/lib/chat/chat-rows.ts) | 功能测试快捷项 |
+| 交互状态 | 工具状态机、半截 JSON、审批、reasoning、引用 | fixture 回放；工具状态演示 | [tool-card.tsx](../apps/web/src/components/agent-card/tool-card.tsx) · [chat-rows.ts](../apps/web/src/lib/chat/chat-rows.ts) | 功能测试快捷项 |
 | 对话追加 | 流式中继续输入并排队，run 结束后自动发送；取消清空 | E2E 覆盖自动发送与取消清空 | [ChatView.tsx](../apps/web/src/views/ChatView.tsx) · [chat-composer.tsx](../apps/web/src/components/chat/chat-composer.tsx) | Chat 输入框 |
 | Agent runtime | Hono + LangGraph 工具循环、checkpointer、BM25 RAG | 16 篇文档；API 62 测试；离线假模型 E2E | [graph.ts](../apps/api/src/agent/graph.ts) · [tools.ts](../apps/api/src/agent/tools.ts) · [kb/index.ts](../apps/api/src/kb/index.ts) | 知识库问答 |
 | 历史会话 | 物化快照 + cursor 分页、JSONL 持久化、重启种子恢复 | 22 轮分页验证；同 thread 单 run 409 | [thread-store.ts](../apps/api/src/runs/thread-store.ts) | 会话侧栏 |

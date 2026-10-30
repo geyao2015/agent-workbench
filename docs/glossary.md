@@ -49,12 +49,12 @@
 
 | 概念 | 本质 | 本仓库落点 |
 | --- | --- | --- |
-| Agent loop | 模型 → 工具 → 观察 → 再模型 | M2 LangGraph |
+| Agent loop | 模型 → 工具 → 观察 → 再模型 | LangGraph 工具循环 |
 | 执行与状态模型 | 会话/执行边界、事件日志、可回放可恢复 | Thread / Run、reducer |
 | 流式一致性 | 增量到达、半截 JSON、乱序去重、取消与重连的终态 | `seq` / `eventId`、SSE |
 | 工具与安全 | 不可逆操作审批；文档/日志不可信；不执行模型输出的 HTML/JSX | approval、防注入约定 |
-| 上下文与检索 | 上下文预算、记忆分层、RAG 作为工具、引用与拒答 | M2 RAG |
-| 可观测性与评测 | trace、token/耗时/成本、离线 fixture、指标化评测 | Span、M4 评测 |
+| 上下文与检索 | 上下文预算、记忆分层、RAG 作为工具、引用与拒答 | BM25 检索工具 |
+| 可观测性与评测 | trace、token/耗时/成本、离线 fixture、指标化评测 | Span、离线评测 |
 | 确定性边界 | 高风险流程尽量确定性，LLM 只做有界任务 | Release 六阶段 |
 
 Embedding、向量库、LangChain 的具体 API 是选型细节，不是核心概念；换掉它们不影响对系统的理解。必背五个词：**Run（执行边界）、Event（事实源）、Reducer（投影）、Tool 状态机（能力）、Approval / Trace（可控与可审计）**。

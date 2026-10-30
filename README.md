@@ -2,7 +2,7 @@
 
 > 从知识库对话到可审计发版。一个用于求职展示的研发 Agent 工作台：Chat 基于工程知识库对话，Release 执行可审计的发版流程。
 
-**状态：M4 已完成（离线评测基线；真实模型端到端待配置 Key）。** 技术选型与待确认项见 [docs/decision.md](docs/decision.md)；执行计划见 [docs/plan.md](docs/plan.md)；事件协议见 [docs/protocol.md](docs/protocol.md)。
+**状态：核心链路已完成（Chat、Release、Trace 与离线评测；真实模型端到端待配置 Key）。** 技术选型与待确认项见 [docs/decision.md](docs/decision.md)；执行计划与待办见 [docs/plan.md](docs/plan.md)；事件协议见 [docs/protocol.md](docs/protocol.md)。
 
 本文件是产品事实的唯一来源：项目定位、场景、演示流程、功能范围、非目标、当前状态、仓库结构与文档索引。
 
@@ -101,9 +101,9 @@ agent-workbench/
 - 不使用前雇主的代码、数据、内部 prompt、架构图或系统名。
 - 不在第一版实现权限体系、多租户、复杂文档接入。
 
-## 8. 当前阶段
+## 8. 当前状态
 
-**M4 已完成**：Trace 瀑布、检索与 RCA 评测基线、文档元数据过滤、事件回放与评测报告均已落地。真实模型端到端评测与成本估算待配置 Key 和单价。
+**核心链路已完成**：Trace 瀑布、检索与 RCA 评测基线、文档元数据过滤、事件回放与评测报告均已落地。真实模型端到端评测与成本估算待配置 Key 和单价。
 
 ```bash
 pnpm install
@@ -115,12 +115,12 @@ pnpm bench:streaming        # 流式渲染基准，结果写入 data/bench/resul
 
 默认不配置模型 Key 时自动使用 fixture mock 运行时；配置 `ANTHROPIC_API_KEY` 或 `OPENAI_API_KEY`（可配 `OPENAI_BASE_URL` / `OPENAI_MODEL`）后启用实时 Agent。环境变量示例见 [.env.example](.env.example)，知识库位于 `data/docs/`，会话数据写入本地 `.data/`。
 
-各阶段状态、交付物、时间盒与退出条件见 [docs/plan.md](docs/plan.md)。
+待办分组、验收标准与已知限制见 [docs/plan.md](docs/plan.md)。
 
 ## 9. 文档索引
 
 - [docs/decision.md](docs/decision.md) — 技术选型、架构与范围决策、求职叙事、待确认项、变更记录
-- [docs/plan.md](docs/plan.md) — 阶段划分、阶段状态、M0 执行清单、时间盒与验收标准
+- [docs/plan.md](docs/plan.md) — 执行计划、待办分组、验收标准与已知限制
 - [docs/agent-map.md](docs/agent-map.md) — Agent 应用难点分层、能力覆盖与推进顺序
 - [docs/protocol.md](docs/protocol.md) — AgentEvent / Span 协议草案与 fixture 格式
 - [docs/rendering.md](docs/rendering.md) — 渲染实现、增量分段与性能数据
