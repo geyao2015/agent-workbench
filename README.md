@@ -109,7 +109,7 @@ agent-workbench/
 pnpm install
 pnpm dev                    # Vite http://localhost:5173 + Hono http://localhost:8787
 pnpm build && pnpm start    # 单 URL http://localhost:8787
-pnpm test:e2e               # Playwright UI 回归（使用本地 Chrome）
+pnpm test:e2e               # Playwright UI 回归（按需运行，使用本地 Chrome）
 pnpm bench:streaming        # 流式渲染基准，结果写入 data/bench/results.json
 ```
 
