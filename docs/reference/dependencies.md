@@ -1,6 +1,6 @@
 # 依赖清单
 
-最后更新：2026-10-29
+最后更新：2026-10-30
 
 本文件记录各 workspace 的直接依赖与用途；版本为当前安装解析值，`package.json` 使用 `^` 范围。workspace 内部包 `@agent-workbench/protocol` 通过 `workspace:*` 引用，不计入三方依赖。
 
@@ -14,6 +14,8 @@
 | `lucide-react` | 1.59.0 | 图标库 |
 | `@tanstack/react-virtual` | 3.14.21 | 长会话行级虚拟化 |
 | `@radix-ui/react-slot` | 1.5.0 | `asChild`，shadcn 风格 Button |
+| `@radix-ui/react-dropdown-menu` | 2.2.1 | header 运行时切换下拉 |
+| `zustand` | 5.0.16 | 全局运行时状态（模式、模型、挂起切换） |
 | `class-variance-authority` | 0.7.1 | Button 变体样式 |
 | `clsx` | 2.1.1 | 类名拼接 |
 | `tailwind-merge` | 3.7.0 | Tailwind 类名去重 |
@@ -58,7 +60,7 @@ shadcn/ui 不是 npm 依赖，而是复制组件源码的模式；当前只落�
 
 ## 5. 当前刻意未引入
 
-- 状态管理、路由、数据请求库：使用 React 内置能力与原生 `fetch`。
+- 路由、数据请求库：使用 hash 路由与原生 `fetch`。
 - 语法高亮库（Prism / Shiki / highlight.js）：代码块当前为纯文本。
 - 完整 Radix / shadcn 组件集：按需逐个引入。
 - ESLint / Prettier：暂未配置。

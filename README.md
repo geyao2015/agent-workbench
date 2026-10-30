@@ -103,7 +103,7 @@ agent-workbench/
 
 ## 8. 当前状态
 
-**核心链路已完成**：Trace 瀑布、检索与 RCA 评测基线、文档元数据过滤、事件回放与评测报告均已落地。真实模型端到端评测与成本估算待配置 Key 和单价。
+**核心链路已完成**：Trace 瀑布、检索与 RCA 评测基线、文档元数据过滤、事件回放与评测报告均已落地；默认 mock，页面可全局切换实时 Agent。真实模型端到端评测与成本估算待配置 Key 和单价。
 
 ```bash
 pnpm install
@@ -113,7 +113,7 @@ pnpm test:e2e               # Playwright UI 回归（使用本地 Chrome）
 pnpm bench:streaming        # 流式渲染基准，结果写入 data/bench/results.json
 ```
 
-默认不配置模型 Key 时自动使用 fixture mock 运行时；配置 `ANTHROPIC_API_KEY` 或 `OPENAI_API_KEY`（可配 `OPENAI_BASE_URL` / `OPENAI_MODEL`）后启用实时 Agent。环境变量示例见 [.env.example](.env.example)，知识库位于 `data/docs/`，会话数据写入本地 `.data/`。
+默认使用 fixture mock 运行时；配置 `ANTHROPIC_API_KEY` 或 `OPENAI_API_KEY`（可配 `OPENAI_BASE_URL` / `OPENAI_MODEL`）后，可在页面 header 全局切换实时 Agent。环境变量示例见 [.env.example](.env.example)，知识库位于 `data/docs/`，会话数据写入本地 `.data/`。
 
 待办分组、验收标准与已知限制见 [docs/product/plan.md](docs/product/plan.md)。
 

@@ -33,6 +33,7 @@
 | 检索 | 本地索引 → SQLite FTS | 本地 BM25 已实现；SQLite FTS 待定 |
 | 存储 | 内存 / JSONL → SQLite FTS；checkpointer 先内存 | 内存 + JSONL 已实现；SQLite 待定 |
 | 样式 | Tailwind CSS + shadcn/ui | 已确认 |
+| 客户端状态 | zustand（全局运行时状态） | 已确认 |
 
 - 本地运行方式：单个 Hono 进程同时服务 web 静态资源和 API；不引入部署平台。
 - 开发期使用 Vite dev server（HMR），`/api` 代理到 Hono；构建后由 Hono 单进程托管 web 静态资源。
@@ -119,3 +120,7 @@
 | 2026-10-29 | 对话追加首版使用客户端队列，run 结束后逐条发送；取消清空队列 | 先验证交互而不改服务端单活跃 run 约束；服务端队列与分支后续再做 |
 | 2026-10-29 | 部署形态：前端 Netlify 静态托管，后端 Render/Fly 单 Node 服务；当前无鉴权阶段用 CORS，不拆 API | 兼顾静态 CDN/预览部署与 SSE、文件存储；Render/Fly、持久卷和跨域 SSE 在部署时再确认 |
 | 2026-10-30 | 移除 M0–M4 阶段门禁与时间盒，执行计划合并为统一待办清单 | 阶段拆分对后续迭代无实际价值，单一待办更直接 |
+| 2026-10-30 | 本地默认 mock；RUNTIME_MODE 只决定启动默认值，Key 只决定实时 Agent 是否可切换 | 页面内切换，不必改 .env 重启 |
+| 2026-10-30 | 运行时是服务端全局单状态，只有 `POST /api/runtime` 带参数；mock 与 agent 双运行时共存，按当前模式或 run 归属分发 | 会话列表等接口不感知模式，避免全链路透传 |
+| 2026-10-30 | 每个 run 在 `run.started.payload.runtime` 快照模式与模型；流式期间切换先挂起，run 结束后生效 | 在跑 run 语义稳定，切换可审计、可提示 |
+| 2026-10-30 | 客户端全局状态引入 zustand 与 `@radix-ui/react-dropdown-menu` | 运行时状态跨 Chat/Release 共享且需要选择器订阅 |

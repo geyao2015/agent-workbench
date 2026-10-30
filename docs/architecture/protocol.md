@@ -65,7 +65,7 @@ export interface AgentEvent<T = unknown> {
 
 | type | payload | 说明 |
 | --- | --- | --- |
-| `run.started` | `{ kind, title?, parentRunId?, sourceRunId? }` | run 开始；`sourceRunId` 用于 Chat handoff |
+| `run.started` | `{ kind, title?, parentRunId?, sourceRunId?, runtime? }` | run 开始；`sourceRunId` 用于 Chat handoff；`runtime` 快照 `mode / provider / model` |
 | `run.paused` | `{ reason: "approval" \| "user", approvalId? }` | 等待审批或用户输入 |
 | `run.resumed` | `{ fromSeq? }` | 恢复执行 |
 | `run.completed` | `{ status: "done" \| "cancelled" \| "error", usage?: Usage }` | 终态；之后不再有事件 |
@@ -324,7 +324,8 @@ HTTP 形态（已实现）：
 - `POST /api/runs/:runId/cancel` → 协作式取消。
 - `POST /api/approvals/:approvalId` → 提交审批（当前 mock 运行时）。
 - `GET /api/runs/:runId/artifacts/:artifactId` → 拉取 artifact 内容。
-- `GET /api/runtime` → 运行时模式、模型与知识库信息。
+- `GET /api/runtime` → 当前模式、模型、可用模型目录与知识库信息。
+- `POST /api/runtime` → `{ mode, modelId? }` 切换全局运行时；唯一携带模式参数的接口，其余接口由服务端当前模式或 run 归属决定。
 - `GET /api/threads` → 会话列表。
 - `GET /api/threads/:threadId/runs?cursor=&limit=` → 物化快照分页。
 
@@ -467,3 +468,4 @@ export interface Span {
 | 2026-10-29 | v1 | 新增 `approval.required` / `approval.resolved` 阶段级审批；artifact 增加可选 `stageId` |
 | 2026-10-29 | v1 | `run.started` 增加可选 `sourceRunId`，记录 Chat → Release handoff 来源 |
 | 2026-10-29 | v1 | 新增 `guard.blocked`，记录安全拦截类别；RunState 增加 `guards` |
+| 2026-10-30 | v1 | `run.started` 增加可选 `runtime`（`mode / provider / model`），快照 run 启动时的运行时；新增 `POST /api/runtime` 切换全局模式 |
