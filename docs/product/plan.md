@@ -13,8 +13,8 @@
 - **协议与渲染**：AgentEvent v1 + 纯函数 reducer；fixture 回放、SSE 重放、取消与断线重连；增量 Markdown、闭合块冻结、长会话虚拟化与渲染基准。
 - **Chat**：Hono + LangGraph 工具循环、BM25 知识库、引用与拒答、历史快照分页、对话追加队列；工具/审批/reasoning/引用时间线卡；离线检索 3/3 top-1，真实模型需配 Key 验证。
 - **Release**：确定性阶段、阶段审批、diff/audit artifact；LLM 冲突结构化输出 + 确定性回退；test.1 失败 → 日志 RCA → 修复审批 → test.2 重跑；回滚 child run（parentRunId）与审计；`prepare_release` handoff（sourceRunId）；耗时/审批/artifact 指标。
-- **评测、Trace 与安全**：Trace 从事件派生；16 篇语料 + 50 题检索金标（`eval:retrieval`）、10 个 RCA 案例（`eval:rca`）、元数据过滤、离线评测报告、渲染基准；input guard、检索数据分隔、输出脱敏。
-- **展示与回归**：工程亮点卡、工程说明抽屉、guard 卡片；protocol 62 / API 76 测试，Playwright 10 条关键路径，typecheck / build / check-docs 全绿。
+- **评测、Trace 与安全**：Trace 从事件派生；17 篇语料（含前端组件库）+ 50 题检索金标（`eval:retrieval`）、10 个 RCA 案例（`eval:rca`）、元数据过滤、离线评测报告、渲染基准；input guard、检索数据分隔、输出脱敏。
+- **展示与回归**：工程亮点卡、工程说明抽屉、guard 卡片；protocol 62 / API 80 测试，Playwright 10 条关键路径，typecheck / build / check-docs 全绿。
 - **运行时切换**：默认 mock；`RuntimeController` 全局模式 + `MODEL_CATALOG` 目录；mock/agent 双运行时分发；header 切换控件（无 Key 禁用），流式中挂起切换；`run.started.runtime` 快照；mock 终态落库，侧栏与模式解耦。
 
 ## 3. 待办
@@ -32,11 +32,9 @@
 - [ ] 文本复制快捷键。
 - [ ] 音视频消息以卡片渲染。
 - [ ] 对话分支：从指定消息拆出 branch thread；需要 `branchFrom` / `parentThreadId` 元数据和事件前缀/快照 fork。
-- [ ] 引用下钻：`citation.added` 增加 `blockId` / `chunkId` / `quote`；block 尾部引用标记，点击弹层展示原文摘录。
-  - 完整文档只走 source API / artifact；侧栏拉取原文并按 `chunkId` 定位高亮；关联 retrieval span 与引用准确率评测。
+- [ ] 引用下钻：`citation.added` 增加 `blockId` / `chunkId` / `quote`；block 尾部引用标记，点击弹层展示原文摘录；完整文档只走 source API / artifact，侧栏拉取原文并按 `chunkId` 定位高亮，关联 retrieval span 与引用准确率评测。
 - [ ] 会话内目录（Outline）：按 run 分组提取提问与 assistant heading；hover 200–300ms 显示摘要预览，点击按 `runId / messageId / blockId` 跳转。
-  - 预览只渲染摘要并按锚点缓存；目录在 block 闭合时更新，长会话虚拟化或折叠；支持键盘选择、Enter 跳转、Esc 关闭。
-  - 预览卡参考 Obsidian Page Preview：白底、圆角、细边框、柔和阴影，靠边翻转并 clamp；左侧用长短灰线表示标题层级，`+N` 语义待定。
+  - 预览只渲染摘要并按锚点缓存；目录在 block 闭合时更新，长会话虚拟化或折叠；支持键盘选择、Enter 跳转、Esc 关闭。预览卡参考 Obsidian Page Preview：白底、圆角、细边框、柔和阴影，靠边翻转并 clamp；左侧用长短灰线表示标题层级，`+N` 语义待定。
 - [ ] 端上 UI 打磨（借机学习 TailwindCSS）。
 
 ### 3.3 统计与模型
@@ -80,15 +78,17 @@
 - [ ] oxlint（type-aware）+ Prettier 清理后接入 GitHub Actions：format / lint / typecheck / test / build / check-docs；E2E 可选。
 - [ ] 本地开发与线上测试切换：环境变量与 API base URL 切换，补线上一套冒烟测试。
 - [ ] Mock 数据真实化：
-  - Demo fixture 由知识库、1.2.0 发版场景与 INC-042 日志组合生成并提交 JSONL，禁止“节点 N”/lorem 进入 Demo。
-  - 长会话改为 30–50 轮真实 Q&A，长报告改为发版检查/事故复盘；图片用本地合成截图 + 固定识别文本。
-  - 节点生成器只保留给 `pnpm bench:streaming` 与压测入口，快捷项标注“压测数据”。
-  - 增加 `fixtures:check`：校验领域锚点、引用 `sourceId`、占位词和块数。
+  - Demo fixture 由知识库、1.2.0 发版场景与 INC-042 日志组合生成并提交 JSONL，禁止“节点 N”/lorem 进入 Demo；长会话改为 30–50 轮真实 Q&A，长报告改为发版检查/事故复盘，图片用本地合成截图 + 固定识别文本。
+  - 节点生成器只保留给 `pnpm bench:streaming` 与压测入口，快捷项标注“压测数据”；增加 `fixtures:check`：校验领域锚点、引用 `sourceId`、占位词和块数。
 - [ ] 部署与演示入口：前端 Netlify + 后端 Render/Fly；CORS、API base URL、mock 标注、环境变量校验、健康检查与跨域 SSE 实测。
 
 ### 3.9 文档
 
 - [ ] 整理文档：难点分析单独归类，清理重复与过期描述。
+
+### 3.10 Release 流程与范围
+
+- [ ] 重构发版流程与范围：当前固定阶段链（前置检查 → 冲突解决 → Diff 审批 → 测试 → RCA → 修复审批 → 重测 → 回滚 → Release Notes → 审计）不是目标形态；目标流程、阶段粒度与边界确认后按切片重做。
 
 ## 4. 验收与限制
 
