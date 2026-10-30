@@ -30,8 +30,8 @@
 | Agent | LangGraph JS / LangChain v1 | 已定 |
 | 协议 | append-only AgentEvent + Zod | 已定 |
 | 测试 | Vitest；Playwright（后期 E2E） | 已确认 |
-| 检索 | 本地 BM25 → SQLite FTS5 | BM25 已实现；FTS5 已定，待实现 |
-| 存储 | SQLite（Kysely）+ Storage 抽象 → Postgres | 本地文件已实现；SQLite 已定，待实现 |
+| 检索 | 本地 BM25 → pg 倒排（应用层 bigram + GIN） | BM25 已实现；落库方案已定，待实现 |
+| 存储 | Postgres（Kysely + pg）+ Storage 抽象（大对象走文件 / 对象存储） | 本地文件已实现；Postgres 已定，待实现 |
 | 样式 | Tailwind CSS + shadcn/ui | 已确认 |
 | 客户端状态 | zustand（全局运行时状态） | 已确认 |
 
@@ -68,7 +68,7 @@
 ### 日志
 
 - 业务日志：Agent 工具（`search_logs`、`get_log_context`、`group_errors`、`get_commit_diff`），输出根因 + 证据 + 修复建议，用合成故障集评测。
-- 不建日志平台；小规模合成语料 + 本地索引 + SQLite FTS / 内存即可。
+- 不建日志平台；小规模合成语料 + 本地索引 / pg 倒排即可。
 
 ## 5. 信息架构
 
@@ -96,7 +96,8 @@
 
 ## 8. 待确认
 
-- 部署执行细节：后端 Render 或 Fly 二选一、实例规格、持久卷与跨域 SSE 实测（部署时确认）。
+- 部署执行细节：后端 Render 或 Fly 二选一、实例规格与跨域 SSE 实测（部署时确认）。
+- Postgres 部署形态：托管 pg（Neon / Supabase / Railway）还是自建容器、连接池（应用侧 vs pgbouncer）、SSL 与备份策略（部署时确认）。
 - 语音输入选型：Web Speech（快、跨浏览器受限）vs 服务端 Whisper / 流式 ASR；第一版倾向 Web Speech adapter，见 [multimodal.md §4](../architecture/multimodal.md#4-服务端与模型)。
 - 图片存储与发送策略：保留时长、是否默认发模型 provider、EXIF 清理规则，见 [multimodal.md §5](../architecture/multimodal.md#5-安全与隐私)。
 - 视觉模型支持与成本：当前 provider 是否支持图片、超限如何降级，需真实 Key 验证。
@@ -139,3 +140,4 @@
 | 2026-10-30 | 数据存储改为 DB 为源：SQLite + Kysely，日志独立库，大对象走 Storage；runtime 模式仍进程内；详见 [storage.md](../architecture/storage.md) | 本地跑通并可迁 Postgres；支撑产品迭代内容与 prompt 版本落库 |
 | 2026-10-30 | 知识库文档采用逻辑文档 + 不可变版本；检索仅索引 current 版本；引用钉 `docVersion`；文档 id 显式存储在元数据，正文互链只写 docId | 升版不能断链、不能让历史版本污染检索；旧 run 的引用需可回溯 |
 | 2026-10-30 | Release 升级为迭代容器：迭代含多 feature、PRD / 技术方案、功能分支与版本号，发版作为迭代内阶段；新起 iterations 领域，旧 Release 达到能力对等后整块删除；feature 仅保留轻量状态；`run.started` 加法预留 `iterationId`；数据真实、执行模拟 | 发版不应是独立场景；迭代才能承载多 feature 并联动知识库，原地改名会让容器与执行层语义错位 |
+| 2026-10-30 | 存储选型由 SQLite 改为 Postgres：本地 Docker 与部署托管 pg 同构，只换连接串；全文检索改为应用层 bigram + pg GIN，不引入 zhparser / pg_bigm；测试分层，纯单测离线，集成测试连真库 | 项目目标是实际上线，生产固定 pg；当前尚无落库数据，迁移成本最低；避免上线后再迁库 |

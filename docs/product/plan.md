@@ -64,11 +64,13 @@
 
 ### 3.7 持久化与数据库
 
-表结构、兼容规则与迁移顺序见 [storage.md](../architecture/storage.md)，按顺序逐段实现：
+表结构、数据库约定与迁移顺序见 [storage.md](../architecture/storage.md)，按顺序逐段实现：
 
+- [ ] 本地 pg：`docker compose` 起 Postgres，`DATABASE_URL` 进 `.env.example`，启动时执行迁移。
 - [ ] `Storage` 与 repository 接口，文件实现收到接口后面。
 - [ ] 运行时落库：threads / runs / events，导入现有 `.data/threads`，快照改派生。
-- [ ] 文本内容落库：documents / chunks / FTS5，`data/docs` 改为 seed import。
+- [ ] 集成测试切真库：每个 worker 独立 schema，纯单测保持离线。
+- [ ] 文本内容落库：documents / chunks 与 bigram 倒排索引，`data/docs` 改为 seed import。
 - [ ] 产品迭代落库：iterations / features / iteration_links 与 PRD / 技术方案 / 发版记录，知识库增加迭代分类。
 - [ ] prompt 版本、spans、独立日志库与 artifacts 接入 `Storage`。
 

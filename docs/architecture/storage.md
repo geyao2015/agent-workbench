@@ -6,7 +6,7 @@
 
 目标：
 
-- 本地 SQLite 单进程跑通，部署时迁 Postgres，业务代码只换方言与迁移。
+- 本地与部署共用 Postgres：本地 Docker 起库，部署接托管 pg，只换连接串。
 - 会话、事件、知识库、产品迭代文档、prompt 版本统一落库。
 - 大对象走 `Storage` 抽象，DB 只存引用。
 
@@ -62,15 +62,16 @@ documents(id pk, namespace, category, origin, title, current_version,
 document_versions(doc_id, version, hash, content, created_at,
                   pk(doc_id, version))
 document_tags(doc_id, tag, pk(doc_id, tag))
-chunks(id pk, doc_id, version, ordinal, locator, content)
-chunks_fts(content, locator)  -- FTS5 虚表，派生
+chunks(id pk, doc_id, version, ordinal, locator, content, terms tsvector)
+-- terms 由应用层 bigram 分词派生，GIN 索引倒排
 ```
 
 - `category`：`kb` / `prd` / `tech_design` / `release_notes`；`origin`：`seed` / `upload` / `generated`。
 - 一套模型覆盖知识库与产品迭代文档，版本、分类与引用能力复用。
 - chunk 落库而非每次现切：`citation.added` 已带 `chunkId` / `locator`，切分算法调整后旧引用仍需可回溯。
 - `documents.id` 由文档元数据显式声明，不从文件名或路径推导；`current_version` 必须指向 `document_versions` 中已存在的行，同一文档版本号唯一。
-- 历史版本只读保留；FTS 索引与检索只覆盖 `current_version`，历史版本仅供查阅与审计（理由见 [decision.md §4](../product/decision.md#知识库文档模型)）。
+- 历史版本只读保留；检索索引只覆盖 `current_version`，历史版本仅供查阅与审计（理由见 [decision.md §4](../product/decision.md#知识库文档模型)）。
+- 全文检索不依赖编译扩展：应用层做中文 bigram 分词写入 `terms`，pg 侧用 `to_tsvector('simple', ...)` 与 GIN 倒排；不引入 `zhparser` / `pg_bigm`，托管 pg 可直接迁移。
 - seed 期一个逻辑文档的多个版本存为独立文件，按 `<docId>@<version>.md` 命名，由元数据记录 `currentVersion`；落库后文件名不再参与标识。
 
 ### 3.3 产品迭代
@@ -102,27 +103,29 @@ prompt 有 active 指针与评测绑定，生命周期不同于普通文档，�
 log_entries(id pk, ts, level, source, run_id, message, attrs_json)
 ```
 
-写入独立 `logs.sqlite`，与业务库隔离，避免与事件写入争锁；保留策略见 §7。
+写入独立日志库（独立 database），与业务库隔离，避免与事件写入争锁；保留策略见 §7。
 
-## 4. 本地到部署的兼容规则
+## 4. 数据库约定
 
-- id 全部应用生成字符串（现有 `run_*` / `thread_*` 已如此），禁用自增。
-- 时间统一 epoch ms 整数。
-- 布尔用 0/1；JSON 存 TEXT 并用 `json_valid` 约束，Postgres 换 `jsonb`。
-- 不用 `INSERT OR REPLACE`、不依赖 `rowid`、不用 SQLite 特有类型。
-- FTS5 与向量只出现在 repository 实现里，不泄漏到业务层。
+本地与部署是同一方言，规则只约束写法，不做跨方言兼容：
+
+- id 全部应用生成字符串（现有 `run_*` / `thread_*` 已如此），禁用自增与 `serial`。
+- 时间统一 epoch ms 的 `bigint`，不用 `timestamptz`，避免时区语义分叉。
+- 布尔用原生 `boolean`；JSON 用 `jsonb`，必要时加 `jsonb_typeof` 约束。
+- 查询经 Kysely；只有倒排、聚合等表达力不足时才用 `sql` 模板，且只出现在 repository 实现里。
+- 全文检索（bigram + `tsvector`）与向量只出现在 repository 实现里，不泄漏到业务层。
 - schema 用版本化迁移文件，启动时执行，不在代码里建表。
 - 大对象只存 `storage_key` / `mime` / `size` / `hash`，读写经 `Storage` 接口。
 
 ## 5. 目录形态
 
 ```
-.env                    配置
+.env                    配置（DATABASE_URL 等）
 data/kb/seed/*.md       启动 seed 与测试夹具
-.data/app.sqlite        业务库
-.data/logs.sqlite       日志库
 .data/blobs/<sha256>    大对象，内容寻址去重
 ```
+
+数据库不在仓库目录：本地由 `docker compose` 管理数据卷，部署连托管 pg；测试用独立 database / schema，不与开发库共用。
 
 迁移完成后移除 `.data/threads`、`.data/artifacts` 与 `data/bench/results.json`；生成产物不再与源内容同目录。
 
@@ -130,7 +133,7 @@ data/kb/seed/*.md       启动 seed 与测试夹具
 
 1. `Storage` 与 repository 接口：文件实现收到接口后，行为不变。
 2. 运行时落库：threads / runs / events，导入现有 `.data/threads` 数据，快照改为派生。
-3. 文本内容落库：documents / chunks / FTS5，`data/docs` 改为 seed import。
+3. 文本内容落库：documents / chunks 与倒排索引，`data/docs` 改为 seed import。
 4. 产品迭代落库：iterations / features / iteration_links 与 PRD / 技术方案 / 发版记录，知识库增加迭代分类。
 5. prompt 版本、spans、日志库与 artifacts 接入 `Storage`。
 
@@ -138,7 +141,7 @@ data/kb/seed/*.md       启动 seed 与测试夹具
 
 ## 7. 待定
 
-- SQLite 驱动：`better-sqlite3` 优先，`node:sqlite` 作为减依赖备选。
-- 向量检索：BM25 / FTS 召回不足时再引入；SQLite 用 `sqlite-vec`，Postgres 用 `pgvector`。
+- 连接池：应用侧 `pg` Pool 与部署侧 pgbouncer 的取舍，部署时确认。
+- 向量检索：BM25 / 倒排召回不足时再引入 `pgvector`。
 - 日志保留期与是否提供查询界面。
 - 现有 `.data/threads` 导入时是否保留每个 run 的完整事件原文。
