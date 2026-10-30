@@ -50,17 +50,23 @@
 - [ ] 服务端队列：追加队列移到 RunRegistry，解决多标签页一致性与 409 单活跃 run 约束；当前队列只在单页内存。
 - [ ] 运行态持久化恢复：服务重启后恢复运行中 run 与 pending approval。
 
-### 3.5 多 Agent 架构
+### 3.5 知识库文件
+
+- [ ] 文件库：浏览知识库文档列表与内容，展示 `service` / `type` / `tags` 等元数据；入口放 Chat 侧栏或独立页面待定。
+- [ ] 上传：新增文档并触发索引重建，上传后可在文件库查看；暂不做在线编辑。
+- [ ] 上传安全：限制类型与大小，文档内容按不可信数据处理。
+
+### 3.6 多 Agent 架构
 
 - [ ] 明确角色拆分、调度方式、共享/私有上下文、工具权限与 handoff 边界。
 - [ ] 协议扩展 `agentId` 等可选字段，Trace 按 agent 关联；先选一个场景落地（如 Release 内拆分检查/修复/审计）。
 
-### 3.6 持久化与数据库
+### 3.7 持久化与数据库
 
 - [ ] 接入数据库，替代内存 checkpointer 与 JSONL 事件日志；选型与迁移策略先在 decision.md 确认。
 - [ ] 本地落库：服务日志、AgentEvent 事件日志、run/thread 元数据与 artifact 索引。
 
-### 3.7 工程化与交付
+### 3.8 工程化与交付
 
 - [ ] 测试统一：测试文件风格统一并集中到一个包（如 `packages/testing` 或仓库级 `tests/`），保留 Vitest / Playwright 分工。
 - [ ] oxlint（type-aware）+ Prettier 清理后接入 GitHub Actions：format / lint / typecheck / test / build / check-docs；E2E 可选。
@@ -72,7 +78,7 @@
   - 增加 `fixtures:check`：校验领域锚点、引用 `sourceId`、占位词和块数。
 - [ ] 部署与演示入口：前端 Netlify + 后端 Render/Fly；CORS、API base URL、mock 标注、环境变量校验、健康检查与跨域 SSE 实测。
 
-### 3.8 文档
+### 3.9 文档
 
 - [ ] 整理文档：难点分析单独归类，清理重复与过期描述。
 
