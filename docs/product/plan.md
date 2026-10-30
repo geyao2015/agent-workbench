@@ -85,6 +85,8 @@
   - Demo fixture 由知识库、1.2.0 发版场景与 INC-042 日志组合生成并提交 JSONL，禁止“节点 N”/lorem 进入 Demo；长会话改为 30–50 轮真实 Q&A，长报告改为发版检查/事故复盘，图片用本地合成截图 + 固定识别文本。
   - 节点生成器只保留给 `pnpm bench:streaming` 与压测入口，快捷项标注“压测数据”；增加 `fixtures:check`：校验领域锚点、引用 `sourceId`、占位词和块数。
 - [ ] 部署与演示入口：前端 Netlify + 后端 Render/Fly；CORS、API base URL、mock 标注、环境变量校验、健康检查与跨域 SSE 实测。
+- [ ] API 资源化：run 收敛为单一 `/api/runs/:runId`（按 `kind` 判别，吸收 `/api/releases/runs/*` 的 cancel / events / spans），审批统一为 `/api/approvals/:id`；补 `GET /api/runs/:runId` 与 `POST /api/threads`；创建类接口返回 201 + `Location`；动作端点改资源语义（`cancel` / `pause` → `PATCH /api/runs/:runId { status }`，`rollback` → `POST /api/runs` 带 `parentRunId`，审批决议 → `PATCH /api/approvals/:id { status, note? }`），路径中不再出现动词。与 3.10 迭代重做同步，避免 Release 命名空间改两遍；实现时同步 [protocol.md §6](../architecture/protocol.md#6-transport-契约)。
+- [ ] API 版本化：路由统一挂 `/api/v1`，前端 transport 收敛到单一 base URL；与事件协议 `v: 1` 区分（URL 版本管 HTTP 契约，事件版本管 AgentEvent）；同步 protocol.md 的接口清单与 Changelog。
 
 ### 3.9 文档
 
