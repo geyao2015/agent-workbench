@@ -84,7 +84,8 @@ M0 之前不做 M1 及以后的内容。
 - [x] RAG 检索评测：`pnpm eval:retrieval`，Recall@1/@4、MRR、Abstain。
 - [ ] RAG 端到端评测：补 `goldAnswerPoints` / `goldEvidenceIds`；忠实度、引用准确率、答案正确性；需真实模型 + judge + 人工抽检。
 - [x] RCA 评测集：10 个合成事故，证据定位与 runbook 检索；`pnpm eval:rca`。
-- [ ] 成本与真实 provider 延迟：待配置 Key 与单价。
+- [ ] 统计看板（性能 + 计费）：把 `PerformancePanel` 升级为统计看板，分「性能」「计费」两类；性能补真实 provider 首 token 与端到端延迟，计费按模型单价汇总 `run.completed.usage` 的 token 与成本并按 run / thread 聚合，无 Key 时标注 mock。
+- [ ] 真实 provider 基线（统计看板前置）：用免费额度的 OpenAI 兼容 provider 跑通一次真实调用，拿到单价与延迟数据。
 - [x] 对话追加（客户端队列）：流式期间继续输入并排队，当前 run 结束后自动发送；取消、新会话、切换历史清空队列；E2E 覆盖自动发送与取消清空。
 - [ ] 对话分支：从指定消息拆出 branch thread；需要 `branchFrom` / `parentThreadId` 元数据和事件前缀/快照 fork。
 - [ ] 服务端队列：把追加队列移到 RunRegistry，解决多标签页一致性与 409 单活跃 run 约束；当前版本队列只在单页内存中。
