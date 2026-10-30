@@ -71,7 +71,8 @@
 
 ### 3.8 工程化与交付
 
-- [ ] 测试统一：测试文件风格统一并集中到一个包（如 `packages/testing` 或仓库级 `tests/`），保留 Vitest / Playwright 分工。
+- [ ] 测试统一：单测与源码共置、统一 `.test.ts`（`packages/protocol/src/__tests__` 迁出）；E2E 保持根级并升级为独立 workspace（`e2e/package.json` + tsconfig，仍用 `pnpm dev` 起全链路），统一 `.spec.ts`。
+- [ ] 测试纳入 typecheck：`e2e/*.spec.ts` 目前不在任何 tsconfig；共享辅助只抽 2 处以上复用的（事件构造、临时 store / app），不预先建 `packages/testing`。
 - [ ] 单测执行与调试：支持按包 / 文件 / 用例运行（`pnpm test -- <path>`、`-t`）与 watch 模式；补编辑器断点调试配置（`node --inspect-brk` 或 VS Code launch.json），能对单条用例断点逐帧调试。
 - [ ] oxlint（type-aware）+ Prettier 清理后接入 GitHub Actions：format / lint / typecheck / test / build / check-docs；E2E 可选。
 - [ ] 本地开发与线上测试切换：环境变量与 API base URL 切换，补线上一套冒烟测试。
