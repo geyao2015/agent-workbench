@@ -124,3 +124,4 @@
 | 2026-10-30 | 运行时是服务端全局单状态，只有 `POST /api/runtime` 带参数；mock 与 agent 双运行时共存，按当前模式或 run 归属分发 | 会话列表等接口不感知模式，避免全链路透传 |
 | 2026-10-30 | 每个 run 在 `run.started.payload.runtime` 快照模式与模型；流式期间切换先挂起，run 结束后生效 | 在跑 run 语义稳定，切换可审计、可提示 |
 | 2026-10-30 | 客户端全局状态引入 zustand 与 `@radix-ui/react-dropdown-menu` | 运行时状态跨 Chat/Release 共享且需要选择器订阅 |
+| 2026-10-30 | mock 会话在终态（完成/取消）写入 `ThreadStore`；`bench-*` 与断开未取消的 run 不落库；侧栏与运行时解耦，切换模式保留 threadId | 会话列表是历史记录，不应随模式隐藏；mock 历史可作为后续 agent 上下文 |

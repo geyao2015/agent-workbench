@@ -15,7 +15,7 @@
 - **Release**：确定性阶段、阶段审批、diff/audit artifact；LLM 冲突结构化输出 + 确定性回退；test.1 失败 → 日志 RCA → 修复审批 → test.2 重跑；回滚 child run（parentRunId）与审计；`prepare_release` handoff（sourceRunId）；耗时/审批/artifact 指标。
 - **评测、Trace 与安全**：Trace 从事件派生；16 篇语料 + 50 题检索金标（`eval:retrieval`）、10 个 RCA 案例（`eval:rca`）、元数据过滤、离线评测报告、渲染基准；input guard、检索数据分隔、输出脱敏。
 - **展示与回归**：工程亮点卡、工程说明抽屉、guard 卡片；protocol 62 / API 76 测试，Playwright 10 条关键路径，typecheck / build / check-docs 全绿。
-- **运行时切换**：默认 mock；`RuntimeController` 全局模式 + `MODEL_CATALOG` 目录；mock/agent 双运行时分发；header 切换控件（无 Key 禁用），流式中挂起切换；`run.started.runtime` 快照。
+- **运行时切换**：默认 mock；`RuntimeController` 全局模式 + `MODEL_CATALOG` 目录；mock/agent 双运行时分发；header 切换控件（无 Key 禁用），流式中挂起切换；`run.started.runtime` 快照；mock 终态落库，侧栏与模式解耦。
 
 ## 3. 待办
 
@@ -92,6 +92,6 @@
 
 - 每个切片退出条件：可运行、端到端场景、测试通过、1–3 个量化指标、README 更新、能回答 3 个面试追问。
 - 运行中的 Chat / Release run 依赖内存 runtime，服务重启后不可恢复，pending approval 失效；已完成 run 与 artifact 仍可读。
-- 运行时模式为进程内全局状态，重启回默认 mock；mock 会话不落库，切换后不复用旧 threadId。
+- 运行时模式为进程内全局状态，重启回默认 mock；mock 会话终态落库，`bench-*` 与断开未取消的 run 不落库。
 - 真实模型端到端答案质量、引用准确率与成本估算待 Key/单价。
 - 发版为模拟环境，不接真实 CI/CD。
