@@ -112,15 +112,11 @@ export function ChatView() {
   }, []);
 
   useEffect(() => {
-    if (mode !== "agent") {
-      return;
-    }
-
     const controller = new AbortController();
     void refreshThreads(controller.signal);
 
     return () => controller.abort();
-  }, [mode]);
+  }, []);
 
   useEffect(() => {
     if (mode !== "mock" || autoRunRef.current) {
@@ -152,30 +148,6 @@ export function ChatView() {
     };
   }, [isStreaming, setChatBusy]);
 
-  const previousModeRef = useRef<"agent" | "mock" | undefined>(undefined);
-
-  useEffect(() => {
-    if (!mode) {
-      return;
-    }
-
-    const previous = previousModeRef.current;
-    previousModeRef.current = mode;
-
-    if (!previous || previous === mode) {
-      return;
-    }
-
-    // mock 会话不落库，切换后不复用旧 threadId，下一次提问从新会话开始。
-    threadIdRef.current = null;
-    setActiveThreadId(null);
-    clearQueue();
-
-    if (mode === "agent") {
-      void refreshThreads();
-    }
-  }, [mode]);
-
   async function refreshThreads(signal?: AbortSignal) {
     setIsLoadingThreads(true);
 
@@ -184,7 +156,7 @@ export function ChatView() {
         (await fetchThreads(signal)).filter((thread) => thread.kind === "chat"),
       );
     } catch {
-      // mock 模式下没有会话接口，忽略即可
+      // 会话接口不可用时保持当前列表
     } finally {
       if (!signal?.aborted) {
         setIsLoadingThreads(false);
@@ -813,15 +785,13 @@ export function ChatView() {
       </AppHeader>
 
       <div className="relative flex min-h-0 flex-1">
-        {mode === "agent" ? (
-          <ThreadSidebar
-            threads={threads}
-            activeThreadId={activeThreadId}
-            loading={isLoadingThreads}
-            onSelect={(threadId) => void openThread(threadId)}
-            onNew={resetConversation}
-          />
-        ) : null}
+        <ThreadSidebar
+          threads={threads}
+          activeThreadId={activeThreadId}
+          loading={isLoadingThreads}
+          onSelect={(threadId) => void openThread(threadId)}
+          onNew={resetConversation}
+        />
 
         <main className="flex min-h-0 flex-1 flex-col">
           {historyCursor ? (

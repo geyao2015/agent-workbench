@@ -23,31 +23,40 @@ afterEach(() => {
   }
 });
 
-function makeFixture(): FixtureDefinition {
-  const runStarted = {
+function makeFixture(name = "fixture-chat"): FixtureDefinition {
+  const event = (type: string, payload: unknown) => ({
     v: 1,
-    eventId: "evt_1",
-    seq: 1,
+    eventId: "",
+    seq: 0,
     runId: "run_fixture",
     threadId: "thread_fixture",
     ts: 0,
-    type: "run.started",
-    payload: { kind: "chat", title: "fixture" },
-  };
+    type,
+    payload,
+  });
 
   return {
     scenario: {
-      name: "fixture-chat",
+      name,
       description: "测试 fixture",
       runKind: "chat",
       threadId: "thread_fixture",
       timing: { mode: "fast", defaultMs: 0 },
     },
-    events: [runStarted],
+    events: [
+      event("run.started", { kind: "chat", title: "fixture" }),
+      event("message.started", { messageId: "msg_a", role: "assistant" }),
+      event("text.delta", { messageId: "msg_a", delta: "fixture answer" }),
+      event("message.completed", { messageId: "msg_a", stopReason: "stop" }),
+      event("run.completed", { status: "done" }),
+    ],
   } as unknown as FixtureDefinition;
 }
 
-function makeApp(env: NodeJS.ProcessEnv = {}) {
+function makeApp(
+  env: NodeJS.ProcessEnv = {},
+  fixtureName = "fixture-chat",
+) {
   const dir = mkdtempSync(join(tmpdir(), "aw-chat-api-"));
   tempDirs.push(dir);
 
@@ -61,7 +70,11 @@ function makeApp(env: NodeJS.ProcessEnv = {}) {
     createAgent: () => ({}) as unknown as ChatAgent,
     createConflictResolver: () => new DeterministicConflictResolver(),
   });
-  const mock = createMockRuntime(() => new Map([["fixture-chat", makeFixture()]]));
+  const threads = new ThreadStore(dir);
+  const mock = createMockRuntime(
+    () => new Map([[fixtureName, makeFixture(fixtureName)]]),
+    { store: threads },
+  );
   const agentApi = new Hono();
   agentApi.post("/api/runs", (c) =>
     c.json({ runId: "run_agent", threadId: "thread_agent", kind: "chat" }),
@@ -71,7 +84,7 @@ function makeApp(env: NodeJS.ProcessEnv = {}) {
   );
   const app = createChatApi({
     controller,
-    threads: new ThreadStore(dir),
+    threads,
     kb: { list: () => [] } as unknown as KnowledgeBase,
     agentApi,
     mock,
@@ -79,7 +92,7 @@ function makeApp(env: NodeJS.ProcessEnv = {}) {
     releases: 1,
   });
 
-  return { app, controller };
+  return { app, controller, threads };
 }
 
 describe("chat api 运行时分发", () => {
@@ -167,5 +180,58 @@ describe("chat api 运行时分发", () => {
       headers: { "content-type": "application/json" },
     });
     expect(invalid.status).toBe(400);
+  });
+
+  it("mock run 完成后写入 ThreadStore", async () => {
+    const { app, threads } = makeApp();
+    const created = await app.request("/api/runs", {
+      method: "POST",
+      body: JSON.stringify({ prompt: "你好" }),
+      headers: { "content-type": "application/json" },
+    });
+    const run = (await created.json()) as { runId: string; threadId: string };
+    const events = await app.request(`/api/runs/${run.runId}/events`);
+
+    await events.text();
+
+    const list = threads.list({ kind: "chat" });
+
+    expect(list).toHaveLength(1);
+    expect(list[0]?.threadId).toBe(run.threadId);
+    expect(list[0]?.runCount).toBe(1);
+    expect(list[0]?.messageCount).toBeGreaterThanOrEqual(2);
+    expect(threads.historyMessages(run.threadId).length).toBeGreaterThan(0);
+  });
+
+  it("取消未结束的 mock run 也会落库", async () => {
+    const { app, threads } = makeApp();
+    const created = await app.request("/api/runs", {
+      method: "POST",
+      body: JSON.stringify({ prompt: "取消测试" }),
+      headers: { "content-type": "application/json" },
+    });
+    const run = (await created.json()) as { runId: string; threadId: string };
+
+    await app.request(`/api/runs/${run.runId}/cancel`, { method: "POST" });
+
+    const list = threads.list({ kind: "chat" });
+
+    expect(list).toHaveLength(1);
+    expect(list[0]?.threadId).toBe(run.threadId);
+  });
+
+  it("bench fixture 不落库", async () => {
+    const { app, threads } = makeApp({}, "bench-200-blocks");
+    const created = await app.request("/api/runs", {
+      method: "POST",
+      body: JSON.stringify({ prompt: "压测", fixture: "bench-200-blocks" }),
+      headers: { "content-type": "application/json" },
+    });
+    const run = (await created.json()) as { runId: string };
+    const events = await app.request(`/api/runs/${run.runId}/events`);
+
+    await events.text();
+
+    expect(threads.list()).toHaveLength(0);
   });
 });

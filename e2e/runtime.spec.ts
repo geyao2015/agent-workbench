@@ -42,6 +42,22 @@ test("Release 页面共享同一个运行时切换控件", async ({ page }) => {
   await expect(page.getByTestId("runtime-switcher")).toContainText("Mock 模式");
 });
 
+test("mock 会话完成后出现在侧栏", async ({ page }) => {
+  await page.goto("/#/chat");
+  await page.getByRole("button", { name: /一般对话/ }).click();
+
+  await expect(page.getByTestId("chat-feed")).toHaveAttribute(
+    "data-streaming",
+    "false",
+    { timeout: 20_000 },
+  );
+
+  const sidebar = page.locator("aside");
+  await expect(
+    sidebar.getByText("你在 Agent Workbench 里能做什么？").first(),
+  ).toBeVisible({ timeout: 10_000 });
+});
+
 test("运行中切换会挂起，run 结束后自动生效", async ({ page }) => {
   const info = await runtimeInfo(page);
 

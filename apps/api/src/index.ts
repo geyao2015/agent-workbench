@@ -77,7 +77,7 @@ const release = new ReleaseService({
 const runs = new RunManager({ runtime: controller, kb, store: threads, registry });
 const agentApi = createAgentApi({ runs });
 // mock 运行时：fixture 回放，保留暂停、审批与断线重放语义
-const mockRuntime = createMockRuntime(() => fixtures);
+const mockRuntime = createMockRuntime(() => fixtures, { store: threads });
 
 const app = new Hono();
 

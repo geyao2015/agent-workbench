@@ -19,6 +19,7 @@ export default defineConfig({
     timeout: 120_000,
     env: {
       RUNTIME_MODE: "mock",
+      STORE_DIR: ".data/e2e",
       OPENAI_API_KEY: "",
       OPENAI_BASE_URL: "",
       OPENAI_MODEL: "",

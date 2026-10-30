@@ -3,23 +3,32 @@ import { randomUUID } from "node:crypto";
 import { Hono } from "hono";
 import { streamSSE } from "hono/streaming";
 
-import type { AgentEvent, Timing } from "@agent-workbench/protocol";
+import type { AgentEvent, RunKind, Timing } from "@agent-workbench/protocol";
 
 import type { FixtureDefinition } from "../fixtures.js";
+import type { ThreadStore } from "../runs/thread-store.js";
 
 export interface MockRuntime {
   app: Hono;
   owns(runId: string): boolean;
 }
 
+export interface MockRuntimeDeps {
+  store: ThreadStore;
+}
+
 export function createMockRuntime(
   getFixtures: () => Map<string, FixtureDefinition>,
+  deps: MockRuntimeDeps,
 ): MockRuntime {
   const app = new Hono();
 
 interface MockRun {
   runId: string;
   threadId: string;
+  kind: RunKind;
+  title: string;
+  createdAt: number;
   timing: Timing;
   events: AgentEvent[];
   emittedCount: number;
@@ -30,11 +39,40 @@ interface MockRun {
   pauseRequested: boolean;
   awaitingApproval: string | null;
   finished: boolean;
+  persistable: boolean;
+  persisted: boolean;
 }
 
 const runs = new Map<string, MockRun>();
 
 const MAX_PROMPT_LENGTH = 4000;
+
+function isPersistable(fixture: FixtureDefinition): boolean {
+  return (
+    fixture.scenario.runKind === "chat" &&
+    !fixture.scenario.name.startsWith("bench-")
+  );
+}
+
+function persistRun(run: MockRun): void {
+  if (run.persisted || !run.persistable) {
+    return;
+  }
+
+  run.persisted = true;
+
+  try {
+    deps.store.saveRun(run.threadId, {
+      runId: run.runId,
+      kind: run.kind,
+      title: run.title,
+      createdAt: run.createdAt,
+      events: run.events,
+    });
+  } catch (cause) {
+    console.warn("[mock] 会话落库失败", cause);
+  }
+}
 
 function pickRandomChatFixture(): FixtureDefinition | undefined {
   const chatFixtures = [...getFixtures().values()].filter(
@@ -63,7 +101,11 @@ function createRunEvents(
     threadId,
     ts: 0,
     type: "run.started",
-    payload: { kind: fixture.scenario.runKind, title: prompt.slice(0, 60) },
+    payload: {
+      kind: fixture.scenario.runKind,
+      title: prompt.slice(0, 60),
+      runtime: { mode: "mock" },
+    },
   };
   const userEvents: AgentEvent[] = [
     {
@@ -285,6 +327,9 @@ app.post("/api/runs", async (c) => {
   runs.set(runId, {
     runId,
     threadId,
+    kind: fixture.scenario.runKind,
+    title: prompt.replace(/\s+/g, " ").slice(0, 40),
+    createdAt: Date.now(),
     timing: fixture.scenario.timing,
     events,
     emittedCount: 0,
@@ -295,6 +340,8 @@ app.post("/api/runs", async (c) => {
     pauseRequested: false,
     awaitingApproval: null,
     finished: false,
+    persistable: isPersistable(fixture),
+    persisted: false,
   });
 
   return c.json({
@@ -326,6 +373,7 @@ app.post("/api/runs/:runId/cancel", (c) => {
     run.pausedReason = null;
     run.awaitingApproval = null;
     run.finished = true;
+    persistRun(run);
   }
 
   return c.json({ cancelled: true });
@@ -454,6 +502,7 @@ app.get("/api/runs/:runId/events", (c) => {
         id: cancelled.eventId,
         data: JSON.stringify(cancelled),
       });
+      persistRun(run);
     };
 
     const pauseAt = async (index: number) => {
@@ -531,6 +580,7 @@ app.get("/api/runs/:runId/events", (c) => {
 
         if (event.type === "run.completed" || event.type === "run.failed") {
           run.finished = true;
+          persistRun(run);
           return;
         }
 
