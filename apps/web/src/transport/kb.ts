@@ -16,10 +16,22 @@ export interface KbDoc extends KbDocSummary {
   content: string;
 }
 
+async function request(path: string, signal?: AbortSignal): Promise<Response> {
+  try {
+    return await fetch(path, { signal });
+  } catch (cause) {
+    if (signal?.aborted) {
+      throw cause;
+    }
+
+    throw new Error("无法连接后端服务，请确认 pnpm dev 已启动");
+  }
+}
+
 export async function fetchKbDocs(
   signal?: AbortSignal,
 ): Promise<KbDocSummary[]> {
-  const response = await fetch("/api/kb/docs", { signal });
+  const response = await request("/api/kb/docs", signal);
 
   if (!response.ok) {
     throw new HttpError(
@@ -37,9 +49,9 @@ export async function fetchKbDoc(
   docId: string,
   signal?: AbortSignal,
 ): Promise<KbDoc> {
-  const response = await fetch(
+  const response = await request(
     `/api/kb/docs/${encodeURIComponent(docId)}`,
-    { signal },
+    signal,
   );
 
   if (!response.ok) {
